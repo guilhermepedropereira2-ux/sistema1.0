@@ -1,0 +1,6 @@
+{
+  "name": "Barbearia",
+  "description": "Sistema completo de gestão para barbearias com painel financeiro, relatórios, equipe, receitas e portal do barbeiro",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

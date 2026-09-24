@@ -1,0 +1,191 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <defs>
+    <!-- Background Gradients -->
+    <radialGradient id="bgGlow" cx="50%" cy="46%" r="50%">
+      <stop offset="0%" stop-color="#222834" />
+      <stop offset="65%" stop-color="#101319" />
+      <stop offset="100%" stop-color="#080A0E" />
+    </radialGradient>
+    
+    <linearGradient id="discBorder" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#3A404D" />
+      <stop offset="50%" stop-color="#14171F" />
+      <stop offset="100%" stop-color="#282D37" />
+    </linearGradient>
+
+    <!-- Gold Gradients for 3D Chiseled Facets -->
+    <linearGradient id="goldLight" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFF3C4" />
+      <stop offset="30%" stop-color="#F7DF8C" />
+      <stop offset="70%" stop-color="#D4AF37" />
+      <stop offset="100%" stop-color="#B88A20" />
+    </linearGradient>
+
+    <linearGradient id="goldMid" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#E2BA49" />
+      <stop offset="50%" stop-color="#C69B2A" />
+      <stop offset="100%" stop-color="#997316" />
+    </linearGradient>
+
+    <linearGradient id="goldDark" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#9E781F" />
+      <stop offset="60%" stop-color="#6B4F0E" />
+      <stop offset="100%" stop-color="#453106" />
+    </linearGradient>
+
+    <linearGradient id="goldHighlight" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#FFFDF5" />
+      <stop offset="40%" stop-color="#FCEAB3" />
+      <stop offset="80%" stop-color="#E5BE53" />
+      <stop offset="100%" stop-color="#B08620" />
+    </linearGradient>
+
+    <linearGradient id="bladeSpecular" x1="20%" y1="0%" x2="80%" y2="100%">
+      <stop offset="0%" stop-color="#FFFDE8" />
+      <stop offset="25%" stop-color="#FCE69B" />
+      <stop offset="55%" stop-color="#D1A732" />
+      <stop offset="100%" stop-color="#805B0D" />
+    </linearGradient>
+
+    <!-- Drop Shadows -->
+    <filter id="emblemShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="18" stdDeviation="22" flood-color="#000000" flood-opacity="0.85" />
+      <feDropShadow dx="0" dy="6" stdDeviation="8" flood-color="#000000" flood-opacity="0.95" />
+    </filter>
+    
+    <filter id="bevelGlow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="4" stdDeviation="4" flood-color="#000000" flood-opacity="0.7" />
+    </filter>
+  </defs>
+
+  <!-- Base Circular Badge -->
+  <circle cx="512" cy="512" r="494" fill="url(#discBorder)" />
+  <circle cx="512" cy="512" r="486" fill="url(#bgGlow)" />
+  
+  <!-- Subtle circular texture rings -->
+  <circle cx="512" cy="512" r="460" fill="none" stroke="#FFFFFF" stroke-opacity="0.02" stroke-width="2" />
+  <circle cx="512" cy="512" r="420" fill="none" stroke="#FFFFFF" stroke-opacity="0.015" stroke-width="1.5" />
+  <circle cx="512" cy="512" r="380" fill="none" stroke="#000000" stroke-opacity="0.25" stroke-width="2" />
+  <circle cx="512" cy="512" r="300" fill="none" stroke="#FFFFFF" stroke-opacity="0.01" stroke-width="1.5" />
+
+  <!-- Main Monogram Group with Shadow -->
+  <g filter="url(#emblemShadow)">
+
+    <!-- ========================================================= -->
+    <!-- 1. LEFT VERTICAL STEM OF "K" WITH CHISELED SERIFS         -->
+    <!-- ========================================================= -->
+    <!-- Outer Outline / Deep Base for Left Stem -->
+    <path d="M 288 276 L 396 276 L 438 318 L 388 318 L 388 706 L 438 706 L 396 748 L 288 748 L 346 706 L 332 706 L 332 318 L 346 318 Z"
+          fill="#3A2805" />
+
+    <!-- Left Stem - Light Face (Left Bevel) -->
+    <path d="M 288 276 L 360 276 L 360 748 L 288 748 L 339 706 L 332 706 L 332 318 L 339 318 Z"
+          fill="url(#goldLight)" />
+          
+    <!-- Left Stem - Upper Serif Chisel Facets -->
+    <polygon points="288,276 360,276 360,318 332,318" fill="url(#goldHighlight)" />
+    <polygon points="360,276 396,276 438,318 388,318 360,318" fill="url(#goldMid)" />
+    <polygon points="288,276 339,318 332,318" fill="url(#goldHighlight)" />
+
+    <!-- Left Stem - Vertical Shaft Left Facet -->
+    <polygon points="332,318 360,318 360,706 332,706" fill="url(#goldHighlight)" />
+    
+    <!-- Left Stem - Vertical Shaft Right Facet (Shaded) -->
+    <polygon points="360,318 388,318 388,706 360,706" fill="url(#goldMid)" />
+
+    <!-- Left Stem - Lower Serif Chisel Facets -->
+    <polygon points="332,706 360,706 360,748 288,748" fill="url(#goldMid)" />
+    <polygon points="360,706 388,706 438,706 396,748 360,748" fill="url(#goldDark)" />
+
+    <!-- Inner Chisel Ridge Line on Vertical Stem -->
+    <line x1="360" y1="276" x2="360" y2="748" stroke="#FFF7D1" stroke-width="3" stroke-linecap="round" />
+
+    <!-- Inner Shadow Groove along Left Stem -->
+    <path d="M 388 340 L 400 352 L 400 672 L 388 684 Z" fill="#201502" opacity="0.6" />
+
+    <!-- ========================================================= -->
+    <!-- 2. LOWER RIGHT LEG OF "K" (CHISELED DAGGER / WEDGE)       -->
+    <!-- ========================================================= -->
+    <!-- Lower Leg Shadow Base -->
+    <polygon points="460,520 736,740 600,748 390,560" fill="#2E1F05" />
+
+    <!-- Lower Leg Upper Facet (Facing Up-Right, Golden Highlight) -->
+    <polygon points="460,520 600,630 736,740 600,748" fill="url(#goldMid)" />
+    <polygon points="460,520 608,632 736,740 600,650" fill="url(#goldHighlight)" />
+
+    <!-- Lower Leg Lower Facet (Deep Chiseled Shade) -->
+    <polygon points="460,520 600,650 736,740 620,748 460,600" fill="url(#goldDark)" />
+    <polygon points="620,748 736,740 580,724" fill="#3D2905" />
+
+    <!-- Lower Leg Center Ridge Line -->
+    <line x1="460" y1="520" x2="736" y2="740" stroke="#FFF2B0" stroke-width="3.5" stroke-linecap="round" />
+
+    <!-- ========================================================= -->
+    <!-- 3. UPPER RIGHT ARM OF "K": BARBER STRAIGHT RAZOR BLADE    -->
+    <!-- ========================================================= -->
+    <!-- Razor Blade Back Spine (Thick Chiseled Brass Spine) -->
+    <g id="razorBlade">
+      <!-- Deep Blade Under-Layer / Outline -->
+      <path d="M 380,480 L 590,272 L 712,272 L 734,310 L 718,340 L 510,540 Z" fill="#2B1D04" />
+
+      <!-- Razor Blade Main Polished Surface (Upper diagonal) -->
+      <polygon points="384,476 592,274 708,274 728,304 530,510" fill="url(#bladeSpecular)" />
+
+      <!-- Razor Beveled Spine (Top Chisel Face) -->
+      <polygon points="384,476 592,274 708,274 690,288 568,288 396,460" fill="url(#goldHighlight)" />
+      
+      <!-- Razor Spine Upper Ridge Highlight -->
+      <line x1="396" y1="460" x2="592" y2="274" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" />
+      <line x1="592" y1="274" x2="708" y2="274" stroke="#FFFFFF" stroke-width="3.5" stroke-linecap="round" />
+
+      <!-- French Point / Notched Tip of the Barber Razor -->
+      <path d="M 708,274 L 734,306 C 730,326 714,334 702,342 L 536,512 L 512,488 Z" fill="url(#goldMid)" />
+      <path d="M 734,306 C 722,320 710,328 694,338 L 682,352 L 670,366 L 546,494 Z" fill="url(#goldDark)" />
+
+      <!-- Razor Cutting Edge Facet (Ground Hollow Edge) -->
+      <polygon points="460,540 682,352 702,342 660,378 480,560" fill="url(#goldHighlight)" />
+      <line x1="472" y1="550" x2="698" y2="344" stroke="#FFFCEB" stroke-width="2" />
+
+      <!-- Razor Shank / Jimps Details (Grip notches near tang) -->
+      <line x1="432" y1="492" x2="444" y2="504" stroke="#3A2805" stroke-width="3" />
+      <line x1="446" y1="478" x2="458" y2="490" stroke="#3A2805" stroke-width="3" />
+      <line x1="460" y1="464" x2="472" y2="476" stroke="#3A2805" stroke-width="3" />
+    </g>
+
+    <!-- ========================================================= -->
+    <!-- 4. STRAIGHT RAZOR HANDLE (SCALE) CROSSING DIAGONALLY      -->
+    <!-- ========================================================= -->
+    <g id="razorHandle" filter="url(#bevelGlow)">
+      <!-- Handle Base / Deep Drop Shadow Boundary -->
+      <path d="M 292,620 C 286,612 288,600 298,590 L 538,300 C 554,282 576,288 586,302 L 580,318 L 334,636 C 322,648 304,640 292,620 Z"
+            fill="#1E1402" />
+
+      <!-- Handle Upper Body (Light Metallic Gold) -->
+      <path d="M 298,606 L 534,304 C 546,290 562,294 572,308 L 560,324 L 322,630 C 312,638 302,628 298,606 Z"
+            fill="url(#goldLight)" />
+
+      <!-- Handle Bevel Lower Half (Shaded Gold) -->
+      <path d="M 298,606 C 290,616 294,628 308,634 L 324,632 L 564,320 L 574,306 C 564,316 550,332 538,346 L 318,618 Z"
+            fill="url(#goldDark)" />
+
+      <!-- Handle Spine / Ridge Highlight -->
+      <path d="M 302,612 L 548,308" stroke="#FFF7DB" stroke-width="3.5" stroke-linecap="round" />
+
+      <!-- Pivot Rivet Pin / Screw at Handle Butt -->
+      <circle cx="328" cy="610" r="13" fill="#2E2005" />
+      <circle cx="328" cy="610" r="10" fill="url(#goldHighlight)" />
+      <circle cx="328" cy="610" r="6" fill="#422D07" />
+      <circle cx="326" cy="608" r="2.5" fill="#FFFFFF" />
+
+      <!-- Secondary Pivot Rivet Pin at Handle Center -->
+      <circle cx="444" cy="470" r="11" fill="#2E2005" />
+      <circle cx="444" cy="470" r="8.5" fill="url(#goldHighlight)" />
+      <circle cx="444" cy="470" r="5" fill="#422D07" />
+      <circle cx="442.5" cy="468.5" r="2" fill="#FFFFFF" />
+    </g>
+
+    <!-- Additional Micro Highlights for Sharp Dagger Aesthetic -->
+    <circle cx="734" cy="308" r="3" fill="#FFFFFF" opacity="0.9" />
+    <circle cx="736" cy="740" r="3" fill="#FFFFFF" opacity="0.8" />
+  </g>
+</svg>

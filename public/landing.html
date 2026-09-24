@@ -1,0 +1,1140 @@
+<!DOCTYPE html>
+<html lang="pt-PT" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>KortePro — Automação de Cortes & Fecho do Mês para Barbearias</title>
+  <link rel="icon" type="image/png" href="/logo.png" />
+  <link rel="apple-touch-icon" href="/logo.png" />
+  <meta name="description" content="Automatize a contagem de cortes, comissões de barbeiros e fecho financeiro da sua barbearia em 30 segundos. Teste 7 dias grátis sem cartão." />
+
+  <!-- Tailwind CSS via CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Lucide Icons via CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- Google Fonts: Plus Jakarta Sans & Outfit -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              950: '#07090E',
+              900: '#0B0F17',
+              850: '#101522',
+              800: '#161C2C',
+              700: '#222A3E',
+              gold: '#D4AF37',
+              goldLight: '#E6CA65',
+              goldDark: '#997B1A',
+              muted: '#8B94A7'
+            }
+          },
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+            display: ['"Outfit"', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    body {
+      background-color: #0B0F17;
+      color: #E2E8F0;
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    /* Ambient background subtle grid */
+    .bg-grid-subtle {
+      background-size: 40px 40px;
+      background-image: 
+        linear-gradient(to right, rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+    }
+
+    /* SaaS Glass Cards - Optimized dark background without expensive GPU backdrop-filter */
+    .saas-card {
+      background: rgba(16, 21, 34, 0.95);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .gold-metallic-text {
+      background: linear-gradient(135deg, #FFF6DA 0%, #E6CA65 35%, #D4AF37 70%, #997B1A 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .btn-gold {
+      background: linear-gradient(135deg, #E6CA65 0%, #D4AF37 50%, #B38E22 100%);
+      color: #0B0F17;
+      font-weight: 700;
+      transition: all 0.2s ease;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+    }
+    .btn-gold:hover {
+      filter: brightness(1.06);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 20px -2px rgba(212, 175, 55, 0.35);
+    }
+
+    /* Smartphone frame shadow */
+    .mockup-phone-frame {
+      box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.95), 0 0 0 1px rgba(255, 255, 255, 0.12);
+    }
+
+    /* Live Loop Simulation animations */
+    @keyframes pulseGlow {
+      0%, 100% { opacity: 0.4; transform: scale(1); }
+      50% { opacity: 0.8; transform: scale(1.03); }
+    }
+    .animate-pulse-glow {
+      animation: pulseGlow 4s ease-in-out infinite;
+    }
+
+    @keyframes liveCounter {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.85; }
+    }
+    .live-fade-in {
+      animation: liveCounter 0.5s ease-out;
+    }
+  </style>
+</head>
+<body class="min-h-screen bg-[#0B0F17] text-slate-200 overflow-x-hidden selection:bg-[#D4AF37]/20 selection:text-[#E6CA65]">
+
+  <!-- ======================================================== -->
+  <!-- 1. NAVBAR LIMPA (SEM BADGES "SAAS" OU VERSÃO)            -->
+  <!-- ======================================================== -->
+  <header class="sticky top-0 z-50 bg-[#0B0F17]/95 border-b border-white/[0.08]">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      
+      <!-- Brand Logo Limpo -->
+      <a href="#" class="flex items-center gap-3 group">
+        <img src="/logo.png" alt="KortePro" class="h-10 w-10 rounded-full object-cover border border-[#D4AF37]/40 shadow-md shadow-[#D4AF37]/15" />
+        <span class="font-display font-bold text-xl tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-[#D4AF37] to-amber-500">KortePro</span>
+      </a>
+
+      <!-- Navigation Links Principais -->
+      <nav class="hidden md:flex items-center gap-8 text-xs font-medium text-slate-400">
+        <a href="#solucao" class="hover:text-white transition-colors">Visão Geral</a>
+        <a href="#comparativo" class="hover:text-white transition-colors">Antes vs. Depois</a>
+        <a href="#pilares" class="hover:text-white transition-colors">Pilares Operacionais</a>
+        <a href="#precos" class="hover:text-white transition-colors">Planos</a>
+        <a href="#faq" class="hover:text-white transition-colors">Perguntas Frequentes</a>
+      </nav>
+
+      <!-- Botão Entrar / Login Direto -->
+      <div class="flex items-center gap-3">
+        <a href="/login" class="px-4 py-2 text-xs font-semibold text-slate-200 hover:text-white transition-colors border border-white/10 hover:border-white/25 rounded-lg hover:bg-white/[0.04]">
+          Entrar
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- ======================================================== -->
+  <!-- 2. HERO SECTION COM MOCKUP REALISTA (DESKTOP + CELULAR)  -->
+  <!-- ======================================================== -->
+  <section id="hero-section" class="relative pt-12 pb-24 md:pt-20 md:pb-36 px-4 sm:px-6 lg:px-8 overflow-hidden bg-grid-subtle">
+    
+    <!-- Fundo Sutil de Barbearia com Overlay Escuro 85% Sem Filtro Pesado -->
+    <div class="absolute inset-0 pointer-events-none select-none z-0">
+      <img 
+        src="https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&w=1600&q=80" 
+        alt="Barbearia Moderna" 
+        class="w-full h-full object-cover opacity-15 scale-105"
+      />
+      <div class="absolute inset-0 bg-gradient-to-b from-[#0B0F17] via-[#0B0F17]/90 to-[#0B0F17]"></div>
+      <div class="absolute top-0 left-1/2 -translate-x-1/2 w-[650px] h-[320px] bg-[#D4AF37]/10 rounded-full pointer-events-none"></div>
+    </div>
+
+    <div class="max-w-6xl mx-auto text-center relative z-10">
+      
+      <!-- Headline Principal Sem Termos de IA -->
+      <h1 class="font-display text-3xl sm:text-5xl md:text-6xl font-bold tracking-tight text-white max-w-4xl mx-auto leading-[1.12]">
+        O fim das planilhas manuais. <br class="hidden sm:inline" />
+        <span class="gold-metallic-text">O fecho do mês em 30 segundos.</span>
+      </h1>
+
+      <!-- Subtítulo Focado em Automação Prática -->
+      <p class="mt-6 text-sm sm:text-base md:text-lg text-slate-300 max-w-2xl mx-auto leading-relaxed font-normal">
+        Contagem automática de cada atendimento, rateio instantâneo de comissões por cadeira e desconto real das taxas de maquininhas. Sem papel, sem erro de conta e sem atritos na equipa.
+      </p>
+
+      <!-- Botões de Ação com Ícone Neutro (arrow-right, sem estrelinhas de IA) -->
+      <div class="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
+        <a href="/login" class="btn-gold w-full sm:w-auto px-6 py-3 text-sm rounded-lg flex items-center justify-center gap-2 group cursor-pointer">
+          <span>Começar Teste Grátis de 7 Dias</span>
+          <i data-lucide="arrow-right" class="h-4 w-4 text-[#0B0F17] group-hover:translate-x-0.5 transition-transform"></i>
+        </a>
+        <a href="#comparativo" class="w-full sm:w-auto px-5 py-3 text-xs sm:text-sm font-medium text-slate-300 hover:text-white border border-white/10 hover:border-white/20 rounded-lg hover:bg-white/[0.03] transition-all flex items-center justify-center gap-2">
+          <span>Ver Comparativo</span>
+          <i data-lucide="chevron-down" class="h-3.5 w-3.5 text-slate-400"></i>
+        </a>
+      </div>
+
+      <!-- Indicadores de Confiança -->
+      <div class="mt-4 flex flex-wrap items-center justify-center gap-5 text-[11px] text-slate-400">
+        <span class="flex items-center gap-1.5">
+          <i data-lucide="check" class="h-3.5 w-3.5 text-[#D4AF37]"></i> Sem cartão de crédito
+        </span>
+        <span class="flex items-center gap-1.5">
+          <i data-lucide="check" class="h-3.5 w-3.5 text-[#D4AF37]"></i> Configuração em 2 minutos
+        </span>
+        <span class="flex items-center gap-1.5">
+          <i data-lucide="check" class="h-3.5 w-3.5 text-[#D4AF37]"></i> Acesso imediato no celular
+        </span>
+      </div>
+
+      <!-- ======================================================== -->
+      <!-- MOCKUP COMBINADO: BROWSER DESKTOP + SMARTPHONE OVERLAP   -->
+      <!-- ======================================================== -->
+      <div class="mt-14 sm:mt-16 relative mx-auto max-w-5xl" id="solucao">
+        
+        <!-- Brilho Ambiente sutil sob o dispositivo -->
+        <div class="absolute -inset-2 bg-gradient-to-b from-[#D4AF37]/15 to-transparent rounded-2xl blur-2xl opacity-60 pointer-events-none"></div>
+
+        <!-- 1. MOLDURA DO COMPUTADOR (NAVEGADOR macOS DARK) -->
+        <div class="relative saas-card rounded-xl shadow-2xl overflow-hidden text-left border border-white/10 bg-[#0E131F]">
+          
+          <!-- Barra Superior do Navegador / macOS Window Chrome -->
+          <div class="h-10 px-4 bg-[#121827] border-b border-white/[0.08] flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="h-2.5 w-2.5 rounded-full bg-[#EC6A5E] border border-black/20"></span>
+              <span class="h-2.5 w-2.5 rounded-full bg-[#F5BF4F] border border-black/20"></span>
+              <span class="h-2.5 w-2.5 rounded-full bg-[#61C554] border border-black/20"></span>
+              <span class="ml-2 text-[11px] font-mono text-slate-400 hidden sm:inline">kortepro.app/painel/financeiro</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="flex items-center gap-1.5 text-[10px] font-semibold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded">
+                <span class="h-1.5 w-1.5 rounded-full bg-emerald-400"></span>
+                Fecho Sincronizado
+              </span>
+            </div>
+          </div>
+
+          <!-- Conteúdo Interno do Painel Administrativo -->
+          <div class="p-4 sm:p-6 space-y-5">
+            
+            <!-- Sub-header do Admin com Seletor e Data -->
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-white/[0.06]">
+              <div>
+                <div class="flex items-center gap-2">
+                  <h3 class="font-display text-base font-bold text-white">Barbearia Vintage Club</h3>
+                  <span class="text-[10px] text-slate-400 font-medium px-2 py-0.5 rounded bg-white/[0.04]">Unidade Matriz</span>
+                </div>
+                <p class="text-xs text-slate-400 mt-0.5">Visão consolidada do mês • 5 cadeiras ativas</p>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="text-xs text-slate-300 font-medium bg-white/[0.03] border border-white/10 px-2.5 py-1 rounded">
+                  Setembro 2026
+                </span>
+                <span class="text-xs font-bold text-[#D4AF37] bg-[#D4AF37]/10 border border-[#D4AF37]/25 px-2.5 py-1 rounded">
+                  DRE em Tempo Real
+                </span>
+              </div>
+            </div>
+
+            <!-- Grid de Métricas Principais Solicitadas -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <div class="p-3.5 rounded-lg bg-[#121827] border border-white/[0.06] transition-all" id="hero-kpi-faturamento-card">
+                <span class="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Faturamento Bruto</span>
+                <p class="text-lg sm:text-xl font-display font-bold text-white mt-1 transition-all" id="hero-kpi-faturamento">R$ 28.450,00</p>
+                <span class="text-[10px] text-slate-400" id="hero-kpi-atendimentos">512 atendimentos</span>
+              </div>
+
+              <div class="p-3.5 rounded-lg bg-[#121827] border border-white/[0.06] transition-all" id="hero-kpi-comissoes-card">
+                <span class="text-[10px] font-semibold uppercase tracking-wider text-amber-400/90">Comissões Apuradas</span>
+                <p class="text-lg sm:text-xl font-display font-bold text-amber-300 mt-1 transition-all" id="hero-kpi-comissoes">R$ 13.210,00</p>
+                <span class="text-[10px] text-slate-400">5 barbeiros calculados</span>
+              </div>
+
+              <div class="p-3.5 rounded-lg bg-[#121827] border border-white/[0.06] transition-all" id="hero-kpi-taxas-card">
+                <span class="text-[10px] font-semibold uppercase tracking-wider text-rose-400/90">Taxa Maquininhas</span>
+                <p class="text-lg sm:text-xl font-display font-bold text-rose-300 mt-1 transition-all" id="hero-kpi-taxas">- R$ 1.360,00</p>
+                <span class="text-[10px] text-slate-400">Descontadas na fonte</span>
+              </div>
+
+              <div class="p-3.5 rounded-lg bg-[#121827] border border-emerald-500/20 bg-emerald-500/[0.03] transition-all" id="hero-kpi-lucro-card">
+                <span class="text-[10px] font-semibold uppercase tracking-wider text-emerald-400">Lucro Líquido Real</span>
+                <p class="text-lg sm:text-xl font-display font-bold text-emerald-400 mt-1 transition-all" id="hero-kpi-lucro">R$ 13.880,00</p>
+                <span class="text-[10px] text-emerald-300/80">Disponível no caixa do dono</span>
+              </div>
+            </div>
+
+            <!-- Mini Gráfico de Fluxo & Tabela Resumida de Repasses -->
+            <div class="grid md:grid-cols-3 gap-4">
+              
+              <!-- Mini gráfico simulado -->
+              <div class="p-4 rounded-lg bg-[#121827] border border-white/[0.06] flex flex-col justify-between">
+                <div>
+                  <div class="flex items-center justify-between mb-3">
+                    <span class="text-xs font-bold text-white">Fluxo de Faturamento</span>
+                    <span class="text-[10px] text-emerald-400 font-semibold">Média R$ 1.150/dia</span>
+                  </div>
+                  <div class="h-20 flex items-end gap-1.5 pt-2">
+                    <div class="w-full bg-[#D4AF37]/20 hover:bg-[#D4AF37]/40 h-[45%] rounded-t-sm transition-all" title="Seg: R$ 850"></div>
+                    <div class="w-full bg-[#D4AF37]/20 hover:bg-[#D4AF37]/40 h-[60%] rounded-t-sm transition-all" title="Ter: R$ 1.020"></div>
+                    <div class="w-full bg-[#D4AF37]/30 hover:bg-[#D4AF37]/50 h-[75%] rounded-t-sm transition-all" title="Qua: R$ 1.280"></div>
+                    <div class="w-full bg-[#D4AF37]/40 hover:bg-[#D4AF37]/60 h-[80%] rounded-t-sm transition-all" title="Qui: R$ 1.340"></div>
+                    <div class="w-full bg-[#D4AF37]/70 hover:bg-[#D4AF37] h-[95%] rounded-t-sm transition-all" title="Sex: R$ 1.890"></div>
+                    <div class="w-full bg-[#D4AF37] h-[100%] rounded-t-sm shadow-sm" title="Sáb: R$ 2.150"></div>
+                    <div class="w-full bg-[#D4AF37]/30 hover:bg-[#D4AF37]/50 h-[40%] rounded-t-sm transition-all" title="Dom: R$ 680"></div>
+                  </div>
+                </div>
+                <div class="mt-3 pt-2 border-t border-white/[0.05] flex items-center justify-between text-[10px] text-slate-400">
+                  <span>Seg</span><span>Ter</span><span>Qua</span><span>Qui</span><span>Sex</span><span class="text-[#D4AF37] font-bold">Sáb</span><span>Dom</span>
+                </div>
+              </div>
+
+              <!-- Tabela Resumida de Repasses -->
+              <div class="md:col-span-2 p-3.5 rounded-lg bg-[#121827] border border-white/[0.06] overflow-hidden">
+                <div class="flex items-center justify-between pb-2 mb-2 border-b border-white/[0.06]">
+                  <span class="text-xs font-bold text-white">Extrato Consolidado por Barbeiro</span>
+                  <span class="text-[10px] text-slate-400">Valores líquidos para Pix</span>
+                </div>
+
+                <div class="space-y-1.5 text-xs">
+                  <div class="p-2 rounded bg-white/[0.02] flex items-center justify-between hover:bg-white/[0.04]">
+                    <div class="flex items-center gap-2.5">
+                      <div class="h-6 w-6 rounded-full bg-[#D4AF37]/15 text-[#D4AF37] font-bold text-[10px] flex items-center justify-center">RC</div>
+                      <div>
+                        <p class="font-semibold text-white leading-tight">Rodrigo Costa</p>
+                        <p class="text-[10px] text-slate-400">154 cortes • 50% comissão</p>
+                      </div>
+                    </div>
+                    <div class="text-right">
+                      <span class="font-bold text-white font-mono">R$ 3.850,00</span>
+                      <span class="block text-[9px] text-emerald-400 font-medium">Pronto para Pix</span>
+                    </div>
+                  </div>
+
+                  <div class="p-2 rounded bg-white/[0.02] flex items-center justify-between hover:bg-white/[0.04]">
+                    <div class="flex items-center gap-2.5">
+                      <div class="h-6 w-6 rounded-full bg-slate-700 text-slate-300 font-bold text-[10px] flex items-center justify-center">ML</div>
+                      <div>
+                        <p class="font-semibold text-white leading-tight">Matheus Lima</p>
+                        <p class="text-[10px] text-slate-400">128 cortes • 45% comissão</p>
+                      </div>
+                    </div>
+                    <div class="text-right">
+                      <span class="font-bold text-white font-mono">R$ 2.880,00</span>
+                      <span class="block text-[9px] text-emerald-400 font-medium">Pronto para Pix</span>
+                    </div>
+                  </div>
+
+                  <div class="p-2 rounded bg-white/[0.02] flex items-center justify-between hover:bg-white/[0.04]">
+                    <div class="flex items-center gap-2.5">
+                      <div class="h-6 w-6 rounded-full bg-slate-700 text-slate-300 font-bold text-[10px] flex items-center justify-center">GA</div>
+                      <div>
+                        <p class="font-semibold text-white leading-tight">Gabriel Alves</p>
+                        <p class="text-[10px] text-slate-400">104 cortes • 45% comissão</p>
+                      </div>
+                    </div>
+                    <div class="text-right">
+                      <span class="font-bold text-white font-mono">R$ 2.340,00</span>
+                      <span class="block text-[9px] text-emerald-400 font-medium">Pronto para Pix</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- 2. MOLDURA DO SMARTPHONE (APP INDIVIDUAL DO BARBEIRO) -->
+        <div class="hidden sm:block absolute -bottom-10 -right-4 md:-right-6 w-64 md:w-72 mockup-phone-frame bg-[#0B0E17] rounded-[32px] p-2.5 border border-zinc-700/80 z-20 transition-transform duration-300 hover:scale-[1.02]">
+          
+          <div class="relative bg-[#0F1524] rounded-[24px] overflow-hidden border border-white/10 p-3.5 text-left">
+            
+            <!-- Dynamic Island / Speaker Pill -->
+            <div class="h-4 w-24 bg-black rounded-full mx-auto mb-3 flex items-center justify-center">
+              <span class="h-1.5 w-1.5 rounded-full bg-zinc-800"></span>
+            </div>
+
+            <!-- Mobile App Header do Barbeiro -->
+            <div class="flex items-center justify-between pb-2 mb-2.5 border-b border-white/[0.08]">
+              <div class="flex items-center gap-2">
+                <div class="h-7 w-7 rounded-full bg-[#D4AF37] text-[#0B0F17] font-bold text-xs flex items-center justify-center">
+                  RC
+                </div>
+                <div>
+                  <p class="text-xs font-bold text-white leading-tight">Rodrigo Costa</p>
+                  <p class="text-[10px] text-slate-400">Extrato em Tempo Real</p>
+                </div>
+              </div>
+              <span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                Ativo
+              </span>
+            </div>
+
+            <!-- Card de Ganhos Rápidos de Hoje -->
+            <div class="p-3 rounded-xl bg-gradient-to-br from-[#161D2E] to-[#0E1320] border border-[#D4AF37]/30 mb-2.5 transition-all" id="phone-stat-card">
+              <div class="flex justify-between items-center text-[10px] text-slate-400">
+                <span>Comissão de Hoje</span>
+                <span class="text-[#D4AF37] font-semibold" id="phone-today-cuts">7 atendimentos</span>
+              </div>
+              <p class="text-xl font-display font-extrabold text-white mt-0.5 transition-all" id="phone-today-amount">R$ 345,00</p>
+              <div class="mt-1.5 flex items-center justify-between text-[9px] text-slate-400">
+                <span>Taxa base: 50%</span>
+                <span class="text-emerald-400 font-medium" id="phone-month-total">Mês: R$ 3.850,00</span>
+              </div>
+            </div>
+
+            <!-- Botão de Lançamento Rápido no App -->
+            <div class="mb-2.5">
+              <button id="phone-launch-btn" class="w-full py-1.5 rounded-lg bg-[#D4AF37] text-[#0B0F17] text-[11px] font-bold flex items-center justify-center gap-1 shadow-sm transition-all active:scale-95">
+                <i data-lucide="plus" class="h-3.5 w-3.5 stroke-[2.5]"></i>
+                <span id="phone-btn-text">Lançar Atendimento</span>
+              </button>
+            </div>
+
+            <!-- Últimos Atendimentos no Feed do Celular -->
+            <div class="space-y-1.5 text-[10px]">
+              <div class="flex items-center justify-between">
+                <p class="text-[9px] uppercase font-bold text-slate-500 tracking-wider">Últimos Lançamentos</p>
+                <span class="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" title="Sincronizado"></span>
+              </div>
+              
+              <div id="phone-feed-list" class="space-y-1.5">
+                <div class="p-1.5 rounded bg-white/[0.02] flex items-center justify-between border border-white/[0.04] transition-all" id="phone-item-1">
+                  <div>
+                    <p class="font-semibold text-white">Corte Degradê</p>
+                    <span class="text-slate-400 text-[9px]">18:10 • Lucas M.</span>
+                  </div>
+                  <span class="font-mono text-emerald-400 font-semibold">+R$ 27,50</span>
+                </div>
+
+                <div class="p-1.5 rounded bg-white/[0.02] flex items-center justify-between border border-white/[0.04]">
+                  <div>
+                    <p class="font-semibold text-white">Barba Terapia</p>
+                    <span class="text-slate-400 text-[9px]">17:30 • Marcos V.</span>
+                  </div>
+                  <span class="font-mono text-emerald-400 font-semibold">+R$ 22,50</span>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ======================================================== -->
+  <!-- 3. COMPARATIVO LATERAL ("ANTES VS. DEPOIS") LIMPO       -->
+  <!-- ======================================================== -->
+  <section id="comparativo" class="py-24 border-y border-white/[0.08] bg-[#080C14] relative">
+    <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+      
+      <div class="text-center max-w-2xl mx-auto mb-16">
+        <span class="text-xs font-bold uppercase tracking-widest text-[#D4AF37] mb-2 block">
+          Comparativo Direto
+        </span>
+        <h2 class="font-display text-2xl sm:text-4xl font-bold text-white">
+          A transição do método tradicional para a automação prática
+        </h2>
+        <p class="mt-3 text-slate-400 text-sm sm:text-base">
+          Como o KortePro simplifica a rotina do dono da barbearia e elimina atritos de repasse.
+        </p>
+      </div>
+
+      <!-- Duas Colunas Lado a Lado Refinadas -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        
+        <!-- Coluna 1: Método Tradicional (Papel e Planilha) -->
+        <div class="saas-card rounded-xl p-6 sm:p-8 border border-white/[0.08] bg-[#0E131F]/90">
+          <div class="flex items-center gap-2 pb-4 mb-6 border-b border-white/[0.06]">
+            <div class="h-8 w-8 rounded-lg bg-white/[0.05] flex items-center justify-center text-slate-400">
+              <i data-lucide="file-text" class="h-4 w-4"></i>
+            </div>
+            <div>
+              <span class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Rotina Manual</span>
+              <h3 class="font-display text-base font-bold text-slate-200">Método Tradicional (Papel e Planilha)</h3>
+            </div>
+          </div>
+
+          <ul class="space-y-5 text-xs sm:text-sm text-slate-300">
+            <li class="flex items-start gap-3">
+              <div class="h-5 w-5 rounded bg-white/[0.04] text-slate-400 flex items-center justify-center shrink-0 mt-0.5">
+                <i data-lucide="clock-3" class="h-3.5 w-3.5"></i>
+              </div>
+              <div>
+                <p class="font-semibold text-slate-200">Horas perdidas no domingo</p>
+                <p class="text-xs text-slate-400 mt-0.5 leading-relaxed">Conferência manual de comandas rasuradas, cadernos de caixa e soma em calculadoras para fechar o mês.</p>
+              </div>
+            </li>
+
+            <li class="flex items-start gap-3">
+              <div class="h-5 w-5 rounded bg-white/[0.04] text-slate-400 flex items-center justify-center shrink-0 mt-0.5">
+                <i data-lucide="users" class="h-3.5 w-3.5"></i>
+              </div>
+              <div>
+                <p class="font-semibold text-slate-200">Desconfiança de valores pelos barbeiros</p>
+                <p class="text-xs text-slate-400 mt-0.5 leading-relaxed">Divergências frequentes entre as anotações do profissional e o registro do balcão, gerando clima tenso.</p>
+              </div>
+            </li>
+
+            <li class="flex items-start gap-3">
+              <div class="h-5 w-5 rounded bg-white/[0.04] text-slate-400 flex items-center justify-center shrink-0 mt-0.5">
+                <i data-lucide="credit-card" class="h-3.5 w-3.5"></i>
+              </div>
+              <div>
+                <p class="font-semibold text-slate-200">Absorção involuntária das taxas de cartão</p>
+                <p class="text-xs text-slate-400 mt-0.5 leading-relaxed">Comissões pagas sobre o valor bruto do corte, fazendo com que o dono arque sozinho com as taxas das maquininhas.</p>
+              </div>
+            </li>
+          </ul>
+        </div>
+
+        <!-- Coluna 2: Com o KortePro -->
+        <div class="saas-card rounded-xl p-6 sm:p-8 border border-[#D4AF37]/35 bg-[#101626]/95 relative shadow-lg shadow-[#D4AF37]/5">
+          <div class="flex items-center gap-2 pb-4 mb-6 border-b border-white/[0.08]">
+            <div class="h-8 w-8 rounded-lg bg-[#D4AF37]/15 border border-[#D4AF37]/30 flex items-center justify-center text-[#D4AF37]">
+              <i data-lucide="check" class="h-4 w-4 stroke-[2.5]"></i>
+            </div>
+            <div>
+              <span class="text-[11px] font-semibold text-[#D4AF37] uppercase tracking-wider">Rotina Automatizada</span>
+              <h3 class="font-display text-base font-bold text-white">Com o KortePro</h3>
+            </div>
+          </div>
+
+          <ul class="space-y-5 text-xs sm:text-sm text-slate-200">
+            <li class="flex items-start gap-3">
+              <div class="h-5 w-5 rounded bg-[#D4AF37]/15 text-[#D4AF37] flex items-center justify-center shrink-0 mt-0.5">
+                <i data-lucide="zap" class="h-3.5 w-3.5"></i>
+              </div>
+              <div>
+                <p class="font-semibold text-white">Fechamento completo em 30 segundos</p>
+                <p class="text-xs text-slate-300 mt-0.5 leading-relaxed">Cada atendimento computado no ato. No final do expediente ou mês, os relatórios consolidados já estão gerados.</p>
+              </div>
+            </li>
+
+            <li class="flex items-start gap-3">
+              <div class="h-5 w-5 rounded bg-[#D4AF37]/15 text-[#D4AF37] flex items-center justify-center shrink-0 mt-0.5">
+                <i data-lucide="smartphone" class="h-3.5 w-3.5"></i>
+              </div>
+              <div>
+                <p class="font-semibold text-white">Extrato aberto no celular do barbeiro</p>
+                <p class="text-xs text-slate-300 mt-0.5 leading-relaxed">O profissional confere seus próprios atendimentos e comissões minuto a minuto, com transparência total.</p>
+              </div>
+            </li>
+
+            <li class="flex items-start gap-3">
+              <div class="h-5 w-5 rounded bg-[#D4AF37]/15 text-[#D4AF37] flex items-center justify-center shrink-0 mt-0.5">
+                <i data-lucide="wallet" class="h-3.5 w-3.5"></i>
+              </div>
+              <div>
+                <p class="font-semibold text-white">Taxas descontadas na fonte e Pix prontos</p>
+                <p class="text-xs text-slate-300 mt-0.5 leading-relaxed">Cálculo justo que desconta taxas de cartões e apresenta o montante líquido pronto para envio imediato aos barbeiros.</p>
+              </div>
+            </li>
+          </ul>
+        </div>
+
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ======================================================== -->
+  <!-- 4. TRÊS PILARES OPERACIONAIS: BENTO GRID REFINADO        -->
+  <!-- ======================================================== -->
+  <section id="pilares" class="py-24 relative bg-[#0B0F17]">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      
+      <div class="text-center max-w-2xl mx-auto mb-16">
+        <span class="text-xs font-bold uppercase tracking-widest text-[#D4AF37] mb-2 block">
+          Arquitetura Operacional
+        </span>
+        <h2 class="font-display text-2xl sm:text-4xl font-bold text-white">
+          Três pilares fundamentais do sistema
+        </h2>
+        <p class="mt-3 text-slate-400 text-sm sm:text-base">
+          Projetado exclusivamente para a rotina diária de barbearias e estúdios.
+        </p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        
+        <!-- Pilar 1 -->
+        <div class="saas-card rounded-xl p-6 flex flex-col justify-between border border-white/[0.08] hover:border-[#D4AF37]/30 transition-colors">
+          <div>
+            <div class="flex items-center justify-between mb-5">
+              <div class="h-10 w-10 rounded-lg bg-[#D4AF37]/10 border border-[#D4AF37]/20 flex items-center justify-center text-[#D4AF37]">
+                <i data-lucide="clock" class="h-5 w-5 stroke-[2]"></i>
+              </div>
+              <span class="text-[10px] uppercase font-bold text-slate-400 tracking-wider px-2 py-0.5 rounded bg-white/[0.03]">
+                Automação
+              </span>
+            </div>
+            
+            <h3 class="font-display text-lg font-bold text-white mb-2">
+              Fechamento Automático de Mês
+            </h3>
+            <p class="text-xs text-slate-400 leading-relaxed">
+              Elimine pilhas de cadernos e formulários. Ao final do expediente ou do mês, o montante exato de repasse por barbeiro já está apurado e pronto para exportação em PDF ou Pix.
+            </p>
+          </div>
+
+          <div class="mt-6 pt-4 border-t border-white/[0.06] flex items-center gap-2 text-xs font-semibold text-[#D4AF37]">
+            <i data-lucide="check" class="h-3.5 w-3.5"></i>
+            <span>Economia média de 12 horas por mês</span>
+          </div>
+        </div>
+
+        <!-- Pilar 2 -->
+        <div class="saas-card rounded-xl p-6 flex flex-col justify-between border border-white/[0.08] hover:border-[#D4AF37]/30 transition-colors">
+          <div>
+            <div class="flex items-center justify-between mb-5">
+              <div class="h-10 w-10 rounded-lg bg-[#D4AF37]/10 border border-[#D4AF37]/20 flex items-center justify-center text-[#D4AF37]">
+                <i data-lucide="users" class="h-5 w-5 stroke-[2]"></i>
+              </div>
+              <span class="text-[10px] uppercase font-bold text-slate-400 tracking-wider px-2 py-0.5 rounded bg-white/[0.03]">
+                Transparência
+              </span>
+            </div>
+            
+            <h3 class="font-display text-lg font-bold text-white mb-2">
+              Acesso Móvel para Cada Barbeiro
+            </h3>
+            <p class="text-xs text-slate-400 leading-relaxed">
+              Cada profissional faz login no celular e acompanha apenas seus próprios cortes e comissões em tempo real, sem acesso ao faturamento global ou dados sensíveis do dono.
+            </p>
+          </div>
+
+          <div class="mt-6 pt-4 border-t border-white/[0.06] flex items-center gap-2 text-xs font-semibold text-[#D4AF37]">
+            <i data-lucide="check" class="h-3.5 w-3.5"></i>
+            <span>Zero divergências entre dono e profissionais</span>
+          </div>
+        </div>
+
+        <!-- Pilar 3 -->
+        <div class="saas-card rounded-xl p-6 flex flex-col justify-between border border-white/[0.08] hover:border-[#D4AF37]/30 transition-colors">
+          <div>
+            <div class="flex items-center justify-between mb-5">
+              <div class="h-10 w-10 rounded-lg bg-[#D4AF37]/10 border border-[#D4AF37]/20 flex items-center justify-center text-[#D4AF37]">
+                <i data-lucide="wallet" class="h-5 w-5 stroke-[2]"></i>
+              </div>
+              <span class="text-[10px] uppercase font-bold text-slate-400 tracking-wider px-2 py-0.5 rounded bg-white/[0.03]">
+                Margem Real
+              </span>
+            </div>
+            
+            <h3 class="font-display text-lg font-bold text-white mb-2">
+              Auditoria de Taxas de Maquininhas
+            </h3>
+            <p class="text-xs text-slate-400 leading-relaxed">
+              Conciliação automática de taxas de débito e crédito. Saiba exatamente quanto foi retido pelas operadoras e proteja a margem de lucro líquido da sua barbearia.
+            </p>
+          </div>
+
+          <div class="mt-6 pt-4 border-t border-white/[0.06] flex items-center gap-2 text-xs font-semibold text-[#D4AF37]">
+            <i data-lucide="check" class="h-3.5 w-3.5"></i>
+            <span>Clareza sobre o lucro livre no caixa</span>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ======================================================== -->
+  <!-- 5. NOVA SEÇÃO DE PREÇOS E PLANOS (BASIC, PRO, PREMIUM)   -->
+  <!-- ======================================================== -->
+  <section id="precos" class="py-24 border-t border-white/[0.08] bg-[#080C14] relative">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      
+      <div class="text-center max-w-2xl mx-auto mb-14">
+        <span class="text-xs font-bold uppercase tracking-widest text-[#D4AF37] mb-2 block">
+          Planos e Condições
+        </span>
+        <h2 class="font-display text-2xl sm:text-4xl font-bold text-white">
+          Escolha o plano ideal para a sua estrutura
+        </h2>
+        <p class="mt-3 text-slate-400 text-sm">
+          Comece com 7 dias de acesso liberado. Sem cartão de crédito e sem cobrança imediata.
+        </p>
+
+        <!-- Seletor Interativo de Período: Mensal, Trimestral (-10%) e Anual (2 Meses Grátis) -->
+        <div class="mt-8 inline-flex items-center p-1 rounded-lg bg-white/[0.03] border border-white/[0.08]">
+          <button id="btn-periodo-mensal" class="period-btn px-4 py-1.5 text-xs font-bold rounded-md bg-[#D4AF37] text-[#0B0F17] transition-all">
+            Mensal
+          </button>
+          <button id="btn-periodo-trimestral" class="period-btn px-4 py-1.5 text-xs font-medium text-slate-400 hover:text-white transition-all flex items-center gap-1.5">
+            <span>Trimestral</span>
+            <span class="text-[9px] font-bold text-amber-400 bg-amber-400/10 px-1.5 py-0.5 rounded border border-amber-400/20">-10%</span>
+          </button>
+          <button id="btn-periodo-anual" class="period-btn px-4 py-1.5 text-xs font-medium text-slate-400 hover:text-white transition-all flex items-center gap-1.5">
+            <span>Anual</span>
+            <span class="text-[9px] font-bold text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20">2 Meses Grátis</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Grid de 3 Planos: Basic, Pro (Destaque), Premium -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch">
+        
+        <!-- 1. Plano Basic -->
+        <div class="saas-card rounded-xl p-6 flex flex-col justify-between border border-white/[0.08] bg-[#0E131F]">
+          <div>
+            <div class="mb-4">
+              <span class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Profissional Solo</span>
+              <h3 class="font-display text-xl font-bold text-white mt-0.5">Plano Basic</h3>
+              <p class="text-xs text-slate-400 mt-1">Ideal para 1 barbeiro ou cadeira individual.</p>
+            </div>
+
+            <!-- Sem valor monetário fixo; badge discreto -->
+            <div class="py-2.5 px-3 rounded-lg bg-white/[0.03] border border-white/[0.06] mb-6">
+              <span class="text-xs font-semibold text-slate-300 block">Valores sob consulta</span>
+              <span class="text-[10px] text-slate-400">Consulte condições especiais no lançamento</span>
+            </div>
+
+            <ul class="space-y-3 text-xs text-slate-300">
+              <li class="flex items-center gap-2.5">
+                <i data-lucide="check" class="h-4 w-4 text-[#D4AF37] shrink-0"></i>
+                <span>Até 1 barbeiro / cadeira</span>
+              </li>
+              <li class="flex items-center gap-2.5">
+                <i data-lucide="check" class="h-4 w-4 text-[#D4AF37] shrink-0"></i>
+                <span>Lançamentos e cortes ilimitados</span>
+              </li>
+              <li class="flex items-center gap-2.5">
+                <i data-lucide="check" class="h-4 w-4 text-[#D4AF37] shrink-0"></i>
+                <span>Fechamento diário e mensal automático</span>
+              </li>
+              <li class="flex items-center gap-2.5">
+                <i data-lucide="check" class="h-4 w-4 text-[#D4AF37] shrink-0"></i>
+                <span>Histórico financeiro essencial</span>
+              </li>
+            </ul>
+          </div>
+
+          <div class="mt-8">
+            <a href="/login" class="w-full py-2.5 px-4 rounded-md border border-white/15 hover:border-white/30 text-white font-semibold text-xs flex items-center justify-center gap-2 transition-colors">
+              <span>Iniciar Teste Grátis de 7 Dias</span>
+              <i data-lucide="arrow-right" class="h-3.5 w-3.5"></i>
+            </a>
+          </div>
+        </div>
+
+        <!-- 2. Plano Pro (Destaque Visual / Mais Escolhido) -->
+        <div class="saas-card rounded-xl p-6 flex flex-col justify-between border border-[#D4AF37]/60 relative shadow-xl shadow-[#D4AF37]/10 bg-[#121828]">
+          <div class="absolute -top-3 right-6">
+            <span class="bg-gradient-to-r from-[#E6CA65] to-[#D4AF37] text-[#0B0F17] text-[10px] font-bold uppercase px-3 py-0.5 rounded-full shadow-sm">
+              Mais Escolhido
+            </span>
+          </div>
+
+          <div>
+            <div class="mb-4">
+              <span class="text-[11px] font-semibold text-[#D4AF37] uppercase tracking-wider">Equipas em Expansão</span>
+              <h3 class="font-display text-xl font-bold text-white mt-0.5">Plano Pro</h3>
+              <p class="text-xs text-slate-300 mt-1">Para barbearias de 2 a 5 barbeiros com rateio de comissões.</p>
+            </div>
+
+            <!-- Sem valor monetário fixo; badge de lançamento -->
+            <div class="py-2.5 px-3 rounded-lg bg-[#D4AF37]/10 border border-[#D4AF37]/25 mb-6">
+              <span class="text-xs font-bold text-[#E6CA65] block">Valores sob consulta</span>
+              <span class="text-[10px] text-slate-300">Condições exclusivas para novas barbearias</span>
+            </div>
+
+            <ul class="space-y-3 text-xs text-slate-200">
+              <li class="flex items-center gap-2.5">
+                <i data-lucide="check" class="h-4 w-4 text-[#D4AF37] shrink-0"></i>
+                <span><strong>2 a 5 barbeiros</strong> cadastrados</span>
+              </li>
+              <li class="flex items-center gap-2.5">
+                <i data-lucide="check" class="h-4 w-4 text-[#D4AF37] shrink-0"></i>
+                <span><strong>Acessos individuais no celular</strong> para cada barbeiro</span>
+              </li>
+              <li class="flex items-center gap-2.5">
+                <i data-lucide="check" class="h-4 w-4 text-[#D4AF37] shrink-0"></i>
+                <span><strong>Rateio personalizado</strong> por serviço ou produto</span>
+              </li>
+              <li class="flex items-center gap-2.5">
+                <i data-lucide="check" class="h-4 w-4 text-[#D4AF37] shrink-0"></i>
+                <span><strong>Desconto automático de taxas de cartão</strong></span>
+              </li>
+              <li class="flex items-center gap-2.5">
+                <i data-lucide="check" class="h-4 w-4 text-[#D4AF37] shrink-0"></i>
+                <span>Exportação de relatórios em PDF para Pix</span>
+              </li>
+            </ul>
+          </div>
+
+          <div class="mt-8">
+            <a href="/login" class="btn-gold w-full py-2.5 px-4 rounded-md text-xs flex items-center justify-center gap-2 cursor-pointer">
+              <span>Iniciar Teste Grátis de 7 Dias</span>
+              <i data-lucide="arrow-right" class="h-3.5 w-3.5"></i>
+            </a>
+            <p class="text-[10px] text-center text-slate-400 mt-2">
+              Ativação instantânea • Sem cartão de crédito
+            </p>
+          </div>
+        </div>
+
+        <!-- 3. Plano Premium -->
+        <div class="saas-card rounded-xl p-6 flex flex-col justify-between border border-white/[0.08] bg-[#0E131F]">
+          <div>
+            <div class="mb-4">
+              <span class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Grandes Operações</span>
+              <h3 class="font-display text-xl font-bold text-white mt-0.5">Plano Premium</h3>
+              <p class="text-xs text-slate-400 mt-1">Para 6+ cadeiras ou estabelecimentos multiunidades.</p>
+            </div>
+
+            <!-- Sem valor monetário fixo; badge discreto -->
+            <div class="py-2.5 px-3 rounded-lg bg-white/[0.03] border border-white/[0.06] mb-6">
+              <span class="text-xs font-semibold text-slate-300 block">Valores sob consulta</span>
+              <span class="text-[10px] text-slate-400">Atendimento personalizado para redes</span>
+            </div>
+
+            <ul class="space-y-3 text-xs text-slate-300">
+              <li class="flex items-center gap-2.5">
+                <i data-lucide="check" class="h-4 w-4 text-[#D4AF37] shrink-0"></i>
+                <span><strong>Barbeiros ilimitados</strong> (6+ cadeiras)</span>
+              </li>
+              <li class="flex items-center gap-2.5">
+                <i data-lucide="check" class="h-4 w-4 text-[#D4AF37] shrink-0"></i>
+                <span><strong>Painel consolidado multiunidades</strong></span>
+              </li>
+              <li class="flex items-center gap-2.5">
+                <i data-lucide="check" class="h-4 w-4 text-[#D4AF37] shrink-0"></i>
+                <span>DRE gerencial avançado e centro de custos</span>
+              </li>
+              <li class="flex items-center gap-2.5">
+                <i data-lucide="check" class="h-4 w-4 text-[#D4AF37] shrink-0"></i>
+                <span>Suporte prioritário e integração dedicada</span>
+              </li>
+            </ul>
+          </div>
+
+          <div class="mt-8">
+            <a href="/login" class="w-full py-2.5 px-4 rounded-md border border-white/15 hover:border-white/30 text-white font-semibold text-xs flex items-center justify-center gap-2 transition-colors">
+              <span>Iniciar Teste Grátis de 7 Dias</span>
+              <i data-lucide="arrow-right" class="h-3.5 w-3.5"></i>
+            </a>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ======================================================== -->
+  <!-- 6. PERGUNTAS FREQUENTES (FAQ ACCORDION)                  -->
+  <!-- ======================================================== -->
+  <section id="faq" class="py-24 relative bg-[#0B0F17]">
+    <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+      
+      <div class="text-center mb-14">
+        <span class="text-xs font-bold uppercase tracking-widest text-[#D4AF37] mb-2 block">
+          Esclarecimentos Rápidos
+        </span>
+        <h2 class="font-display text-2xl sm:text-3xl font-bold text-white">
+          Perguntas Frequentes
+        </h2>
+      </div>
+
+      <div class="space-y-3">
+        
+        <div class="saas-card rounded-lg border border-white/[0.08] overflow-hidden">
+          <button class="faq-toggle w-full p-4 text-left flex items-center justify-between gap-4 focus:outline-none cursor-pointer">
+            <span class="font-semibold text-white text-xs sm:text-sm">Preciso cadastrar cartão de crédito para iniciar o teste?</span>
+            <i data-lucide="chevron-down" class="faq-icon h-4 w-4 text-slate-400 shrink-0 transition-transform duration-200"></i>
+          </button>
+          <div class="faq-content hidden px-4 pb-4 text-xs text-slate-400 leading-relaxed border-t border-white/[0.04] pt-3">
+            Não. O período de 7 dias é totalmente gratuito e não requer cartão. Pode cadastrar os seus barbeiros, serviços e testar o fecho financeiro com total liberdade.
+          </div>
+        </div>
+
+        <div class="saas-card rounded-lg border border-white/[0.08] overflow-hidden">
+          <button class="faq-toggle w-full p-4 text-left flex items-center justify-between gap-4 focus:outline-none cursor-pointer">
+            <span class="font-semibold text-white text-xs sm:text-sm">Os barbeiros conseguem ver o faturamento total da barbearia?</span>
+            <i data-lucide="chevron-down" class="faq-icon h-4 w-4 text-slate-400 shrink-0 transition-transform duration-200"></i>
+          </button>
+          <div class="faq-content hidden px-4 pb-4 text-xs text-slate-400 leading-relaxed border-t border-white/[0.04] pt-3">
+            Não. O KortePro possui controle estrito de permissões. O barbeiro acessa apenas a sua própria página móvel com os seus cortes e valores de comissão. As métricas globais e o DRE são restritos ao dono/administrador.
+          </div>
+        </div>
+
+        <div class="saas-card rounded-lg border border-white/[0.08] overflow-hidden">
+          <button class="faq-toggle w-full p-4 text-left flex items-center justify-between gap-4 focus:outline-none cursor-pointer">
+            <span class="font-semibold text-white text-xs sm:text-sm">Como funciona o desconto das taxas de maquininhas de cartão?</span>
+            <i data-lucide="chevron-down" class="faq-icon h-4 w-4 text-slate-400 shrink-0 transition-transform duration-200"></i>
+          </button>
+          <div class="faq-content hidden px-4 pb-4 text-xs text-slate-400 leading-relaxed border-t border-white/[0.04] pt-3">
+            Você cadastra as taxas de cada operadora (ex: débito 1.5%, crédito à vista 2.9%). Em cada serviço pago via cartão, o sistema calcula o valor líquido real e permite configurar se a comissão incide sobre o bruto ou sobre o líquido.
+          </div>
+        </div>
+
+        <div class="saas-card rounded-lg border border-white/[0.08] overflow-hidden">
+          <button class="faq-toggle w-full p-4 text-left flex items-center justify-between gap-4 focus:outline-none cursor-pointer">
+            <span class="font-semibold text-white text-xs sm:text-sm">Posso configurar percentuais de comissão diferentes por barbeiro?</span>
+            <i data-lucide="chevron-down" class="faq-icon h-4 w-4 text-slate-400 shrink-0 transition-transform duration-200"></i>
+          </button>
+          <div class="faq-content hidden px-4 pb-4 text-xs text-slate-400 leading-relaxed border-t border-white/[0.04] pt-3">
+            Sim. Cada profissional pode ter a sua própria regra de comissão (ex: 50% para sênior, 40% para iniciante) com diferenciação por tipo de serviço ou venda de produtos da barbearia.
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ======================================================== -->
+  <!-- 7. RODAPÉ LIMPO E MINIMALISTA                            -->
+  <!-- ======================================================== -->
+  <footer class="py-12 border-t border-white/[0.08] bg-[#070A10] text-xs text-slate-500">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div class="flex items-center gap-2.5">
+        <img src="/logo.png" alt="KortePro" class="h-7 w-7 rounded-full object-cover border border-[#D4AF37]/40 shadow-sm" />
+        <span class="font-display font-semibold text-slate-200">KortePro</span>
+        <span class="text-slate-600">•</span>
+        <span>© 2026 KortePro. Todos os direitos reservados.</span>
+      </div>
+
+      <div class="flex items-center gap-5">
+        <a href="#solucao" class="hover:text-slate-300 transition-colors">Visão Geral</a>
+        <a href="#comparativo" class="hover:text-slate-300 transition-colors">Antes vs. Depois</a>
+        <a href="#precos" class="hover:text-slate-300 transition-colors">Planos</a>
+        <a href="/login" class="text-slate-300 hover:text-white transition-colors">Entrar</a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Scripts Interativos -->
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      lucide.createIcons();
+
+      // Accordion FAQ Simples
+      const toggles = document.querySelectorAll('.faq-toggle');
+      toggles.forEach(toggle => {
+        toggle.addEventListener('click', () => {
+          const content = toggle.nextElementSibling;
+          const icon = toggle.querySelector('.faq-icon');
+          const isHidden = content.classList.contains('hidden');
+
+          document.querySelectorAll('.faq-content').forEach(c => c.classList.add('hidden'));
+          document.querySelectorAll('.faq-icon').forEach(i => i.classList.remove('rotate-180'));
+
+          if (isHidden) {
+            content.classList.remove('hidden');
+            icon.classList.add('rotate-180');
+          }
+        });
+      });
+
+      // Seletor de Período (Mensal, Trimestral, Anual)
+      const btnMensal = document.getElementById('btn-periodo-mensal');
+      const btnTrimestral = document.getElementById('btn-periodo-trimestral');
+      const btnAnual = document.getElementById('btn-periodo-anual');
+
+      const setPeriodActive = (activeBtn) => {
+        [btnMensal, btnTrimestral, btnAnual].forEach(btn => {
+          if (!btn) return;
+          if (btn === activeBtn) {
+            btn.classList.remove('text-slate-400', 'hover:text-white');
+            btn.classList.add('bg-[#D4AF37]', 'text-[#0B0F17]', 'font-bold');
+          } else {
+            btn.classList.remove('bg-[#D4AF37]', 'text-[#0B0F17]', 'font-bold');
+            btn.classList.add('text-slate-400', 'hover:text-white', 'font-medium');
+          }
+        });
+      };
+
+      if (btnMensal) btnMensal.addEventListener('click', () => setPeriodActive(btnMensal));
+      if (btnTrimestral) btnTrimestral.addEventListener('click', () => setPeriodActive(btnTrimestral));
+      if (btnAnual) btnAnual.addEventListener('click', () => setPeriodActive(btnAnual));
+
+      // ========================================================
+      // ANIMAÇÃO CONTÍNUA EM LOOP (HERO MOCKUP: CELULAR + PC)
+      // Simula o barbeiro lançando um corte e o DRE/Painel do PC
+      // atualizando instantaneamente em tempo real.
+      // ========================================================
+      const phoneBtn = document.getElementById('phone-launch-btn');
+      const phoneBtnText = document.getElementById('phone-btn-text');
+      const phoneTodayCuts = document.getElementById('phone-today-cuts');
+      const phoneTodayAmount = document.getElementById('phone-today-amount');
+      const phoneMonthTotal = document.getElementById('phone-month-total');
+      const phoneFeedList = document.getElementById('phone-feed-list');
+
+      const kpiFaturamento = document.getElementById('hero-kpi-faturamento');
+      const kpiAtendimentos = document.getElementById('hero-kpi-atendimentos');
+      const kpiComissoes = document.getElementById('hero-kpi-comissoes');
+      const kpiTaxas = document.getElementById('hero-kpi-taxas');
+      const kpiLucro = document.getElementById('hero-kpi-lucro');
+
+      const kpiFaturamentoCard = document.getElementById('hero-kpi-faturamento-card');
+      const kpiComissoesCard = document.getElementById('hero-kpi-comissoes-card');
+      const kpiLucroCard = document.getElementById('hero-kpi-lucro-card');
+
+      const simulatedServices = [
+        { service: 'Corte Degradê Navalhado', client: 'Gabriel S.', price: 60, barberCut: 30, fee: 1.80, netLucro: 28.20, time: 'Agora' },
+        { service: 'Barba Terapia Completa', client: 'Felipe T.', price: 50, barberCut: 25, fee: 1.50, netLucro: 23.50, time: 'Agora' },
+        { service: 'Combo Cabelo + Barba', client: 'Rafael M.', price: 95, barberCut: 47.50, fee: 2.85, netLucro: 44.65, time: 'Agora' },
+      ];
+
+      let loopIndex = 0;
+      let baseFat = 28450;
+      let baseAtend = 512;
+      let baseComiss = 13210;
+      let baseTaxas = 1360;
+      let baseLucro = 13880;
+
+      let basePhoneCuts = 7;
+      let basePhoneToday = 345;
+      let basePhoneMonth = 3850;
+
+      let isHeroVisible = true;
+      let simulationTimer = null;
+
+      function updateMockupDOM(currentService) {
+        requestAnimationFrame(() => {
+          if (!phoneFeedList) return;
+
+          // Passo 2: Adiciona item no feed do celular
+          const newItem = document.createElement('div');
+          newItem.className = 'p-1.5 rounded bg-[#D4AF37]/10 border border-[#D4AF37]/40 flex items-center justify-between';
+          newItem.innerHTML = `
+            <div>
+              <p class="font-semibold text-white flex items-center gap-1">
+                <span>${currentService.service}</span>
+                <span class="text-[8px] bg-emerald-500/20 text-emerald-400 px-1 py-0.2 rounded font-mono">PIX</span>
+              </p>
+              <span class="text-slate-400 text-[9px]">${currentService.time} • ${currentService.client}</span>
+            </div>
+            <span class="font-mono text-emerald-400 font-bold">+R$ ${currentService.barberCut.toFixed(2).replace('.', ',')}</span>
+          `;
+
+          phoneFeedList.insertBefore(newItem, phoneFeedList.firstChild);
+          if (phoneFeedList.children.length > 3) {
+            phoneFeedList.removeChild(phoneFeedList.lastChild);
+          }
+
+          // Atualiza totais do celular
+          basePhoneCuts++;
+          basePhoneToday += currentService.barberCut;
+          basePhoneMonth += currentService.barberCut;
+
+          if (phoneTodayCuts) phoneTodayCuts.textContent = `${basePhoneCuts} atendimentos`;
+          if (phoneTodayAmount) {
+            phoneTodayAmount.textContent = `R$ ${basePhoneToday.toFixed(2).replace('.', ',')}`;
+            phoneTodayAmount.classList.add('text-[#D4AF37]');
+            setTimeout(() => {
+              requestAnimationFrame(() => phoneTodayAmount.classList.remove('text-[#D4AF37]'));
+            }, 800);
+          }
+          if (phoneMonthTotal) {
+            phoneMonthTotal.textContent = `Mês: R$ ${basePhoneMonth.toFixed(2).replace('.', ',')}`;
+          }
+
+          // Passo 3: Atualiza monitor PC (visão do dono / DRE)
+          baseFat += currentService.price;
+          baseAtend++;
+          baseComiss += currentService.barberCut;
+          baseTaxas += currentService.fee;
+          baseLucro += currentService.netLucro;
+
+          if (kpiFaturamento) kpiFaturamento.textContent = `R$ ${baseFat.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
+          if (kpiAtendimentos) kpiAtendimentos.textContent = `${baseAtend} atendimentos`;
+          if (kpiComissoes) kpiComissoes.textContent = `R$ ${baseComiss.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
+          if (kpiTaxas) kpiTaxas.textContent = `- R$ ${baseTaxas.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
+          if (kpiLucro) kpiLucro.textContent = `R$ ${baseLucro.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
+
+          // Efeito sutil nos cards do PC sem repintura de layout
+          if (kpiFaturamentoCard) {
+            kpiFaturamentoCard.classList.add('border-[#D4AF37]/60');
+            setTimeout(() => {
+              requestAnimationFrame(() => kpiFaturamentoCard.classList.remove('border-[#D4AF37]/60'));
+            }, 900);
+          }
+          if (kpiLucroCard) {
+            kpiLucroCard.classList.add('border-emerald-500/60');
+            setTimeout(() => {
+              requestAnimationFrame(() => kpiLucroCard.classList.remove('border-emerald-500/60'));
+            }, 900);
+          }
+        });
+      }
+
+      function runLoopSimulation() {
+        if (!isHeroVisible || document.hidden || !phoneBtn || !phoneFeedList) return;
+
+        const currentService = simulatedServices[loopIndex % simulatedServices.length];
+        loopIndex++;
+
+        // Passo 1: Barbeiro clica no botão (animação rápida e feedback via rAF)
+        requestAnimationFrame(() => {
+          phoneBtn.classList.add('scale-95', 'bg-white', 'text-black');
+          if (phoneBtnText) phoneBtnText.textContent = 'Gravando...';
+        });
+
+        setTimeout(() => {
+          requestAnimationFrame(() => {
+            phoneBtn.classList.remove('scale-95', 'bg-white', 'text-black');
+            if (phoneBtnText) phoneBtnText.textContent = 'Lançar Atendimento';
+          });
+
+          updateMockupDOM(currentService);
+        }, 500);
+      }
+
+      function startSimulation() {
+        if (simulationTimer) return;
+        simulationTimer = setInterval(runLoopSimulation, 5000);
+      }
+
+      function stopSimulation() {
+        if (simulationTimer) {
+          clearInterval(simulationTimer);
+          simulationTimer = null;
+        }
+      }
+
+      // IntersectionObserver: pausa imediatamente a simulação quando a Hero section não estiver visível na tela
+      const heroEl = document.getElementById('hero-section');
+      if (heroEl && 'IntersectionObserver' in window) {
+        const observer = new IntersectionObserver((entries) => {
+          entries.forEach((entry) => {
+            isHeroVisible = entry.isIntersecting;
+            if (isHeroVisible && !document.hidden) {
+              startSimulation();
+            } else {
+              stopSimulation();
+            }
+          });
+        }, { threshold: 0.1 });
+        observer.observe(heroEl);
+      } else {
+        startSimulation();
+      }
+
+      // Pausa também ao alternar ou minimizar a aba do navegador
+      document.addEventListener('visibilitychange', () => {
+        if (document.hidden) {
+          stopSimulation();
+        } else if (isHeroVisible) {
+          startSimulation();
+        }
+      });
+    });
+  </script>
+</body>
+</html>

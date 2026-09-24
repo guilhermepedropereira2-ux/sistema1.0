@@ -1,0 +1,86 @@
+{
+  "theme": "dark",
+  "app_type": "Financial Management SaaS Dashboard for Barbershops",
+  "language": "pt-BR",
+  "currency": "BRL (R$)",
+  "typography": {
+    "headings": {
+      "font_family": "Manrope, sans-serif",
+      "weights": ["400", "600", "800"],
+      "instructions": "Use for all headings, KPIs, and major data points. Install via Google Fonts or standard imports. Use tracking-tight for sizes above 32px."
+    },
+    "body": {
+      "font_family": "Inter, sans-serif",
+      "weights": ["400", "500", "600"],
+      "instructions": "Use for tables, body text, forms, and secondary information."
+    }
+  },
+  "colors": {
+    "archetype": "Luxury & High-Contrast (Sophisticated Dark)",
+    "description": "Deep charcoal/obsidian base with muted off-white text to reduce glare. Use Emerald and Crimson for financial indicators.",
+    "css_variables_update": {
+      "dark": {
+        "--background": "0 0% 4%",
+        "--foreground": "0 0% 96%",
+        "--card": "0 0% 7%",
+        "--card-foreground": "0 0% 96%",
+        "--popover": "0 0% 7%",
+        "--popover-foreground": "0 0% 96%",
+        "--primary": "43 74% 66%", 
+        "--primary-foreground": "0 0% 9%",
+        "--secondary": "0 0% 12%",
+        "--secondary-foreground": "0 0% 96%",
+        "--muted": "0 0% 12%",
+        "--muted-foreground": "0 0% 64%",
+        "--accent": "0 0% 15%",
+        "--accent-foreground": "0 0% 96%",
+        "--destructive": "0 84% 60%",
+        "--destructive-foreground": "0 0% 98%",
+        "--success": "142 71% 45%",
+        "--success-foreground": "0 0% 98%",
+        "--border": "0 0% 12%",
+        "--input": "0 0% 12%",
+        "--ring": "43 74% 66%",
+        "--radius": "0.5rem"
+      },
+      "instructions_to_main_agent": "Overwrite the .dark class in src/index.css with these variables. Remove the light mode variables or ensure the app forces the .dark class on the body/html tag permanently, as this is a dark-only app."
+    }
+  },
+  "visual_enhancers": {
+    "surfaces": "Use flat solid backgrounds with 1px borders (border-border). Do not use soft shadows on the dark theme. Build layered surfaces by using slightly lighter grays for elevated cards/modals.",
+    "glassmorphism": "Avoid glassmorphism for financial data. Use solid backgrounds to prevent visual refraction of data.",
+    "borders": "Expose the skeleton for tabular/dense data using border-collapse and subtle borders (border-border). For cards, use rounded-lg with 1px border."
+  },
+  "grids_and_layouts": {
+    "pattern": "High Density Grid (Bento Grid Mode B)",
+    "spacing": "Dense and compact spacing for the dashboard (gap-4 or gap-6). Use generous spacing (p-6 or p-8) inside cards to prevent text collision.",
+    "mobile_first": "Always start with grid-cols-1. Ensure tables overflow horizontally gracefully on mobile.",
+    "dashboard_anatomy": "Collapsible or icon-based left sidebar/bottom nav for mobile. Top-left emphasis for main KPI (e.g. Lucro Real / Disponível). Modular widgets."
+  },
+  "components": {
+    "strategy": "Use Shadcn UI components extensively (Card, Table, Dialog, Select, Input, Tabs, Button). Do not build complex interactions from scratch.",
+    "charts": "Use Shadcn Chart components (Recharts). Ensure chart colors match the dark theme and are accessible. Avoid decorative charts; stick to functional Line, Bar, and Doughnut charts.",
+    "icons": "Use Phosphor Icons (@phosphor-icons/react) for a professional, dense dashboard look, or Lucide React if already installed. Keep strokes thin and legible.",
+    "modals": "Use Shadcn Dialogs for adding revenues, expenses, or configuring machines."
+  },
+  "motion_and_interactions": {
+    "transitions": "Add transitions for specific interactive elements (hover, focus). DO NOT use 'transition: all'. Example: 'transition-colors duration-200'.",
+    "hovers": "Explicitly set text color on hover (e.g., hover:bg-secondary hover:text-foreground).",
+    "micro_interactions": "Subtle scale down on button click (active:scale-95). Subtle lifts on dashboard cards if needed, but prefer border color changes."
+  },
+  "accessibility": {
+    "contrast": "Ensure text meets WCAG AA standards. Off-white on charcoal is great. Ensure positive (green) and negative (red) text on dark backgrounds is legible (use lighter shades of green/red).",
+    "focus": "Focus states must have HIGHER contrast. Use ring-2 ring-primary ring-offset-background.",
+    "data_testid": "MANDATORY: All interactive and key informational elements MUST include a data-testid attribute (e.g., data-testid='add-revenue-button')."
+  },
+  "general_ui_ux_guidelines_for_main_agent": [
+    "NEVER use pure transparent backgrounds for components with overlapping content (e.g., Dropdowns, Modals, Sticky Headers).",
+    "Avoid the 'AI slop' aesthetic: No generic centered layouts, simplistic gradients, or uniform styling.",
+    "Do NOT apply 'text-align: center' globally to the app.",
+    "Do NOT use emoji characters as icons. Use professional SVG icons.",
+    "Format all currency values consistently as BRL (e.g., R$ 1.500,00).",
+    "Provide a 'Limpar Dados' (Clear Data) button strictly for the demo/mock phase.",
+    "Ensure all mock data calculation logic works (Bruto -> Taxa -> Líquido -> Comissão -> Barbearia).",
+    "The app uses .js and .jsx files. Do not generate TypeScript (.tsx/.ts) files."
+  ]
+}
