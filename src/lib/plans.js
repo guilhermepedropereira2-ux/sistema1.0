@@ -1,6 +1,6 @@
 /**
  * Arquitetura Central de Planos e Limites (SaaS Multi-Tenancy)
- * KortePro - Sincronizado estritamente com a Landing Page
+ * KingPro - Sincronizado estritamente com a Landing Page
  */
 
 export const PLANS = {

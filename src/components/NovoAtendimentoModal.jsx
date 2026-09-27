@@ -12,16 +12,25 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { Scissors, User, CreditCard, Sparkles, Check } from "lucide-react";
+import ClientAutocomplete from "@/components/ClientAutocomplete";
+import PaymentChannelSelector from "@/components/PaymentChannelSelector";
+import {
+  getChannelNameById,
+  getMethodNameById,
+  toLegacyPaymentType,
+} from "@/lib/paymentChannels";
 
 export default function NovoAtendimentoModal({ open, onOpenChange, onSuccess }) {
   const [barbers, setBarbers] = useState([]);
   const [services, setServices] = useState([]);
   const [products, setProducts] = useState([]);
   const [methods, setMethods] = useState([]);
+  const [clients, setClients] = useState([]);
   const [loading, setLoading] = useState(false);
 
   const [form, setForm] = useState({
     client_name: "",
+    client_id: "",
     barber_id: "",
     item_kind: "servico",
     item_id: "",
@@ -29,7 +38,9 @@ export default function NovoAtendimentoModal({ open, onOpenChange, onSuccess }) 
     gross_amount: "",
     discount_amount: "0",
     payment_method_id: "",
-    payment_type: "pix",
+    payment_type: "dinheiro",
+    payment_channel: "caixa_fisico",
+    payment_method: "cash",
     date: todayISO(),
     time: new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }),
   });
@@ -41,11 +52,13 @@ export default function NovoAtendimentoModal({ open, onOpenChange, onSuccess }) 
         api.get("/services"),
         api.get("/products"),
         api.get("/payment-methods"),
-      ]).then(([b, s, p, m]) => {
+        api.get("/clients"),
+      ]).then(([b, s, p, m, c]) => {
         setBarbers(b.filter((x) => x.active));
         setServices(s.filter((x) => x.active));
         setProducts(p.filter((x) => x.active));
         setMethods(m.filter((x) => x.active));
+        setClients(c || []);
         if (b.length && !form.barber_id) setForm((f) => ({ ...f, barber_id: b[0].id }));
         if (m.length && !form.payment_method_id) setForm((f) => ({ ...f, payment_method_id: m[0].id }));
       }).catch((err) => console.error("Error loading resources:", err));
@@ -77,6 +90,10 @@ export default function NovoAtendimentoModal({ open, onOpenChange, onSuccess }) 
       return;
     }
     setLoading(true);
+    const channelName = getChannelNameById(form.payment_channel, methods);
+    const methodName = getMethodNameById(form.payment_method);
+    const legacyType = toLegacyPaymentType(form.payment_channel, form.payment_method);
+
     try {
       await api.post("/revenues", {
         ...form,
@@ -84,6 +101,9 @@ export default function NovoAtendimentoModal({ open, onOpenChange, onSuccess }) 
         discount_amount: parseFloat(form.discount_amount) || 0,
         service_type: form.item_kind === "produto" ? "produto" : "corte",
         quantity: 1,
+        payment_channel: channelName,
+        payment_method: methodName,
+        payment_type: legacyType,
       });
       toast.success("Atendimento registrado com sucesso!");
       onOpenChange(false);
@@ -96,7 +116,9 @@ export default function NovoAtendimentoModal({ open, onOpenChange, onSuccess }) 
         gross_amount: "",
         discount_amount: "0",
         payment_method_id: methods[0]?.id || "",
-        payment_type: "pix",
+        payment_type: "dinheiro",
+        payment_channel: "caixa_fisico",
+        payment_method: "cash",
         date: todayISO(),
         time: new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }),
       });
@@ -121,21 +143,33 @@ export default function NovoAtendimentoModal({ open, onOpenChange, onSuccess }) 
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4 pt-2">
-          {/* Cliente */}
+          {/* Cliente com Autocomplete Inteligente */}
           <div>
-            <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1.5 block">
               Nome do Cliente
             </Label>
-            <div className="relative mt-1.5">
-              <User className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Ex: Carlos Eduardo"
-                value={form.client_name}
-                onChange={(e) => setForm({ ...form, client_name: e.target.value })}
-                className="pl-9 bg-[#0D0E12] border-[#262936] text-white focus-visible:ring-[#D4AF37]"
-                autoFocus
-              />
-            </div>
+            <ClientAutocomplete
+              value={form.client_name}
+              clients={clients}
+              placeholder="Ex: Carlos Eduardo (ou digite um novo)"
+              autoFocus
+              onChange={(typedName, client) => {
+                setForm((prev) => ({
+                  ...prev,
+                  client_name: typedName,
+                  client_id: client ? client.id : "",
+                }));
+              }}
+              onSelectClient={(client) => {
+                setForm((prev) => ({
+                  ...prev,
+                  client_name: client.name,
+                  client_id: client.id,
+                }));
+              }}
+              inputClassName="bg-[#0D0E12] border-[#262936] text-white focus-visible:ring-[#D4AF37]"
+              testId="novo-atendimento-client-autocomplete"
+            />
           </div>
 
           {/* Barbeiro */}
@@ -235,50 +269,42 @@ export default function NovoAtendimentoModal({ open, onOpenChange, onSuccess }) 
             </div>
           </div>
 
-          {/* Pagamento */}
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Forma / Meio
-              </Label>
-              <Select
-                value={form.payment_method_id}
-                onValueChange={(val) => setForm({ ...form, payment_method_id: val })}
-              >
-                <SelectTrigger className="mt-1.5 bg-[#0D0E12] border-[#262936] text-white focus:ring-[#D4AF37]">
-                  <SelectValue placeholder="Selecione" />
-                </SelectTrigger>
-                <SelectContent className="bg-[#161822] border-[#262936] text-white">
-                  {methods.map((m) => (
-                    <SelectItem key={m.id} value={m.id}>
-                      {m.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Tipo
-              </Label>
-              <Select
-                value={form.payment_type}
-                onValueChange={(val) => setForm({ ...form, payment_type: val })}
-              >
-                <SelectTrigger className="mt-1.5 bg-[#0D0E12] border-[#262936] text-white focus:ring-[#D4AF37]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="bg-[#161822] border-[#262936] text-white">
-                  <SelectItem value="pix">PIX</SelectItem>
-                  <SelectItem value="dinheiro">Dinheiro</SelectItem>
-                  <SelectItem value="debito">Débito</SelectItem>
-                  <SelectItem value="credito_vista">Crédito à Vista</SelectItem>
-                  <SelectItem value="credito_parcelado">Crédito Parcelado</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
+          {/* Pagamento com Hierarquia Meio de Recebimento -> Forma de Pagamento */}
+          <PaymentChannelSelector
+            channel={form.payment_channel}
+            method={form.payment_method}
+            paymentMethods={methods}
+            onChannelChange={(ch, chObj) => {
+              const leg = toLegacyPaymentType(ch, form.payment_method);
+              let pmId = chObj?.pmId || form.payment_method_id;
+              if (methods?.length) {
+                if (ch === "caixa_fisico") {
+                  pmId = methods.find((x) => x.kind === "dinheiro")?.id || methods[0].id;
+                } else if (ch === "pix_direto") {
+                  pmId = methods.find((x) => x.kind === "pix")?.id || methods[0].id;
+                } else {
+                  pmId = chObj?.pmId || methods.find((x) => x.id === ch || x.kind === "maquininha" || x.kind === "cartao")?.id || methods[0].id;
+                }
+              }
+              setForm((prev) => ({
+                ...prev,
+                payment_channel: ch,
+                payment_type: leg,
+                payment_method_id: pmId,
+              }));
+            }}
+            onMethodChange={(m) => {
+              const leg = toLegacyPaymentType(form.payment_channel, m);
+              setForm((prev) => ({
+                ...prev,
+                payment_method: m,
+                payment_type: leg,
+              }));
+            }}
+            onMachineCreated={(newPm) => {
+              setMethods((prev) => [...prev, newPm]);
+            }}
+          />
 
           <DialogFooter className="pt-3 border-t border-[#262936] sm:justify-end gap-2">
             <Button

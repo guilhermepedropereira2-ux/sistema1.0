@@ -23,7 +23,16 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { brl, fmtDate, todayISO, PAYMENT_TYPES, paymentTypeLabel } from "@/lib/format";
-import { Plus, MoreVertical, Trash2, Ban, RotateCcw, Shield, EyeOff } from "lucide-react";
+import { Plus, MoreVertical, Trash2, Ban, RotateCcw, Shield, EyeOff, FileSpreadsheet, Download, Filter } from "lucide-react";
+import { downloadCsv, formatBrlNumber } from "@/lib/exportCsv";
+import ClientAutocomplete from "@/components/ClientAutocomplete";
+import PaymentChannelSelector from "@/components/PaymentChannelSelector";
+import {
+  getChannelNameById,
+  getMethodNameById,
+  toLegacyPaymentType,
+  formatChannelMethodLabel,
+} from "@/lib/paymentChannels";
 
 const STATUS_BADGE = {
   ativo: null,
@@ -31,21 +40,19 @@ const STATUS_BADGE = {
   estornado: <Badge variant="destructive">Estornado</Badge>,
 };
 
-function RevenueDialog({ methods, barbers, settings, services, products, onDone }) {
+function RevenueDialog({ methods, barbers, settings, services, products, clients = [], onDone }) {
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({
     date: todayISO(), time: "12:00", item_kind: "servico", item_id: "",
     service_type: "servico", service_name: "",
     gross_amount: "", discount_amount: "", payment_method_id: "", payment_type: "dinheiro",
-    barber_id: "", client_name: "",
+    payment_channel: "caixa_fisico", payment_method: "cash",
+    barber_id: "", client_name: "", client_id: "",
   });
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
 
-  const method = methods.find((m) => m.id === form.payment_method_id);
   const barber = barbers.find((b) => b.id === form.barber_id);
-  const availableTypes = method
-    ? PAYMENT_TYPES.filter((t) => t.value in (method.fees || {}))
-    : PAYMENT_TYPES;
+  const method = methods.find((m) => m.id === form.payment_method_id) || methods[0];
 
   const catalog = form.item_kind === "produto" ? products : services;
   const catalogFiltered = barber
@@ -82,8 +89,11 @@ function RevenueDialog({ methods, barbers, settings, services, products, onDone 
 
   const submit = async () => {
     if (!form.service_name) return toast.error("Selecione ou descreva o item");
-    if (!form.payment_method_id) return toast.error("Selecione a forma de pagamento");
     if (!form.gross_amount) return toast.error("Informe o valor bruto");
+    const channelName = getChannelNameById(form.payment_channel, methods);
+    const methodName = getMethodNameById(form.payment_method);
+    const legacyType = toLegacyPaymentType(form.payment_channel, form.payment_method);
+
     try {
       await api.post("/revenues", {
         ...form,
@@ -91,6 +101,10 @@ function RevenueDialog({ methods, barbers, settings, services, products, onDone 
         item_id: form.item_id || null,
         gross_amount: parseFloat(form.gross_amount),
         discount_amount: parseFloat(form.discount_amount) || 0,
+        payment_channel: channelName,
+        payment_method: methodName,
+        payment_type: legacyType,
+        payment_method_id: form.payment_method_id || methods[0]?.id || "pm_dinheiro",
         barber_id: form.barber_id || null,
         client_name: form.client_name || null,
       });
@@ -106,8 +120,9 @@ function RevenueDialog({ methods, barbers, settings, services, products, onDone 
   const resetForm = () => setForm({
     date: todayISO(), time: "12:00", item_kind: "servico", item_id: "",
     service_type: "servico", service_name: "",
-    gross_amount: "", discount_amount: "", payment_method_id: "", payment_type: "dinheiro",
-    barber_id: "", client_name: "",
+    gross_amount: "", discount_amount: "", payment_method_id: methods[0]?.id || "", payment_type: "dinheiro",
+    payment_channel: "caixa_fisico", payment_method: "cash",
+    barber_id: "", client_name: "", client_id: "",
   });
 
   return (
@@ -153,28 +168,39 @@ function RevenueDialog({ methods, barbers, settings, services, products, onDone 
             <Label>Desconto (R$)</Label>
             <Input type="number" value={form.discount_amount} onChange={(e) => set("discount_amount", e.target.value)} data-testid="revenue-discount" placeholder="0,00" />
           </div>
-          <div>
-            <Label>Forma de pagamento</Label>
-            <Select value={form.payment_method_id} onValueChange={(v) => {
-              const m = methods.find((x) => x.id === v);
-              const types = m ? Object.keys(m.fees || {}) : [];
-              set("payment_method_id", v);
-              if (types.length && !types.includes(form.payment_type)) set("payment_type", types[0]);
-            }}>
-              <SelectTrigger data-testid="revenue-method"><SelectValue placeholder="Selecione" /></SelectTrigger>
-              <SelectContent>
-                {methods.map((m) => <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <Label>Tipo</Label>
-            <Select value={form.payment_type} onValueChange={(v) => set("payment_type", v)}>
-              <SelectTrigger data-testid="revenue-paytype"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {availableTypes.map((t) => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
-              </SelectContent>
-            </Select>
+          <div className="sm:col-span-2">
+            <PaymentChannelSelector
+              channel={form.payment_channel}
+              method={form.payment_method}
+              paymentMethods={methods}
+              onChannelChange={(ch, chObj) => {
+                const leg = toLegacyPaymentType(ch, form.payment_method);
+                let pmId = chObj?.pmId || form.payment_method_id;
+                if (!chObj?.pmId && methods?.length) {
+                  if (ch === "caixa_fisico") {
+                    pmId = methods.find((x) => x.kind === "dinheiro")?.id || methods[0].id;
+                  } else if (ch === "pix_direto") {
+                    pmId = methods.find((x) => x.kind === "pix")?.id || methods[0].id;
+                  } else {
+                    pmId = methods.find((x) => x.id === ch || x.kind === "maquininha" || x.kind === "cartao")?.id || methods[0].id;
+                  }
+                }
+                setForm((prev) => ({
+                  ...prev,
+                  payment_channel: ch,
+                  payment_type: leg,
+                  payment_method_id: pmId,
+                }));
+              }}
+              onMethodChange={(m) => {
+                const leg = toLegacyPaymentType(form.payment_channel, m);
+                setForm((prev) => ({
+                  ...prev,
+                  payment_method: m,
+                  payment_type: leg,
+                }));
+              }}
+            />
           </div>
           <div>
             <Label>Barbeiro</Label>
@@ -186,8 +212,27 @@ function RevenueDialog({ methods, barbers, settings, services, products, onDone 
             </Select>
           </div>
           <div>
-            <Label>Cliente (opcional)</Label>
-            <Input value={form.client_name} onChange={(e) => set("client_name", e.target.value)} data-testid="revenue-client" />
+            <Label className="mb-1.5 block">Cliente (opcional)</Label>
+            <ClientAutocomplete
+              value={form.client_name}
+              clients={clients}
+              placeholder="Ex: Carlos Eduardo (ou digite um novo)"
+              onChange={(typedName, client) => {
+                setForm((prev) => ({
+                  ...prev,
+                  client_name: typedName,
+                  client_id: client ? client.id : "",
+                }));
+              }}
+              onSelectClient={(client) => {
+                setForm((prev) => ({
+                  ...prev,
+                  client_name: client.name,
+                  client_id: client.id,
+                }));
+              }}
+              testId="revenue-client-autocomplete"
+            />
           </div>
           <div>
             <Label>Data</Label>
@@ -240,6 +285,7 @@ export default function Receitas() {
   const { data: settings } = useApi((api) => api.get("/settings"));
   const { data: services } = useApi((api) => api.get("/services"));
   const { data: products } = useApi((api) => api.get("/products"));
+  const { data: clients } = useApi((api) => api.get("/clients"));
 
   const action = async (fn, msg) => {
     try { await fn(); toast.success(msg); refresh(); }
@@ -249,6 +295,58 @@ export default function Receitas() {
   if (loading || !methods || !barbers || !services || !products) return <Loading />;
 
   const total = (revenues || []).filter((r) => r.status === "ativo").reduce((a, r) => a + r.paid_amount, 0);
+
+  const handleExportCsv = () => {
+    if (!revenues || !revenues.length) {
+      toast.error("Nenhum dado disponível para exportar no período selecionado.");
+      return;
+    }
+
+    const headers = [
+      "Data/Hora",
+      "Barbeiro/Profissional",
+      "Serviço/Produto",
+      "Forma de Pagamento",
+      "Valor Bruto (R$)",
+      "Comissão (R$)",
+      "Líquido da Casa (R$)",
+      "Status",
+      "Cliente",
+    ];
+
+    const rows = revenues.map((r) => {
+      const dateTime = `${fmtDate(r.date)} ${r.time || ""}`.trim();
+      const barberName = r.barber_name || "Não informado";
+      const itemName = r.service_name || (r.item_kind === "produto" ? "Produto" : "Serviço");
+      const payMethod = formatChannelMethodLabel(
+        r.payment_channel,
+        r.payment_method,
+        r.payment_method_name,
+        r.payment_type
+      );
+      const grossVal = formatBrlNumber(r.gross_amount ?? r.paid_amount);
+      const commissionVal = formatBrlNumber(r.commission_amount ?? 0);
+      const shopVal = formatBrlNumber(r.shop_amount ?? (r.net_amount - (r.commission_amount || 0)));
+      const statusLabel = r.status === "cancelado" ? "Cancelado" : r.status === "estornado" ? "Estornado" : "Ativo";
+      const clientName = r.client_name || "-";
+
+      return [
+        dateTime,
+        barberName,
+        itemName,
+        payMethod,
+        grossVal,
+        commissionVal,
+        shopVal,
+        statusLabel,
+        clientName,
+      ];
+    });
+
+    const filename = `KingPro_Vendas_Financeiro_${month || "periodo"}.csv`;
+    downloadCsv({ filename, headers, rows });
+    toast.success("Planilha gerada com sucesso! Download iniciado.");
+  };
 
   return (
     <div className="space-y-5" data-testid="receitas-page">
@@ -266,7 +364,19 @@ export default function Receitas() {
             <p className="font-display text-2xl font-extrabold">{brl(total)}</p>
           )}
         </div>
-        <RevenueDialog methods={methods} barbers={barbers} settings={settings} services={services} products={products} onDone={refresh} />
+        <div className="flex items-center gap-2.5">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleExportCsv}
+            className="rounded-[4px] border-[#D4AF37]/40 bg-[#12141F] text-[#D4AF37] hover:bg-[#D4AF37]/10 hover:border-[#D4AF37] font-semibold text-xs sm:text-sm gap-2 shadow-none transition-all cursor-pointer"
+            data-testid="export-csv-btn"
+          >
+            <FileSpreadsheet className="h-4 w-4 text-[#D4AF37]" />
+            <span>Exportar para Excel (.csv)</span>
+          </Button>
+          <RevenueDialog methods={methods} barbers={barbers} settings={settings} services={services} products={products} clients={clients || []} onDone={refresh} />
+        </div>
       </div>
 
       {!revenues?.length ? (
@@ -299,8 +409,17 @@ export default function Receitas() {
                     </TableCell>
                     <TableCell>{r.barber_name || "-"}</TableCell>
                     <TableCell>
-                      <span className="text-sm">{r.payment_method_name}</span>
-                      <div className="text-xs text-muted-foreground">{paymentTypeLabel(r.payment_type)}</div>
+                      {r.payment_channel ? (
+                        <div>
+                          <span className="text-sm font-medium text-white">{r.payment_channel}</span>
+                          <div className="text-xs text-amber-400/90 font-medium">{r.payment_method || paymentTypeLabel(r.payment_type)}</div>
+                        </div>
+                      ) : (
+                        <div>
+                          <span className="text-sm">{r.payment_method_name}</span>
+                          <div className="text-xs text-muted-foreground">{paymentTypeLabel(r.payment_type)}</div>
+                        </div>
+                      )}
                     </TableCell>
                     <TableCell className="text-right tabular-nums">
                       {brl(r.gross_amount)}

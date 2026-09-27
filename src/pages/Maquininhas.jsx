@@ -11,7 +11,9 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CreditCard, Plus, Pencil, Trash2, Banknote, Smartphone } from "lucide-react";
+import { CreditCard, Plus, Pencil, Trash2, Banknote, Smartphone, ShieldAlert } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
+import { canManagePaymentMethods } from "@/lib/roles";
 
 const TYPE_FIELDS = {
   dinheiro: ["dinheiro"],
@@ -102,6 +104,7 @@ function MachineDialog({ existing, onDone }) {
 }
 
 export default function Maquininhas() {
+  const { user } = useAuth();
   const { refresh } = useMonth();
   const { data: methods, loading } = useApi((api) => api.get("/payment-methods"));
 
@@ -109,6 +112,20 @@ export default function Maquininhas() {
     try { await api.del(`/payment-methods/${id}`); toast.success("Removido"); refresh(); }
     catch { toast.error("Erro"); }
   };
+
+  if (!canManagePaymentMethods(user)) {
+    return (
+      <div className="p-6 max-w-xl mx-auto mt-10" data-testid="maquininhas-restricted">
+        <Card className="p-8 text-center bg-[#12141F] border border-amber-500/20 rounded-[6px] shadow-lg">
+          <ShieldAlert className="h-12 w-12 text-[#D4AF37] mx-auto mb-3" />
+          <h2 className="font-display text-lg font-bold text-white">Acesso Restrito ao Administrador</h2>
+          <p className="text-xs text-muted-foreground mt-2 leading-relaxed">
+            A configuração de maquininhas, taxas e meios de pagamento é restrita exclusivamente a administradores e gerentes da barbearia.
+          </p>
+        </Card>
+      </div>
+    );
+  }
 
   if (loading) return <Loading />;
 

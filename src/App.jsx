@@ -36,10 +36,14 @@ import MinhaComissao from "@/pages/barber/MinhaComissao";
 import MeuPerfil from "@/pages/barber/MeuPerfil";
 import AgendamentoPublico from "@/pages/AgendamentoPublico";
 import Planos from "@/pages/Planos";
+import PlanosClientes from "@/pages/PlanosClientes";
+import Comissoes from "@/pages/Comissoes";
 import Checkout from "@/pages/Checkout";
 import CheckoutSuccess from "@/pages/CheckoutSuccess";
 import CheckoutFailure from "@/pages/CheckoutFailure";
 import CheckoutPending from "@/pages/CheckoutPending";
+import Termos from "@/pages/Termos";
+import Privacidade from "@/pages/Privacidade";
 
 function App() {
   return (
@@ -60,6 +64,8 @@ function App() {
                 <Route path="/checkout/success" element={<CheckoutSuccess />} />
                 <Route path="/checkout/failure" element={<CheckoutFailure />} />
                 <Route path="/checkout/pending" element={<CheckoutPending />} />
+                <Route path="/termos" element={<Termos />} />
+                <Route path="/privacidade" element={<Privacidade />} />
                 <Route path="/lancar-atendimento" element={<Navigate to="/barbeiro?lancar=true" replace />} />
                 <Route path="/barbeiro" element={<BarberLayout />}>
                   <Route index element={<BarberHome />} />
@@ -67,7 +73,7 @@ function App() {
                   <Route path="atendimentos" element={<MeusAtendimentos />} />
                   <Route path="clientes" element={<MeusClientes />} />
                   <Route path="desempenho" element={<MeuDesempenho />} />
-                  <Route path="comissao" element={<MinhaComissao />} />
+                  <Route path="comissao" element={<Navigate to="/barbeiro/desempenho?tab=comissao" replace />} />
                   <Route path="perfil" element={<MeuPerfil />} />
                 </Route>
                 <Route path="/" element={<Layout />}>
@@ -76,6 +82,7 @@ function App() {
                   <Route path="operacional" element={<Operacional />} />
                   <Route path="receitas" element={<Receitas />} />
                   <Route path="despesas" element={<Despesas />} />
+                  <Route path="comissoes" element={<Comissoes />} />
                   <Route path="maquininhas" element={<Maquininhas />} />
                   <Route path="barbearia" element={<Barbearia />} />
                   <Route path="equipe" element={<Equipe />} />
@@ -84,6 +91,8 @@ function App() {
                   <Route path="produtos" element={<Produtos />} />
                   <Route path="usuarios" element={<Usuarios />} />
                   <Route path="clientes" element={<Clientes />} />
+                  <Route path="planos-clientes" element={<PlanosClientes />} />
+                  <Route path="assinaturas" element={<PlanosClientes />} />
                   <Route path="categorias" element={<Categorias />} />
                   <Route path="fluxo-de-caixa" element={<FluxoCaixa />} />
                   <Route path="calendario" element={<Calendario />} />

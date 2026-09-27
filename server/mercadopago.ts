@@ -93,8 +93,8 @@ export async function createMercadoPagoPreference(
     items: [
       {
         id: params.planId,
-        title: `Assinatura ${params.planName} - KortePro`,
-        description: `Acesso completo ao plano ${params.planName} no sistema KortePro`,
+        title: `Assinatura ${params.planName} - KingPro`,
+        description: `Acesso completo ao plano ${params.planName} no sistema KingPro`,
         quantity: 1,
         currency_id: "BRL",
         unit_price: Number(params.price),
@@ -120,7 +120,7 @@ export async function createMercadoPagoPreference(
       organizationId: params.organizationId || "org_vintage",
       timestamp: Date.now(),
     }),
-    statement_descriptor: "KORTEPRO",
+    statement_descriptor: "KINGPRO",
   };
 
   try {
@@ -197,7 +197,7 @@ export async function processMercadoPagoPayment(
     payment_method_id: params.payment_method_id,
     transaction_amount: Number(params.transaction_amount),
     installments: Number(params.installments) || 1,
-    description: params.description || `Assinatura KortePro - Plano ${(params.plan_id || "pro").toUpperCase()}`,
+    description: params.description || `Assinatura KingPro - Plano ${(params.plan_id || "pro").toUpperCase()}`,
     payer: {
       email: params.payer?.email || "contato@barbearia.com",
     },

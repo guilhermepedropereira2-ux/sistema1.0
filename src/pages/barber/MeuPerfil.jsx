@@ -6,7 +6,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { brl, fmtDate, pct } from "@/lib/format";
-import { Scissors, Phone, Mail, CalendarDays, Percent, Info, Link2, Copy, Check, ExternalLink } from "lucide-react";
+import { Scissors, Phone, Mail, CalendarDays, Percent, Info, Link2, Copy, Check, ExternalLink, Share2, MessageCircle } from "lucide-react";
 
 export default function MeuPerfil() {
   const { data, loading } = useFetch((api) => api.get("/barber/me"));
@@ -61,22 +61,36 @@ export default function MeuPerfil() {
         <div className="p-2.5 rounded-[4px] bg-[#0A0D14] border border-white/10 break-all font-mono text-xs text-[#D4AF37] mb-3 select-all">
           {myBookingUrl}
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Button
             size="sm"
             onClick={handleCopy}
-            className="h-8 text-xs bg-[#D4AF37] hover:bg-[#C59F2E] text-[#0D0E12] font-bold gap-1.5 rounded-[4px] shadow-none"
+            className="h-8 text-xs bg-[#D4AF37] hover:bg-[#C59F2E] text-[#0D0E12] font-bold gap-1.5 rounded-[4px] shadow-none cursor-pointer"
+            data-testid="btn-copy-barber-link"
           >
             {copied ? <Check className="h-3.5 w-3.5 stroke-[3]" /> : <Copy className="h-3.5 w-3.5" />}
             <span>{copied ? "Copiado!" : "Copiar Link"}</span>
           </Button>
+
+          <a
+            href={`https://api.whatsapp.com/send?text=${encodeURIComponent(`Olá! Agende seu horário de corte comigo na barbearia através do KingPro: ${myBookingUrl}`)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="h-8 px-3 text-xs bg-[#25D366]/15 hover:bg-[#25D366]/25 border border-[#25D366]/30 text-[#25D366] font-semibold rounded-[4px] inline-flex items-center gap-1.5 transition-all"
+            data-testid="btn-share-whatsapp-link"
+          >
+            <MessageCircle className="h-3.5 w-3.5" />
+            <span>WhatsApp</span>
+          </a>
+
           <a
             href={myBookingUrl}
             target="_blank"
             rel="noopener noreferrer"
             className="h-8 px-3 text-xs border border-white/10 hover:bg-white/5 text-white font-medium rounded-[4px] inline-flex items-center gap-1.5 transition-all"
+            data-testid="btn-open-barber-link"
           >
-            <span>Abrir</span>
+            <span>Testar Link</span>
             <ExternalLink className="h-3 w-3 text-muted-foreground" />
           </a>
         </div>

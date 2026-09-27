@@ -10,7 +10,7 @@ import {
   UserCircle2, Contact, Bell, Plus, Sparkles, ChevronDown, CheckCircle2,
   AlertTriangle, AlertCircle, Info, Menu, HandCoins, X,
   Link2, Copy, Check, ExternalLink, Crown, EyeOff, Shield,
-  Globe, ArrowUpRight,
+  Globe, ArrowUpRight, Coins,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -55,6 +55,7 @@ export const NAV_SECTIONS = [
       { action: "novo_atendimento", label: "Novo Atendimento", icon: Scissors, badge: "Rápido", perm: ["registrar_atendimentos"] },
       { to: "/receitas", label: "Receitas & Histórico", icon: TrendingUp, testId: "nav-receitas", perm: ["ver_receitas"] },
       { to: "/despesas", label: "Despesas Operacionais", icon: Receipt, testId: "nav-despesas", perm: ["registrar_despesas"] },
+      { to: "/comissoes", label: "Comissões dos Barbeiros", icon: Coins, testId: "nav-comissoes", perm: ["ver_financeiro"] },
       { to: "/retiradas", label: "Retiradas do Dono", icon: HandCoins, testId: "nav-retiradas", perm: ["ver_financeiro"], donoOnly: true },
       { to: "/fechamento", label: "Fechamento de Caixa", icon: ArrowRightLeft, testId: "nav-fechamento", perm: ["ver_financeiro"] },
     ],
@@ -65,6 +66,7 @@ export const NAV_SECTIONS = [
       { to: "/barbearia", label: "Cadastro da Barbearia", icon: Store, testId: "nav-barbearia", perm: ["alterar_configuracoes"] },
       { to: "/equipe", label: "Equipe & Escala de Barbeiros", icon: Users2, testId: "nav-equipe", perm: ["gerenciar_barbeiros", "cadastrar_barbeiros", "editar_barbeiros"] },
       { to: "/clientes", label: "Clientes", icon: Contact, testId: "nav-clientes", perm: ["gerenciar_clientes"] },
+      { to: "/planos-clientes", label: "Planos & Assinaturas", icon: Crown, testId: "nav-planos-clientes", perm: ["gerenciar_clientes"] },
       { to: "/servicos", label: "Catálogo de Serviços", icon: Scissors, testId: "nav-servicos", perm: ["gerenciar_servicos"] },
       { to: "/produtos", label: "Estoque de Produtos", icon: Package, testId: "nav-produtos", perm: ["gerenciar_produtos"] },
       { to: "/categorias", label: "Categorias", icon: Tags, testId: "nav-categorias", perm: ["alterar_configuracoes"] },
@@ -324,62 +326,199 @@ function NotificationsBell() {
   );
 }
 
-function UserAvatarMenu() {
-  const { user, logout } = useAuth();
+const DEFAULT_SWITCHABLE_PROFILES = [
+  { id: "usr_dono", name: "Administrador / Dono", username: "dono", role: "dono", email: "dono@barbearia.com" },
+  { id: "usr_dono_quick", name: "Dono Teste (1)", username: "1", role: "dono", email: "dono@teste.com" },
+  { id: "usr_gerente", name: "Gerente Geral", username: "gerente", role: "gerente", email: "gerente@barbearia.com" },
+  { id: "usr_gerente_quick", name: "Gerente Teste (2)", username: "2", role: "gerente", email: "gerente@teste.com" },
+  { id: "usr_carlos", name: "Carlos Souza", username: "carlos", role: "barbeiro", email: "carlos@barbearia.com" },
+  { id: "usr_barbeiro_quick", name: "Barbeiro Teste (3)", username: "3", role: "barbeiro", email: "barbeiro@teste.com" },
+];
+
+function UserAvatarMenu({ variant = "header" }) {
+  const { user, logout, switchAccount } = useAuth();
   const { isBalcaoMode, toggleBalcaoMode } = useBalcao();
+  const { data: serverUsers } = useApi((api) => api.get("/auth/switchable-users"));
   const navigate = useNavigate();
+
+  const accounts = useMemo(() => {
+    if (Array.isArray(serverUsers) && serverUsers.length > 0) {
+      return serverUsers;
+    }
+    return DEFAULT_SWITCHABLE_PROFILES;
+  }, [serverUsers]);
 
   const displayName = user?.name || "Guilherme Pereira";
   const userRole = user?.role === "dono" ? "Dono" : rolesLabel(user) || "Dono";
 
+  const handleSwitch = async (account) => {
+    if (user?.id === account.id || user?.username === account.username) {
+      toast.info("Você já está conectado nesta conta.");
+      return;
+    }
+    try {
+      const u = await switchAccount(account.id || account.username);
+      toast.success(`Alternado com sucesso para: ${u.name}`);
+      if (u.role === "barbeiro") {
+        navigate("/barbeiro");
+      } else {
+        navigate("/");
+      }
+    } catch {
+      toast.error("Erro ao alternar de conta.");
+    }
+  };
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <button
-          className="relative flex items-center gap-2.5 rounded-[4px] p-1 lg:px-2.5 lg:py-1.5 transition-colors hover:bg-white/5 border border-transparent hover:border-white/10 focus:outline-none cursor-pointer"
-          data-testid="header-user-btn"
-          aria-label="Menu do usuário"
-        >
-          <div className="relative">
-            <div className="h-8 w-8 rounded-full bg-gradient-to-br from-[#EAB308] to-[#D4AF37] flex items-center justify-center text-[#0B0F19] font-black text-xs border border-[#D4AF37]/50">
-              {displayName.substring(0, 2).toUpperCase()}
+        {variant === "sidebar" ? (
+          <button
+            type="button"
+            className="w-full flex items-center justify-between gap-2.5 rounded-[4px] bg-[#12141F] hover:bg-[#181B28] border border-white/10 hover:border-[#D4AF37]/50 p-2 text-left transition-all cursor-pointer group focus:outline-none focus:ring-1 focus:ring-[#D4AF37]/50"
+            data-testid="sidebar-user-card-btn"
+            aria-label="Perfil do usuário e alternância de contas"
+          >
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="relative shrink-0">
+                <div className="h-9 w-9 rounded-full bg-gradient-to-br from-[#EAB308] to-[#D4AF37] flex items-center justify-center text-[#0B0F19] font-black text-xs border border-[#D4AF37]/50 shadow-sm">
+                  {displayName.substring(0, 2).toUpperCase()}
+                </div>
+                <span
+                  className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-[#10B981] ring-2 ring-[#0F121C]"
+                  title="Online"
+                />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-bold text-white group-hover:text-[#D4AF37] truncate transition-colors leading-tight">
+                  {displayName}
+                </p>
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  <span className="inline-block rounded-[2px] px-1 py-0.2 text-[9px] font-bold uppercase bg-[#D4AF37]/15 text-[#D4AF37] border border-[#D4AF37]/30">
+                    {userRole}
+                  </span>
+                  <span className="text-[10px] text-slate-400 truncate max-w-[95px]">
+                    {user?.email || "dono@teste.com"}
+                  </span>
+                </div>
+              </div>
             </div>
-            {/* Status Online Indicator */}
-            <span
-              className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-[#10B981] ring-2 ring-[#0B0F19]"
-              title="Online"
-            />
-          </div>
-          <div className="hidden lg:flex flex-col text-left leading-tight">
-            <span className="text-xs font-bold text-white tracking-tight">{displayName}</span>
-            <span className="text-[10px] text-muted-foreground">({userRole})</span>
-          </div>
-          <ChevronDown className="hidden lg:block h-3.5 w-3.5 text-muted-foreground ml-0.5" />
-        </button>
+            <ChevronDown className="h-4 w-4 text-slate-400 group-hover:text-[#D4AF37] shrink-0 transition-transform duration-200" />
+          </button>
+        ) : (
+          <button
+            type="button"
+            className="relative flex items-center gap-2.5 rounded-[4px] p-1 lg:px-2.5 lg:py-1.5 transition-colors hover:bg-white/5 border border-transparent hover:border-white/10 focus:outline-none cursor-pointer"
+            data-testid="header-user-btn"
+            aria-label="Menu do usuário"
+          >
+            <div className="relative shrink-0">
+              <div className="h-8 w-8 rounded-full bg-gradient-to-br from-[#EAB308] to-[#D4AF37] flex items-center justify-center text-[#0B0F19] font-black text-xs border border-[#D4AF37]/50">
+                {displayName.substring(0, 2).toUpperCase()}
+              </div>
+              <span
+                className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-[#10B981] ring-2 ring-[#0B0F19]"
+                title="Online"
+              />
+            </div>
+            <div className="hidden lg:flex flex-col text-left leading-tight">
+              <span className="text-xs font-bold text-white tracking-tight">{displayName}</span>
+              <span className="text-[10px] text-muted-foreground">({userRole})</span>
+            </div>
+            <ChevronDown className="hidden lg:block h-3.5 w-3.5 text-muted-foreground ml-0.5" />
+          </button>
+        )}
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-60 bg-[#131622] border-white/10 text-white p-2 rounded-[4px] shadow-xl">
+      <DropdownMenuContent
+        align={variant === "sidebar" ? "start" : "end"}
+        side={variant === "sidebar" ? "top" : "bottom"}
+        sideOffset={variant === "sidebar" ? 8 : 6}
+        className="w-72 sm:w-80 bg-[#131622] border border-white/10 text-white p-2 rounded-[4px] shadow-2xl z-50 max-h-[85vh] overflow-y-auto"
+      >
         <DropdownMenuLabel className="flex flex-col gap-0.5 px-2 py-1.5">
-          <span className="font-bold text-sm text-white">{displayName}</span>
+          <div className="flex items-center justify-between">
+            <span className="font-bold text-sm text-white">{displayName}</span>
+            <span className="inline-flex items-center gap-1 text-[10px] text-[#10B981] font-semibold bg-[#10B981]/10 px-1.5 py-0.5 rounded border border-[#10B981]/20">
+              <span className="h-1.5 w-1.5 rounded-full bg-[#10B981]" /> Online
+            </span>
+          </div>
           <span className="text-xs text-muted-foreground">{user?.email || "contato@barbearia.com"}</span>
           <div className="mt-1 flex items-center gap-1.5">
             <span className="inline-block rounded-[3px] px-1.5 py-0.5 text-[10px] font-bold uppercase bg-[#D4AF37]/15 text-[#D4AF37] border border-[#D4AF37]/30">
               {userRole}
             </span>
-            <span className="inline-flex items-center gap-1 text-[10px] text-[#10B981] font-semibold">
-              <span className="h-1.5 w-1.5 rounded-full bg-[#10B981]" /> Online
-            </span>
+            <span className="text-[10px] text-slate-400">Usuário: @{user?.username || "dono"}</span>
           </div>
         </DropdownMenuLabel>
-        <DropdownMenuSeparator className="bg-white/10" />
-        
+
+        <DropdownMenuSeparator className="bg-white/10 my-1" />
+
+        {/* SEÇÃO: ALTERNÂNCIA RÁPIDA DE CONTA */}
+        <div className="px-2 py-1">
+          <div className="flex items-center justify-between pb-1">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-[#D4AF37] flex items-center gap-1">
+              <Users2 className="h-3 w-3" /> Alternar de Conta
+            </span>
+            <span className="text-[9px] text-slate-400">Troca rápida</span>
+          </div>
+          <div className="space-y-1 max-h-48 overflow-y-auto pr-0.5">
+            {accounts.map((acc) => {
+              const isCurrent = user?.id === acc.id || user?.username === acc.username;
+              const roleName = acc.role === "dono" ? "Dono" : acc.role === "gerente" ? "Gerente" : "Barbeiro";
+              const roleGrad = acc.role === "dono"
+                ? "from-[#EAB308] to-[#D4AF37]"
+                : acc.role === "gerente"
+                ? "from-blue-500 to-indigo-600"
+                : "from-emerald-500 to-teal-600";
+              const roleBadge = acc.role === "dono"
+                ? "bg-[#D4AF37]/15 text-[#D4AF37] border-[#D4AF37]/30"
+                : acc.role === "gerente"
+                ? "bg-blue-500/15 text-blue-400 border-blue-500/30"
+                : "bg-emerald-500/15 text-emerald-400 border-emerald-500/30";
+
+              return (
+                <button
+                  key={acc.id || acc.username}
+                  type="button"
+                  onClick={() => handleSwitch(acc)}
+                  className={`w-full flex items-center justify-between p-1.5 rounded-[4px] text-left transition-all cursor-pointer ${
+                    isCurrent
+                      ? "bg-[#D4AF37]/15 border border-[#D4AF37]/40 text-white"
+                      : "hover:bg-white/5 text-slate-300 hover:text-white border border-transparent"
+                  }`}
+                  data-testid={`switch-to-${acc.username}`}
+                >
+                  <div className="flex items-center gap-2 min-w-0">
+                    <div className={`h-6 w-6 rounded-full bg-gradient-to-br ${roleGrad} flex items-center justify-center text-[#0B0F19] font-black text-[9px] shrink-0`}>
+                      {(acc.name || "U").substring(0, 2).toUpperCase()}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs font-bold truncate leading-tight">{acc.name}</p>
+                      <p className="text-[10px] text-slate-400 truncate">@{acc.username} {acc.email ? `· ${acc.email}` : ""}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1.5 shrink-0 ml-1">
+                    <span className={`text-[9px] font-bold px-1.5 py-0.2 rounded uppercase border ${roleBadge}`}>
+                      {roleName}
+                    </span>
+                    {isCurrent && <Check className="h-3.5 w-3.5 text-[#D4AF37] stroke-[3]" />}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <DropdownMenuSeparator className="bg-white/10 my-1" />
+
         {/* Toggle Modo Caixa / Balcão Seguro */}
         <DropdownMenuItem
           onClick={toggleBalcaoMode}
-          className="text-xs focus:bg-white/10 focus:text-white cursor-pointer py-2 rounded-[2px] justify-between"
+          className="text-xs focus:bg-white/10 focus:text-white cursor-pointer py-1.5 rounded-[2px] justify-between"
           data-testid="toggle-balcao-menu-item"
         >
           <div className="flex items-center gap-2">
-            {isBalcaoMode ? <EyeOff className="h-4 w-4 text-amber-400" /> : <Shield className="h-4 w-4 text-slate-400" />}
+            {isBalcaoMode ? <EyeOff className="h-3.5 w-3.5 text-amber-400" /> : <Shield className="h-3.5 w-3.5 text-slate-400" />}
             <span>Modo Balcão Seguro</span>
           </div>
           <span className={`text-[10px] px-1.5 py-0.5 rounded-[3px] font-bold uppercase ${
@@ -389,25 +528,28 @@ function UserAvatarMenu() {
           </span>
         </DropdownMenuItem>
 
-        {isBarber(user) && (
+        {(isBarber(user) || isAdmin(user)) && (
           <DropdownMenuItem
             onClick={() => navigate("/barbeiro")}
-            className="text-xs focus:bg-white/10 focus:text-white cursor-pointer py-2 rounded-[2px]"
+            className="text-xs focus:bg-white/10 focus:text-white cursor-pointer py-1.5 rounded-[2px]"
             data-testid="switch-to-barber"
           >
-            <Scissors className="mr-2 h-4 w-4 text-[#D4AF37]" /> Meu Painel de Barbeiro
+            <Scissors className="mr-2 h-3.5 w-3.5 text-[#D4AF37]" /> Painel do Barbeiro
           </DropdownMenuItem>
         )}
+
         <DropdownMenuItem
           onClick={() => navigate("/configuracoes")}
-          className="text-xs focus:bg-white/10 focus:text-white cursor-pointer py-2 rounded-[2px]"
+          className="text-xs focus:bg-white/10 focus:text-white cursor-pointer py-1.5 rounded-[2px]"
         >
-          <SettingsIcon className="mr-2 h-4 w-4 text-muted-foreground" /> Configurações
+          <SettingsIcon className="mr-2 h-3.5 w-3.5 text-muted-foreground" /> Configurações Operacionais
         </DropdownMenuItem>
-        <DropdownMenuSeparator className="bg-white/10" />
+
+        <DropdownMenuSeparator className="bg-white/10 my-1" />
+
         <DropdownMenuItem
           onClick={() => { logout(); navigate("/login"); }}
-          className="text-xs text-[#EF4444] focus:bg-[#EF4444]/15 focus:text-[#EF4444] cursor-pointer py-2 rounded-[2px]"
+          className="text-xs text-[#EF4444] focus:bg-[#EF4444]/15 focus:text-[#EF4444] cursor-pointer py-2 rounded-[2px] font-semibold"
           data-testid="header-logout-btn"
         >
           <LogOut className="mr-2 h-4 w-4" /> Sair da conta
@@ -554,12 +696,12 @@ export default function Layout() {
         <div className="flex items-center gap-3 px-5 h-16 border-b border-white/[0.08] shrink-0">
           <img 
             src="/logo.png" 
-            alt="KortePro" 
+            alt="KingPro" 
             className="h-10 w-10 rounded-full object-cover border border-[#D4AF37]/30 shadow-md shadow-[#D4AF37]/10 shrink-0" 
           />
           <div className="min-w-0 flex-1">
             <span className="font-display font-extrabold text-base tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-[#D4AF37] to-amber-500 block truncate leading-tight">
-              KortePro
+              KingPro
             </span>
             <p className="text-[10px] text-slate-400 font-medium tracking-wider truncate mt-0.5">
               {barbershop?.name || "Painel de Gestão"}
@@ -592,21 +734,8 @@ export default function Layout() {
         </div>
 
         {/* Rodapé da Sidebar: Perfil do Usuário */}
-        <div className="p-3 border-t border-white/[0.08] bg-[#0C0E16] shrink-0">
-          <div className="flex items-center justify-between gap-2 rounded-[4px] bg-[#12141F] border border-white/5 p-2">
-            <div className="flex items-center gap-2.5 min-w-0">
-              <div className="h-8 w-8 rounded-full bg-gradient-to-br from-[#EAB308] to-[#D4AF37] flex items-center justify-center text-[#0B0D14] font-black text-xs shrink-0">
-                {displayName.substring(0, 2).toUpperCase()}
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-xs font-bold text-white truncate">{displayName}</p>
-                <span className="inline-block rounded-[2px] px-1.5 py-0.2 text-[9px] font-bold uppercase bg-[#D4AF37]/15 text-[#D4AF37] border border-[#D4AF37]/30">
-                  {userRole}
-                </span>
-              </div>
-            </div>
-            <UserAvatarMenu />
-          </div>
+        <div className="p-3 border-t border-white/[0.08] bg-[#0C0E16] shrink-0 relative z-30">
+          <UserAvatarMenu variant="sidebar" />
         </div>
       </aside>
 
@@ -622,12 +751,12 @@ export default function Layout() {
             <div className="flex items-center gap-3 text-left">
               <img 
                 src="/logo.png" 
-                alt="KortePro" 
+                alt="KingPro" 
                 className="h-10 w-10 rounded-full object-cover border border-[#D4AF37]/30 shadow-md shrink-0" 
               />
               <div>
                 <SheetTitle className="text-base font-bold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-[#D4AF37] to-amber-500">
-                  KortePro
+                  KingPro
                 </SheetTitle>
                 <p className="text-[10px] text-slate-400 font-medium tracking-wider truncate max-w-[170px]">
                   {barbershop?.name || "Menu Principal"}
@@ -663,18 +792,7 @@ export default function Layout() {
 
           {/* Rodapé do Drawer com perfil e logout */}
           <div className="p-3 border-t border-white/[0.08] bg-[#0C0E16]">
-            <div className="flex items-center justify-between gap-2 rounded-[4px] bg-[#12141F] border border-white/5 p-2">
-              <div className="flex items-center gap-2 min-w-0">
-                <div className="h-8 w-8 rounded-full bg-gradient-to-br from-[#EAB308] to-[#D4AF37] text-[#0B0D14] font-black text-xs flex items-center justify-center shrink-0">
-                  {displayName.substring(0, 2).toUpperCase()}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-xs font-bold text-white truncate">{displayName}</p>
-                  <p className="text-[10px] text-muted-foreground truncate">{user?.email}</p>
-                </div>
-              </div>
-              <UserAvatarMenu />
-            </div>
+            <UserAvatarMenu variant="sidebar" />
           </div>
         </SheetContent>
       </Sheet>
@@ -702,12 +820,12 @@ export default function Layout() {
               <div className="flex items-center gap-2">
                 <img 
                   src="/logo.png" 
-                  alt="KortePro" 
+                  alt="KingPro" 
                   className="h-8 w-8 rounded-full object-cover border border-[#D4AF37]/30 shadow-sm shrink-0" 
                 />
                 <div className="flex flex-col">
                   <span className="font-display font-extrabold text-sm tracking-tight leading-none text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-[#D4AF37] to-amber-400">
-                    KortePro
+                    KingPro
                   </span>
                   <span className="text-[9px] text-slate-400 font-medium truncate max-w-[130px] mt-0.5">
                     {barbershop?.name || "Gestão"}

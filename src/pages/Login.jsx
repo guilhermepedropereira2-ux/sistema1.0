@@ -84,7 +84,7 @@ export default function Login() {
         state: reg.state.trim() || null,
         shop_phone: reg.shop_phone.trim() || null,
       });
-      toast.success(`Barbearia cadastrada com 7 dias grátis! Bem-vindo ao KortePro, ${u.name}`);
+      toast.success(`Barbearia cadastrada com 7 dias grátis! Bem-vindo ao KingPro, ${u.name}`);
       // Redireciona para escolha de planos com 7 dias de trial grátis
       navigate("/planos", { state: { fromRegister: true } });
     } catch (err) {
@@ -115,13 +115,13 @@ export default function Login() {
           <div className="mb-3 flex items-center justify-center gap-3">
             <img 
               src="/logo.png" 
-              alt="KortePro" 
+              alt="KingPro" 
               className="h-12 w-12 rounded-full object-cover border border-[#D4AF37]/40 shadow-lg shadow-[#D4AF37]/15" 
               data-testid="login-logo" 
             />
             <div className="flex flex-col text-left">
               <span className="font-display font-extrabold text-2xl tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-[#D4AF37] to-amber-500">
-                KortePro
+                KingPro
               </span>
               <span className="text-[10px] text-slate-400 font-medium uppercase tracking-wider">
                 Gestão para Barbearias

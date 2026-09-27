@@ -89,7 +89,7 @@ export default function SubscriptionExpiredModal({ open = true }) {
                     7 Dias de Teste Concluídos
                   </Badge>
                   <span className="text-xs text-slate-400 font-sans">
-                    {user?.name ? `Barbearia de ${user.name}` : "KortePro"}
+                    {user?.name ? `Barbearia de ${user.name}` : "KingPro"}
                   </span>
                 </div>
                 <DialogTitle className="text-lg sm:text-2xl font-display font-bold text-white mt-1.5 tracking-tight leading-snug">
@@ -111,7 +111,7 @@ export default function SubscriptionExpiredModal({ open = true }) {
           </div>
 
           <DialogDescription className="text-slate-300 text-xs sm:text-sm mt-3 leading-relaxed max-w-3xl">
-            O seu período de teste gratuito chegou ao fim. Para continuar usando o KortePro, gerenciando seus atendimentos e acompanhando seu faturamento sem interrupções, escolha o plano ideal para a sua barbearia.
+            O seu período de teste gratuito chegou ao fim. Para continuar usando o KingPro, gerenciando seus atendimentos e acompanhando seu faturamento sem interrupções, escolha o plano ideal para a sua barbearia.
           </DialogDescription>
 
           {/* Destaque Sutil com Benefícios Conquistados e Segurança dos Dados */}

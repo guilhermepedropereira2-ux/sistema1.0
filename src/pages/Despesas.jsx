@@ -16,7 +16,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { brl, fmtDate, todayISO } from "@/lib/format";
-import { Plus, MoreVertical, Trash2, Check, Shield } from "lucide-react";
+import { Plus, MoreVertical, Trash2, Check, Shield, FileSpreadsheet } from "lucide-react";
+import { downloadCsv, formatBrlNumber } from "@/lib/exportCsv";
 
 const STATUS = {
   pago: { label: "Pago", cls: "bg-success text-success-foreground" },
@@ -131,6 +132,35 @@ export default function Despesas() {
   const total = (expenses || []).reduce((a, e) => a + e.value, 0);
   const paid = (expenses || []).filter((e) => e.status === "pago").reduce((a, e) => a + e.value, 0);
 
+  const handleExportCsv = () => {
+    if (!expenses || !expenses.length) {
+      toast.error("Nenhuma despesa para exportar neste mês.");
+      return;
+    }
+
+    const headers = [
+      "Vencimento",
+      "Descrição",
+      "Tipo",
+      "Valor (R$)",
+      "Status",
+      "Recorrência",
+    ];
+
+    const rows = expenses.map((e) => [
+      fmtDate(e.due_date),
+      e.name || "-",
+      e.type === "fixa" ? "Fixa" : "Variável",
+      formatBrlNumber(e.value),
+      STATUS[e.status]?.label || e.status,
+      e.recurrence || "-",
+    ]);
+
+    const filename = `KingPro_Despesas_${tab}_${month}.csv`;
+    downloadCsv({ filename, headers, rows });
+    toast.success("Despesas exportadas com sucesso!");
+  };
+
   return (
     <div className="space-y-5" data-testid="despesas-page">
       <Tabs value={tab} onValueChange={setTab}>
@@ -139,7 +169,19 @@ export default function Despesas() {
             <TabsTrigger value="fixa" data-testid="tab-fixas">Fixas</TabsTrigger>
             <TabsTrigger value="variavel" data-testid="tab-variaveis">Variáveis</TabsTrigger>
           </TabsList>
-          {categories && <ExpenseDialog type={tab} categories={categories} onDone={refresh} />}
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleExportCsv}
+              className="rounded-[4px] border-[#D4AF37]/40 bg-[#12141F] text-[#D4AF37] hover:bg-[#D4AF37]/10 hover:border-[#D4AF37] font-semibold text-xs gap-1.5 shadow-none transition-all cursor-pointer h-9 px-3"
+              data-testid="export-csv-despesas-btn"
+            >
+              <FileSpreadsheet className="h-3.5 w-3.5 text-[#D4AF37]" />
+              <span>Exportar para Excel (.csv)</span>
+            </Button>
+            {categories && <ExpenseDialog type={tab} categories={categories} onDone={refresh} />}
+          </div>
         </div>
       </Tabs>
 

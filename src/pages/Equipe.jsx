@@ -16,7 +16,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Pencil, Trash2, Scissors, FileBarChart, Trophy, KeyRound, Crown, Sparkles, AlertCircle, Lock, Shield } from "lucide-react";
+import { Plus, Pencil, Trash2, Scissors, FileBarChart, Trophy, KeyRound, Crown, Sparkles, AlertCircle, Lock, Shield, Coins } from "lucide-react";
 import { brl, pct, monthRange } from "@/lib/format";
 import { useUnit } from "@/context/UnitContext";
 import { useBalcao } from "@/context/BalcaoContext";
@@ -364,15 +364,26 @@ export default function Equipe() {
             <TabsTrigger value="barbeiros" data-testid="tab-barbeiros">Barbeiros</TabsTrigger>
             <TabsTrigger value="ranking" data-testid="tab-ranking">Ranking</TabsTrigger>
           </TabsList>
-          <BarberDialog
-            services={services}
-            products={products}
-            onDone={refresh}
-            isAtLimit={isAtLimit}
-            openUpgradeModal={openUpgradeModal}
-            plan={plan}
-            maxBarbers={maxBarbers}
-          />
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              onClick={() => navigate("/comissoes")}
+              className="gap-2 rounded-[4px] border-[#D4AF37]/30 bg-[#12141F] text-[#D4AF37] hover:bg-[#D4AF37]/10 text-xs font-semibold shadow-none cursor-pointer"
+              data-testid="go-to-comissoes-btn"
+            >
+              <Coins className="h-4 w-4" />
+              <span>Gestão de Comissões</span>
+            </Button>
+            <BarberDialog
+              services={services}
+              products={products}
+              onDone={refresh}
+              isAtLimit={isAtLimit}
+              openUpgradeModal={openUpgradeModal}
+              plan={plan}
+              maxBarbers={maxBarbers}
+            />
+          </div>
         </div>
 
         <TabsContent value="barbeiros" className="mt-5">

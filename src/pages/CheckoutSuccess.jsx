@@ -101,12 +101,12 @@ export default function CheckoutSuccess() {
         <div className="flex items-center gap-3">
           <img 
             src="/logo.png" 
-            alt="KortePro" 
+            alt="KingPro" 
             className="h-10 w-10 rounded-full object-cover border border-[#D4AF37]/40 shadow-md shrink-0" 
           />
           <div>
             <h1 className="text-base font-extrabold font-display tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-[#D4AF37] to-amber-500">
-              KortePro
+              KingPro
             </h1>
             <span className="text-[10px] text-[#D4AF37] font-semibold uppercase tracking-wider block">
               Mercado Pago Checkout Pro
@@ -223,7 +223,7 @@ export default function CheckoutSuccess() {
 
       {/* Footer */}
       <footer className="max-w-2xl mx-auto w-full py-4 border-t border-white/10 text-center text-xs text-slate-500">
-        KortePro © {new Date().getFullYear()} • Transações processadas oficialmente via Mercado Pago Checkout Pro.
+        KingPro © {new Date().getFullYear()} • Transações processadas oficialmente via Mercado Pago Checkout Pro.
       </footer>
     </div>
   );

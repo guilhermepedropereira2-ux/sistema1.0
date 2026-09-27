@@ -15,8 +15,10 @@ import {
 } from "recharts";
 import {
   ArrowDownCircle, ArrowUpCircle, Landmark, Scale, FileText,
-  TrendingUp, Percent, Users, Receipt, HandCoins, CheckCircle2,
+  TrendingUp, Percent, Users, Receipt, HandCoins, CheckCircle2, FileSpreadsheet,
 } from "lucide-react";
+import { downloadCsv, formatBrlNumber } from "@/lib/exportCsv";
+import { toast } from "sonner";
 
 export default function FluxoCaixa() {
   const { user, ready } = useAuth();
@@ -51,6 +53,36 @@ export default function FluxoCaixa() {
 
   const pct = (val) => (gross > 0 ? ((val / gross) * 100).toFixed(1) + "%" : "0.0%");
 
+  const handleExportCsv = () => {
+    if (!summary && !data?.series?.length) {
+      toast.error("Sem dados para exportação no mês selecionado.");
+      return;
+    }
+
+    const headers = [
+      "Indicador / Conta",
+      "Competência",
+      "Valor (R$)",
+      "Proporção da Receita (%)",
+    ];
+
+    const rows = [
+      ["(+) Receita Bruta Total", month, formatBrlNumber(gross), "100.0%"],
+      ["(-) Taxas de Maquininhas", month, formatBrlNumber(fees), pct(fees)],
+      ["(=) Receita Líquida Real", month, formatBrlNumber(netRevenue), pct(netRevenue)],
+      ["(-) Comissões da Equipe", month, formatBrlNumber(commissions), pct(commissions)],
+      ["(=) Margem de Contribuição", month, formatBrlNumber(contributionMargin), pct(contributionMargin)],
+      ["(-) Despesas Operacionais Fixas/Variáveis", month, formatBrlNumber(expenses), pct(expenses)],
+      ["(=) Lucro Líquido Real", month, formatBrlNumber(netProfit), pct(netProfit)],
+      ["(-) Retiradas do Proprietário", month, formatBrlNumber(totalWithdrawals), pct(totalWithdrawals)],
+      ["(=) Saldo Retido no Caixa", month, formatBrlNumber(retainedResult), pct(retainedResult)],
+    ];
+
+    const filename = `KingPro_DRE_Financeiro_${month}.csv`;
+    downloadCsv({ filename, headers, rows });
+    toast.success("DRE exportada para Excel com sucesso!");
+  };
+
   return (
     <div className="space-y-6" data-testid="fluxo-page">
       {/* Header & Tabs */}
@@ -64,16 +96,28 @@ export default function FluxoCaixa() {
             Ferramenta exclusiva da diretoria para apuração de resultado e movimentação de caixa em {month}
           </p>
         </div>
-        <Tabs value={tab} onValueChange={setTab} className="w-auto">
-          <TabsList className="bg-[#131826] border border-[#1F293D]">
-            <TabsTrigger value="dre" className="text-xs data-[state=active]:bg-[#D4AF37] data-[state=active]:text-[#0B0F19] font-bold">
-              <FileText className="h-3.5 w-3.5 mr-1.5" /> DRE Completa
-            </TabsTrigger>
-            <TabsTrigger value="fluxo" className="text-xs data-[state=active]:bg-[#D4AF37] data-[state=active]:text-[#0B0F19] font-bold">
-              <Scale className="h-3.5 w-3.5 mr-1.5" /> Movimentação Diária
-            </TabsTrigger>
-          </TabsList>
-        </Tabs>
+        <div className="flex flex-wrap items-center gap-2.5">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleExportCsv}
+            className="rounded-[4px] border-[#D4AF37]/40 bg-[#12141F] text-[#D4AF37] hover:bg-[#D4AF37]/10 hover:border-[#D4AF37] font-semibold text-xs gap-1.5 shadow-none transition-all cursor-pointer h-9 px-3"
+            data-testid="export-csv-fluxo-btn"
+          >
+            <FileSpreadsheet className="h-3.5 w-3.5 text-[#D4AF37]" />
+            <span>Exportar DRE (.csv)</span>
+          </Button>
+          <Tabs value={tab} onValueChange={setTab} className="w-auto">
+            <TabsList className="bg-[#131826] border border-[#1F293D]">
+              <TabsTrigger value="dre" className="text-xs data-[state=active]:bg-[#D4AF37] data-[state=active]:text-[#0B0F19] font-bold">
+                <FileText className="h-3.5 w-3.5 mr-1.5" /> DRE Completa
+              </TabsTrigger>
+              <TabsTrigger value="fluxo" className="text-xs data-[state=active]:bg-[#D4AF37] data-[state=active]:text-[#0B0F19] font-bold">
+                <Scale className="h-3.5 w-3.5 mr-1.5" /> Movimentação Diária
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </div>
       </div>
 
       {tab === "dre" ? (

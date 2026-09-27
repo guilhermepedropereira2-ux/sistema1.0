@@ -143,6 +143,8 @@ interface Revenue {
   payment_method_id: string;
   payment_method_name: string;
   payment_type: string;
+  payment_channel?: string;
+  payment_method?: string;
   barber_id?: string;
   barber_name?: string;
   client_name?: string;
@@ -199,6 +201,40 @@ interface CashClosing {
   created_at: string;
 }
 
+interface CommissionPayment {
+  id: string;
+  barbershop_id: string;
+  barber_id: string;
+  barber_name: string;
+  amount: number;
+  payment_method: string;
+  date: string;
+  notes?: string;
+  paid_count?: number;
+  period_start?: string;
+  period_end?: string;
+  expense_id?: string;
+  created_at: string;
+}
+
+interface CustomerPlan {
+  id: string;
+  barbershop_id: string;
+  name: string;
+  price: number;
+  billing_cycle: "mensal" | "quinzenal" | "anual";
+  is_unlimited: boolean;
+  total_credits?: number;
+  services?: {
+    service_id?: string;
+    service_name: string;
+    limit: number;
+  }[];
+  notes?: string;
+  active: boolean;
+  created_at: string;
+}
+
 interface Client {
   id: string;
   barbershop_id: string;
@@ -208,11 +244,18 @@ interface Client {
   notes?: string;
   has_plan: boolean;
   plan?: {
+    plan_id?: string;
     name: string;
+    price?: number;
+    billing_cycle?: "mensal" | "quinzenal" | "anual";
+    is_unlimited?: boolean;
     total: number;
     used: number;
+    remaining?: number | string;
+    services_limit?: { service_name: string; limit: number }[];
     start?: string;
     due?: string;
+    status?: "ativo" | "vencido" | "esgotado";
   };
   created_at: string;
 }
@@ -337,6 +380,8 @@ class Database {
   withdrawals: Withdrawal[] = [];
   cashClosings: CashClosing[] = [];
   clients: Client[] = [];
+  customerPlans: CustomerPlan[] = [];
+  commissionPayments: CommissionPayment[] = [];
   queue: QueueItem[] = [];
   appointments: Appointment[] = [];
   history: ChangeHistory[] = [];
@@ -425,6 +470,7 @@ class Database {
     this.withdrawals = [];
     this.cashClosings = [];
     this.clients = [];
+    this.commissionPayments = [];
     this.history = [];
 
     // Settings
@@ -626,15 +672,136 @@ class Database {
       { id: "cat_produtos", barbershop_id: "profile", name: "Insumos & Lâminas", group: "Operação", type: "despesa", color: "#10b981", created_at: nowIso() },
       { id: "cat_marketing", barbershop_id: "profile", name: "Anúncios Meta/Google", group: "Marketing", type: "despesa", color: "#f43f5e", created_at: nowIso() },
       { id: "cat_manutencao", barbershop_id: "profile", name: "Manutenção Máquinas", group: "Manutenção", type: "despesa", color: "#8b5cf6", created_at: nowIso() },
+      { id: "cat_comissoes", barbershop_id: "profile", name: "Comissões dos Barbeiros", group: "Pessoal", type: "despesa", color: "#10b981", created_at: nowIso() },
     ];
     this.categories = cats;
 
+    // Customer Plans & Subscriptions (Clube de Assinaturas da Barbearia)
+    this.customerPlans = [
+      {
+        id: "cplan_1",
+        barbershop_id: "profile",
+        name: "Corte Livre (Uso Ilimitado)",
+        price: 99.90,
+        billing_cycle: "mensal",
+        is_unlimited: true,
+        total_credits: 999,
+        services: [{ service_name: "Corte de Cabelo", limit: 999 }],
+        notes: "Assinatura mensal para cortes à vontade durante todo o mês.",
+        active: true,
+        created_at: nowIso(),
+      },
+      {
+        id: "cplan_2",
+        barbershop_id: "profile",
+        name: "VIP Mensal (4 Cortes + 2 Barbas)",
+        price: 149.00,
+        billing_cycle: "mensal",
+        is_unlimited: false,
+        total_credits: 6,
+        services: [
+          { service_name: "Corte de Cabelo", limit: 4 },
+          { service_name: "Barba Completa", limit: 2 },
+        ],
+        notes: "Combo completo com cortes e barbas inclusos no mês.",
+        active: true,
+        created_at: nowIso(),
+      },
+      {
+        id: "cplan_3",
+        barbershop_id: "profile",
+        name: "Clube da Barba",
+        price: 79.90,
+        billing_cycle: "mensal",
+        is_unlimited: false,
+        total_credits: 4,
+        services: [{ service_name: "Barba Completa", limit: 4 }],
+        notes: "4 manutenções completas de barba por mês.",
+        active: true,
+        created_at: nowIso(),
+      },
+    ];
+
     // Clients
     this.clients = [
-      { id: "cli_1", barbershop_id: "profile", name: "João Pedro Silva", phone: "(11) 98765-4321", notes: "Prefere degradê navalhado", has_plan: true, plan: { name: "Clube do Corte", total: 4, used: 2, start: "2026-09-01", due: "2026-09-30" }, created_at: nowIso() },
-      { id: "cli_2", barbershop_id: "profile", name: "Lucas Fernandes", phone: "(11) 97777-6666", notes: "Corte tradicional tesoura", has_plan: false, created_at: nowIso() },
-      { id: "cli_3", barbershop_id: "profile", name: "Marcos Vinicius", phone: "(11) 96666-5555", notes: "Barba completa com toalha quente", has_plan: true, plan: { name: "VIP Barba", total: 2, used: 1, start: "2026-09-05", due: "2026-10-05" }, created_at: nowIso() },
-      { id: "cli_4", barbershop_id: "profile", name: "Bruno Henrique", phone: "(11) 95555-4444", notes: "", has_plan: false, created_at: nowIso() },
+      {
+        id: "cli_1",
+        barbershop_id: "profile",
+        name: "João Pedro Silva",
+        phone: "(11) 98765-4321",
+        notes: "Prefere degradê navalhado",
+        has_plan: true,
+        plan: {
+          plan_id: "cplan_2",
+          name: "VIP Mensal (4 Cortes + 2 Barbas)",
+          price: 149.00,
+          billing_cycle: "mensal",
+          is_unlimited: false,
+          total: 4,
+          used: 2,
+          start: "2026-09-01",
+          due: "2026-10-01",
+        },
+        created_at: nowIso(),
+      },
+      {
+        id: "cli_2",
+        barbershop_id: "profile",
+        name: "Lucas Fernandes",
+        phone: "(11) 97777-6666",
+        notes: "Corte tradicional tesoura",
+        has_plan: false,
+        created_at: nowIso(),
+      },
+      {
+        id: "cli_3",
+        barbershop_id: "profile",
+        name: "Marcos Vinicius",
+        phone: "(11) 96666-5555",
+        notes: "Assinante do plano ilimitado",
+        has_plan: true,
+        plan: {
+          plan_id: "cplan_1",
+          name: "Corte Livre (Uso Ilimitado)",
+          price: 99.90,
+          billing_cycle: "mensal",
+          is_unlimited: true,
+          total: 999,
+          used: 3,
+          start: "2026-09-05",
+          due: "2026-10-05",
+        },
+        created_at: nowIso(),
+      },
+      {
+        id: "cli_4",
+        barbershop_id: "profile",
+        name: "Bruno Henrique",
+        phone: "(11) 95555-4444",
+        notes: "",
+        has_plan: false,
+        created_at: nowIso(),
+      },
+      {
+        id: "cli_5",
+        barbershop_id: "profile",
+        name: "Lucas Mendes",
+        phone: "(11) 94444-3333",
+        notes: "Cliente VIP Mensal",
+        has_plan: true,
+        plan: {
+          plan_id: "cplan_2",
+          name: "VIP Mensal",
+          price: 149.00,
+          billing_cycle: "mensal",
+          is_unlimited: false,
+          total: 4,
+          used: 2,
+          start: "2026-09-01",
+          due: "2026-10-01",
+        },
+        created_at: nowIso(),
+      },
     ];
 
     // Seed realistic Revenues for current month and previous days
@@ -685,6 +852,9 @@ class Database {
 
         const timeStr = `${String(9 + (s % 10)).padStart(2, "0")}:${s % 2 === 0 ? "00" : "30"}`;
 
+        const pChannel = pType === "dinheiro" ? "Caixa Físico / Gaveta" : (s % 3 === 0 ? "InfinitePay" : s % 3 === 1 ? "Stone" : "Mercado Pago");
+        const pMethod = pType === "dinheiro" ? "Dinheiro" : pType === "pix" ? "Pix no Terminal" : pType === "debito" ? "Cartão de Débito" : "Cartão de Crédito";
+
         this.revenues.push({
           id: `rev_${d}_${s}`,
           barbershop_id: barber.barbershop_id || "unit_centro",
@@ -702,6 +872,8 @@ class Database {
           payment_method_id: pmId,
           payment_method_name: pmName,
           payment_type: pType,
+          payment_channel: pChannel,
+          payment_method: pMethod,
           barber_id: barber.id,
           barber_name: barber.name,
           client_name: demoClients[(d + s) % demoClients.length],
@@ -1374,7 +1546,7 @@ apiRouter.post("/checkout/process_payment", async (req: Request, res: Response) 
         },
         description:
           description ||
-          `Assinatura KortePro - Plano ${selectedPlan.toUpperCase()}`,
+          `Assinatura KingPro - Plano ${selectedPlan.toUpperCase()}`,
         plan_id: selectedPlan,
       },
       idempotencyKey
@@ -1585,6 +1757,27 @@ apiRouter.post("/auth/login", (req, res) => {
   }
   const token = `fake-token-${user.id}`;
   const { password: _, ...cleanUser } = user;
+  res.json({ token, user: cleanUser });
+});
+
+apiRouter.get("/auth/switchable-users", (req, res) => {
+  const users = db.users.map((u) => {
+    const { password: _, ...clean } = u;
+    return clean;
+  });
+  res.json(users);
+});
+
+apiRouter.post("/auth/switch", (req, res) => {
+  const { userId } = req.body || {};
+  const targetUser = db.users.find(
+    (u) => u.id === userId || u.username === userId || u.email === userId
+  );
+  if (!targetUser) {
+    return res.status(404).json({ detail: "Perfil de usuário não encontrado" });
+  }
+  const token = `fake-token-${targetUser.id}`;
+  const { password: _, ...cleanUser } = targetUser;
   res.json({ token, user: cleanUser });
 });
 
@@ -2047,14 +2240,14 @@ apiRouter.post("/public/shop/:slug/book", (req, res) => {
   const shopPhone = (shop.phone || shop.shop_phone || "11999998888").replace(/\D/g, "");
   const formattedDate = date.split("-").reverse().join("/");
   const serviceListStr = svcs.map((s) => s.name).join(", ");
-  const waMessage = `💈 *Confirmação de Agendamento - ${shop.name}*\n\n` +
+  const waMessage = `💈 *Comprovante de Agendamento - ${shop.name} | KingPro*\n\n` +
     `👤 *Cliente:* ${client_name.trim()}\n` +
     `📱 *WhatsApp:* ${client_phone.trim()}\n` +
     `🗓 *Data:* ${formattedDate} às ${time}\n` +
     `✂️ *Serviço(s):* ${serviceListStr} (R$ ${price.toFixed(2)})\n` +
     `🧔 *Profissional:* ${selectedBarber.name}\n` +
     (notes ? `📝 *Obs:* ${notes}\n` : "") +
-    `\nOlá! Confirmo meu agendamento pelo link da barbearia. Até breve!`;
+    `\n✅ Agendamento registrado com sucesso via *KingPro*!\nOlá! Confirmo meu agendamento na barbearia. Até breve!`;
 
   const whatsapp_url = `https://wa.me/55${shopPhone}?text=${encodeURIComponent(waMessage)}`;
 
@@ -2067,11 +2260,31 @@ apiRouter.post("/public/shop/:slug/book", (req, res) => {
 });
 
 // Payment Methods
+const requirePaymentMethodsAdmin = (req: Request, res: Response, next: NextFunction) => {
+  const user = authUser(req);
+  if (!user) {
+    return res.status(401).json({ detail: "Autenticação obrigatória" });
+  }
+
+  const roles = user.roles || (user.role ? [user.role] : []);
+  const isBarber = roles.some((r: string) => ["barbeiro", "barber"].includes(r));
+  const isAllowed = roles.some((r: string) => ["dono", "admin", "owner", "gerente", "manager"].includes(r));
+
+  if (isBarber || !isAllowed) {
+    return res.status(403).json({
+      error: "Forbidden",
+      detail: "Acesso negado. Apenas administradores e gerentes podem cadastrar ou alterar maquininhas e formas de pagamento.",
+    });
+  }
+
+  next();
+};
+
 apiRouter.get("/payment-methods", (req, res) => {
   res.json(db.paymentMethods);
 });
 
-apiRouter.post("/payment-methods", (req, res) => {
+apiRouter.post("/payment-methods", requirePaymentMethodsAdmin, (req, res) => {
   const body = req.body || {};
   const pm: PaymentMethod = {
     id: newId(),
@@ -2088,7 +2301,7 @@ apiRouter.post("/payment-methods", (req, res) => {
   res.json(pm);
 });
 
-apiRouter.put("/payment-methods/:id", (req, res) => {
+apiRouter.put("/payment-methods/:id", requirePaymentMethodsAdmin, (req, res) => {
   const idx = db.paymentMethods.findIndex((p) => p.id === req.params.id);
   if (idx === -1) return res.status(404).json({ detail: "Forma de pagamento não encontrada" });
   db.paymentMethods[idx] = { ...db.paymentMethods[idx], ...req.body };
@@ -2096,7 +2309,7 @@ apiRouter.put("/payment-methods/:id", (req, res) => {
   res.json(db.paymentMethods[idx]);
 });
 
-apiRouter.delete("/payment-methods/:id", (req, res) => {
+apiRouter.delete("/payment-methods/:id", requirePaymentMethodsAdmin, (req, res) => {
   const pm = db.paymentMethods.find((p) => p.id === req.params.id);
   db.paymentMethods = db.paymentMethods.filter((p) => p.id !== req.params.id);
   if (pm) db.logChange(`Excluiu forma de pagamento '${pm.name}'`, "payment_method", pm, null);
@@ -2288,23 +2501,255 @@ apiRouter.get("/barbers/:id/report", (req, res) => {
   });
 });
 
+// ---------------- Commissions Management & Settlement ----------------
+apiRouter.get("/commissions/summary", (req, res) => {
+  const { start, end, barber_id, period } = req.query as {
+    start?: string;
+    end?: string;
+    barber_id?: string;
+    period?: string;
+  };
+
+  const unitFilter = getUnitFilter(req);
+  let revs = db.revenues.filter((r) => r.status === "ativo");
+  if (unitFilter) {
+    revs = revs.filter((r) => r.barbershop_id === unitFilter || (unitFilter === "unit_centro" && r.barbershop_id === "profile"));
+  }
+  if (start) revs = revs.filter((r) => r.date >= start);
+  if (end) revs = revs.filter((r) => r.date <= end);
+
+  // Group by barber
+  let barbers = [...db.barbers];
+  if (barber_id && barber_id !== "todos") {
+    barbers = barbers.filter((b) => b.id === barber_id);
+  }
+
+  const barberSummaries = barbers.map((b) => {
+    const barberRevs = revs.filter((r) => r.barber_id === b.id);
+    const totalFaturado = Number(barberRevs.reduce((acc, r) => acc + (r.gross_amount ?? r.paid_amount ?? 0), 0).toFixed(2));
+    const totalComissaoGerada = Number(barberRevs.reduce((acc, r) => acc + (r.commission_amount || 0), 0).toFixed(2));
+    const totalComissaoPaga = Number(barberRevs.filter((r) => r.commission_paid).reduce((acc, r) => acc + (r.commission_amount || 0), 0).toFixed(2));
+    const saldoPendente = Number(Math.max(0, totalComissaoGerada - totalComissaoPaga).toFixed(2));
+
+    return {
+      barber_id: b.id,
+      barber_name: b.name,
+      photo_url: b.photo_url || null,
+      role: (b as any).role || "Barbeiro Profissional",
+      commission_percent: b.commission_percent || 40,
+      atendimentos_total: barberRevs.length,
+      faturamento_total: totalFaturado,
+      comissao_gerada: totalComissaoGerada,
+      comissao_paga: totalComissaoPaga,
+      saldo_pendente: saldoPendente,
+      atendimentos: barberRevs.map((r) => ({
+        id: r.id,
+        date: r.date,
+        time: r.time,
+        client_name: r.client_name || "Cliente Balcão",
+        service_name: r.service_name || (r.item_kind === "produto" ? "Produto" : "Corte / Barba"),
+        item_kind: r.item_kind,
+        gross_amount: r.gross_amount ?? r.paid_amount,
+        commission_percent: (r as any).commission_percent || b.commission_percent || 40,
+        commission_amount: r.commission_amount,
+        commission_paid: Boolean(r.commission_paid),
+        commission_paid_date: r.commission_paid_date,
+        payment_method_name: r.payment_method_name || "Pix",
+        payment_type: r.payment_type || "pix",
+      })),
+    };
+  });
+
+  const totalFaturadoGeral = Number(barberSummaries.reduce((acc, b) => acc + b.faturamento_total, 0).toFixed(2));
+  const totalComissaoGeral = Number(barberSummaries.reduce((acc, b) => acc + b.comissao_gerada, 0).toFixed(2));
+  const totalPagaGeral = Number(barberSummaries.reduce((acc, b) => acc + b.comissao_paga, 0).toFixed(2));
+  const totalPendenteGeral = Number(barberSummaries.reduce((acc, b) => acc + b.saldo_pendente, 0).toFixed(2));
+  const totalAtendimentosGeral = barberSummaries.reduce((acc, b) => acc + b.atendimentos_total, 0);
+
+  let paymentsHistory = [...(db.commissionPayments || [])];
+  if (barber_id && barber_id !== "todos") {
+    paymentsHistory = paymentsHistory.filter((p) => p.barber_id === barber_id);
+  }
+  paymentsHistory.sort((a, b) => (b.date + b.created_at).localeCompare(a.date + a.created_at));
+
+  res.json({
+    period: period || "mes",
+    start: start || "",
+    end: end || "",
+    summary: {
+      faturamento_total: totalFaturadoGeral,
+      comissao_gerada: totalComissaoGeral,
+      comissao_paga: totalPagaGeral,
+      saldo_pendente: totalPendenteGeral,
+      atendimentos_total: totalAtendimentosGeral,
+    },
+    barbers: barberSummaries,
+    historico_liquidacoes: paymentsHistory,
+  });
+});
+
+apiRouter.post("/commissions/pay", (req, res) => {
+  const { barber_id, amount, payment_method, payment_date, period_start, period_end, notes } = req.body || {};
+  const barber = db.barbers.find((b) => b.id === barber_id);
+  if (!barber) return res.status(404).json({ detail: "Barbeiro não encontrado" });
+
+  const payVal = Number(amount);
+  if (!payVal || payVal <= 0) {
+    return res.status(400).json({ detail: "Informe um valor de comissão válido maior que zero." });
+  }
+
+  const payDate = payment_date || todayStr();
+  const payMethod = payment_method || "pix";
+  const assignedUnit = getUnitFilter(req) || "unit_centro";
+
+  // Mark pending revenues as paid up to amount
+  let remainingToPay = payVal;
+  let paidCount = 0;
+  db.revenues.forEach((r) => {
+    if (r.barber_id === barber.id && r.status === "ativo" && !r.commission_paid) {
+      if ((!period_start || r.date >= period_start) && (!period_end || r.date <= period_end)) {
+        if (remainingToPay > 0) {
+          r.commission_paid = true;
+          r.commission_paid_date = payDate;
+          paidCount++;
+          remainingToPay -= r.commission_amount;
+        }
+      }
+    }
+  });
+
+  // Ensure category exists for Outflow/Expenses
+  let cat = db.categories.find((c) => c.name.toLowerCase().includes("comiss") && c.type === "despesa");
+  if (!cat) {
+    cat = {
+      id: "cat_comissoes",
+      barbershop_id: "profile",
+      name: "Comissões dos Barbeiros",
+      group: "Pessoal",
+      type: "despesa",
+      color: "#10b981",
+      created_at: nowIso(),
+    };
+    db.categories.push(cat);
+  }
+
+  // Register in Expenses (Fluxo de Caixa & Despesas Operacionais)
+  const methodLabel = payMethod === "pix" ? "PIX" : payMethod === "dinheiro" ? "Dinheiro" : payMethod === "transferencia" ? "Transferência" : "Débito";
+  const exp: Expense = {
+    id: newId(),
+    barbershop_id: assignedUnit,
+    name: `Comissão Barbeiro: ${barber.name} (${methodLabel})`,
+    value: payVal,
+    category_id: cat.id,
+    category_name: cat.name,
+    type: "variavel",
+    due_date: payDate,
+    recurrence: "nenhuma",
+    payment_method: payMethod,
+    payment_date: payDate,
+    status: "pago",
+    created_at: nowIso(),
+  };
+  db.expenses.push(exp);
+  persistExpense(exp);
+
+  // Register in Commission Payments History
+  const payment: CommissionPayment = {
+    id: newId(),
+    barbershop_id: assignedUnit,
+    barber_id: barber.id,
+    barber_name: barber.name,
+    amount: payVal,
+    payment_method: payMethod,
+    date: payDate,
+    paid_count: paidCount,
+    period_start: period_start || undefined,
+    period_end: period_end || undefined,
+    notes: notes || `Quitação de comissões acumuladas`,
+    expense_id: exp.id,
+    created_at: nowIso(),
+  };
+  if (!db.commissionPayments) db.commissionPayments = [];
+  db.commissionPayments.unshift(payment);
+
+  db.logChange(`Quitou comissões de ${barber.name}: ${formatBRL(payVal)} via ${methodLabel}`, "commission");
+
+  res.json({ ok: true, payment, expense: exp, paid_count: paidCount, total: payVal });
+});
+
 apiRouter.post("/barbers/:id/pay-commissions", (req, res) => {
   const { start, end } = req.query as { start?: string; end?: string };
+  const { payment_method, payment_date, notes } = req.body || {};
   const barber = db.barbers.find((b) => b.id === req.params.id);
   if (!barber) return res.status(404).json({ detail: "Barbeiro não encontrado" });
 
   let count = 0;
   let paidTotal = 0;
+  const payDate = payment_date || todayStr();
+  const payMethod = payment_method || "pix";
+
   db.revenues.forEach((r) => {
     if (r.barber_id === barber.id && r.status === "ativo" && !r.commission_paid) {
       if ((!start || r.date >= start) && (!end || r.date <= end)) {
         r.commission_paid = true;
-        r.commission_paid_date = todayStr();
+        r.commission_paid_date = payDate;
         count++;
         paidTotal += r.commission_amount;
       }
     }
   });
+
+  if (paidTotal > 0) {
+    let cat = db.categories.find((c) => c.name.toLowerCase().includes("comiss") && c.type === "despesa");
+    if (!cat) {
+      cat = {
+        id: "cat_comissoes",
+        barbershop_id: "profile",
+        name: "Comissões dos Barbeiros",
+        group: "Pessoal",
+        type: "despesa",
+        color: "#10b981",
+        created_at: nowIso(),
+      };
+      db.categories.push(cat);
+    }
+    const exp: Expense = {
+      id: newId(),
+      barbershop_id: "unit_centro",
+      name: `Comissão Barbeiro: ${barber.name} (${payMethod.toUpperCase()})`,
+      value: paidTotal,
+      category_id: cat.id,
+      category_name: cat.name,
+      type: "variavel",
+      due_date: payDate,
+      recurrence: "nenhuma",
+      payment_method: payMethod,
+      payment_date: payDate,
+      status: "pago",
+      created_at: nowIso(),
+    };
+    db.expenses.push(exp);
+    persistExpense(exp);
+
+    const payment: CommissionPayment = {
+      id: newId(),
+      barbershop_id: "unit_centro",
+      barber_id: barber.id,
+      barber_name: barber.name,
+      amount: paidTotal,
+      payment_method: payMethod,
+      date: payDate,
+      paid_count: count,
+      period_start: start || undefined,
+      period_end: end || undefined,
+      notes: notes || `Quitação de comissões`,
+      expense_id: exp.id,
+      created_at: nowIso(),
+    };
+    if (!db.commissionPayments) db.commissionPayments = [];
+    db.commissionPayments.unshift(payment);
+  }
+
   db.logChange(`Pagou comissões de ${barber.name} (${formatBRL(paidTotal)})`, "commission");
   res.json({ ok: true, paid_count: count, total: paidTotal });
 });
@@ -2435,6 +2880,8 @@ function recordAttendanceRevenue({
   discount = 0,
   payment_method_id,
   payment_type = "dinheiro",
+  payment_channel,
+  payment_method,
   barber_id,
   client_name,
   client_id,
@@ -2446,6 +2893,8 @@ function recordAttendanceRevenue({
   discount?: number;
   payment_method_id?: string;
   payment_type?: string;
+  payment_channel?: string;
+  payment_method?: string;
   barber_id?: string;
   client_name?: string;
   client_id?: string;
@@ -2492,6 +2941,8 @@ function recordAttendanceRevenue({
     payment_method_id: pm?.id || "pm_dinheiro",
     payment_method_name: pm?.name || "Dinheiro",
     payment_type: payment_type || "dinheiro",
+    payment_channel: payment_channel || "Caixa Físico / Gaveta",
+    payment_method: payment_method || (payment_type === "dinheiro" ? "Dinheiro" : payment_type === "pix" ? "PIX" : "Cartão"),
     barber_id: barber?.id,
     barber_name: barber?.name || "",
     client_name: client_name || "Cliente",
@@ -2615,6 +3066,8 @@ apiRouter.post("/queue/:id/finish", (req, res) => {
       discount,
       payment_method_id: body.payment_method_id,
       payment_type: body.payment_type || "dinheiro",
+      payment_channel: body.payment_channel,
+      payment_method: body.payment_method,
       barber_id: item.barber_id || body.barber_id,
       client_name: item.client_name,
       client_id: item.client_id,
@@ -2769,6 +3222,8 @@ apiRouter.post("/appointments/:id/finish", (req, res) => {
       discount,
       payment_method_id: body.payment_method_id,
       payment_type: body.payment_type || "dinheiro",
+      payment_channel: body.payment_channel,
+      payment_method: body.payment_method,
       barber_id: apt.barber_id,
       client_name: apt.client_name,
       client_id: apt.client_id,
@@ -2855,9 +3310,12 @@ apiRouter.post("/revenues", (req, res) => {
     payment_method_id: pm.id,
     payment_method_name: pm.name,
     payment_type: body.payment_type || "dinheiro",
+    payment_channel: body.payment_channel || "Caixa Físico / Gaveta",
+    payment_method: body.payment_method || (body.payment_type === "dinheiro" ? "Dinheiro" : body.payment_type === "pix" ? "PIX" : "Cartão"),
     barber_id: barber?.id,
     barber_name: barber?.name || "",
     client_name: body.client_name,
+    client_id: body.client_id,
     fee_amount: fee,
     net_amount: net,
     commission_amount: comm,
@@ -3016,16 +3474,20 @@ apiRouter.get("/cash-closings", (req, res) => {
 apiRouter.get("/cash-closings/expected", (req, res) => {
   const d = (req.query.day as string) || todayStr();
   const revs = db.revenues.filter((r) => r.date === d && r.status === "ativo");
-  const expected: Record<string, number> = {
-    Dinheiro: 0,
-    PIX: 0,
-    Cartão: 0,
-  };
+  const expected: Record<string, number> = {};
+
   revs.forEach((r) => {
-    if (r.payment_type === "dinheiro") expected.Dinheiro += r.paid_amount;
-    else if (r.payment_type === "pix") expected.PIX += r.paid_amount;
-    else expected.Cartão += r.paid_amount;
+    const channel = r.payment_channel || (r.payment_type === "dinheiro" ? "Caixa Físico / Gaveta" : r.payment_method_name || "Outro Meio");
+    const method = r.payment_method || (r.payment_type === "dinheiro" ? "Dinheiro" : r.payment_type === "pix" ? "PIX" : "Cartão");
+    const key = `${channel} - ${method}`;
+    expected[key] = (expected[key] || 0) + r.paid_amount;
   });
+
+  // Se vazio, fornece ao menos o Caixa Físico
+  if (Object.keys(expected).length === 0) {
+    expected["Caixa Físico / Gaveta - Dinheiro"] = 0;
+  }
+
   Object.keys(expected).forEach((k) => (expected[k] = Number(expected[k].toFixed(2))));
   res.json({ date: d, expected });
 });
@@ -3036,12 +3498,17 @@ apiRouter.post("/cash-closings", (req, res) => {
   const counted = body.counted || {};
   const revs = db.revenues.filter((r) => r.date === d && r.status === "ativo");
 
-  const expected: Record<string, number> = { Dinheiro: 0, PIX: 0, Cartão: 0 };
+  const expected: Record<string, number> = {};
   revs.forEach((r) => {
-    if (r.payment_type === "dinheiro") expected.Dinheiro += r.paid_amount;
-    else if (r.payment_type === "pix") expected.PIX += r.paid_amount;
-    else expected.Cartão += r.paid_amount;
+    const channel = r.payment_channel || (r.payment_type === "dinheiro" ? "Caixa Físico / Gaveta" : r.payment_method_name || "Outro Meio");
+    const method = r.payment_method || (r.payment_type === "dinheiro" ? "Dinheiro" : r.payment_type === "pix" ? "PIX" : "Cartão");
+    const key = `${channel} - ${method}`;
+    expected[key] = (expected[key] || 0) + r.paid_amount;
   });
+
+  if (Object.keys(expected).length === 0) {
+    expected["Caixa Físico / Gaveta - Dinheiro"] = 0;
+  }
 
   let expTotal = 0;
   let countTotal = 0;
@@ -3069,41 +3536,254 @@ apiRouter.post("/cash-closings", (req, res) => {
   res.json(cc);
 });
 
+// Helper to enrich client with real-time stats, history and plan progress
+function enrichClient(c: Client): any {
+  const clientRevenues = db.revenues.filter(
+    (r) =>
+      (r.client_id && r.client_id === c.id) ||
+      (r.client_name && r.client_name.toLowerCase() === c.name.toLowerCase())
+  );
+  const visits = clientRevenues.length;
+  const total_spent = Number(
+    clientRevenues.reduce((acc, r) => acc + (r.paid_amount || 0), 0).toFixed(2)
+  );
+  const last_visit = clientRevenues[0]?.date || null;
+
+  let enrichedPlan = undefined;
+  if (c.has_plan && c.plan) {
+    const isUnlimited = Boolean(c.plan.is_unlimited);
+    const total = isUnlimited ? 999 : Number(c.plan.total || 4);
+    const used = Number(c.plan.used || 0);
+    const remainingCount = isUnlimited ? 999 : Math.max(0, total - used);
+    const remaining = isUnlimited ? "Ilimitado" : remainingCount;
+
+    let status: "ativo" | "vencido" | "esgotado" = "ativo";
+    if (c.plan.due && c.plan.due < todayStr()) {
+      status = "vencido";
+    } else if (!isUnlimited && used >= total) {
+      status = "esgotado";
+    }
+
+    const statusLabel =
+      status === "ativo" ? "Ativo" : status === "vencido" ? "Vencido" : "Esgotado";
+    const remainingText = isUnlimited
+      ? "Assinatura Ativa · Cortes Ilimitados"
+      : `Restam ${remainingCount} de ${total} cortes no mês`;
+
+    enrichedPlan = {
+      ...c.plan,
+      is_unlimited: isUnlimited,
+      total,
+      used,
+      remaining,
+      remaining_count: remainingCount,
+      remainingServices: remaining,
+      totalServices: total,
+      remaining_text: remainingText,
+      status,
+      status_label: statusLabel,
+    };
+  }
+
+  return {
+    ...c,
+    visits,
+    total_spent,
+    last_visit,
+    plan: enrichedPlan,
+  };
+}
+
+// Customer Plans (Modelos de Planos & Assinaturas da Barbearia)
+apiRouter.get("/customer-plans", (req, res) => {
+  const plans = db.customerPlans.map((p) => {
+    const subscribers_count = db.clients.filter(
+      (c) =>
+        c.has_plan &&
+        (c.plan?.plan_id === p.id ||
+          c.plan?.name?.toLowerCase() === p.name.toLowerCase())
+    ).length;
+    return {
+      ...p,
+      subscribers_count,
+    };
+  });
+  res.json(plans);
+});
+
+apiRouter.post("/customer-plans", (req, res) => {
+  const body = req.body || {};
+  if (!body.name?.trim())
+    return res.status(400).json({ detail: "Nome do plano é obrigatório" });
+  const price = Number(body.price || 0);
+  if (price < 0) return res.status(400).json({ detail: "Preço inválido" });
+
+  const isUnlimited = Boolean(body.is_unlimited);
+  const plan: CustomerPlan = {
+    id: `cplan_${newId().slice(0, 8)}`,
+    barbershop_id: "profile",
+    name: body.name.trim(),
+    price,
+    billing_cycle: body.billing_cycle || "mensal",
+    is_unlimited: isUnlimited,
+    total_credits: isUnlimited ? 999 : Number(body.total_credits || 4),
+    services: Array.isArray(body.services) ? body.services : [],
+    notes: body.notes || "",
+    active: body.active !== false,
+    created_at: nowIso(),
+  };
+
+  db.customerPlans.push(plan);
+  db.logChange(
+    `Cadastrou novo plano de clientes '${plan.name}' (${formatBRL(price)}/mês)`,
+    "customer_plan",
+    null,
+    plan
+  );
+  res.json(plan);
+});
+
+apiRouter.put("/customer-plans/:id", (req, res) => {
+  const idx = db.customerPlans.findIndex((p) => p.id === req.params.id);
+  if (idx === -1)
+    return res.status(404).json({ detail: "Plano não encontrado" });
+  const body = req.body || {};
+  const isUnlimited =
+    body.is_unlimited !== undefined
+      ? Boolean(body.is_unlimited)
+      : db.customerPlans[idx].is_unlimited;
+
+  db.customerPlans[idx] = {
+    ...db.customerPlans[idx],
+    ...body,
+    is_unlimited: isUnlimited,
+    total_credits: isUnlimited
+      ? 999
+      : body.total_credits
+      ? Number(body.total_credits)
+      : db.customerPlans[idx].total_credits,
+  };
+  db.logChange(
+    `Atualizou o plano de clientes '${db.customerPlans[idx].name}'`,
+    "customer_plan"
+  );
+  res.json(db.customerPlans[idx]);
+});
+
+apiRouter.delete("/customer-plans/:id", (req, res) => {
+  const idx = db.customerPlans.findIndex((p) => p.id === req.params.id);
+  if (idx === -1)
+    return res.status(404).json({ detail: "Plano não encontrado" });
+  const planName = db.customerPlans[idx].name;
+  db.customerPlans.splice(idx, 1);
+  db.logChange(`Excluiu o plano de clientes '${planName}'`, "customer_plan");
+  res.json({ ok: true });
+});
+
 // Clients
 apiRouter.get("/clients", (req, res) => {
-  res.json(db.clients);
+  res.json(db.clients.map(enrichClient));
 });
 
 apiRouter.post("/clients", (req, res) => {
   const body = req.body || {};
+  if (!body.name?.trim()) {
+    return res.status(400).json({ detail: "Nome é obrigatório" });
+  }
+
+  let planData = undefined;
+  let hasPlan = false;
+
+  if (body.plan_id) {
+    const cp = db.customerPlans.find((p) => p.id === body.plan_id);
+    if (cp) {
+      hasPlan = true;
+      const today = todayStr();
+      const dueDate = new Date();
+      dueDate.setDate(dueDate.getDate() + 30);
+      const dueStr = dueDate.toISOString().slice(0, 10);
+      planData = {
+        plan_id: cp.id,
+        name: cp.name,
+        price: cp.price,
+        billing_cycle: cp.billing_cycle,
+        is_unlimited: cp.is_unlimited,
+        total: cp.is_unlimited ? 999 : cp.total_credits || 4,
+        used: 0,
+        start: today,
+        due: dueStr,
+      };
+    }
+  } else if (body.plan && body.plan.name) {
+    hasPlan = true;
+    planData = {
+      plan_id: body.plan.plan_id,
+      name: body.plan.name,
+      price: Number(body.plan.price || 0),
+      billing_cycle: body.plan.billing_cycle || "mensal",
+      is_unlimited: Boolean(body.plan.is_unlimited),
+      total: body.plan.is_unlimited ? 999 : Number(body.plan.total || 4),
+      used: Number(body.plan.used || 0),
+      start: body.plan.start || todayStr(),
+      due: body.plan.due,
+    };
+  }
+
   const c: Client = {
     id: newId(),
     barbershop_id: "profile",
-    name: body.name,
-    phone: body.phone,
-    birthdate: body.birthdate,
-    notes: body.notes,
-    has_plan: false,
+    name: body.name.trim(),
+    phone: body.phone?.trim() || null,
+    birthdate: body.birthdate || null,
+    notes: body.notes || null,
+    has_plan: hasPlan,
+    plan: planData,
     created_at: nowIso(),
   };
-  db.clients.push(c);
+  db.clients.unshift(c);
   persistClient(c);
   db.logChange(`Cadastrou cliente '${c.name}'`, "client", null, c);
-  res.json(c);
+  res.json(enrichClient(c));
 });
 
 apiRouter.get("/clients/:id", (req, res) => {
   const c = db.clients.find((x) => x.id === req.params.id);
   if (!c) return res.status(404).json({ detail: "Cliente não encontrado" });
-  res.json(c);
+
+  const clientRevenues = db.revenues
+    .filter(
+      (r) =>
+        (r.client_id && r.client_id === c.id) ||
+        (r.client_name && r.client_name.toLowerCase() === c.name.toLowerCase())
+    )
+    .map((r) => ({
+      sale_group_id: r.id,
+      date: r.date,
+      time: r.time,
+      barber_name: r.barber_name,
+      paid: r.paid_amount,
+      discount: r.discount_amount,
+      payment_method_name: r.payment_method_name,
+      status: r.status,
+      items: [{ name: r.service_name, quantity: r.quantity }],
+      plan_used: Boolean(
+        r.note?.includes("plano") || r.note?.includes("assinatura")
+      ),
+    }));
+
+  res.json({
+    ...enrichClient(c),
+    history: clientRevenues,
+  });
 });
 
 apiRouter.put("/clients/:id", (req, res) => {
   const idx = db.clients.findIndex((x) => x.id === req.params.id);
-  if (idx === -1) return res.status(404).json({ detail: "Cliente não encontrado" });
+  if (idx === -1)
+    return res.status(404).json({ detail: "Cliente não encontrado" });
   db.clients[idx] = { ...db.clients[idx], ...req.body };
   persistClient(db.clients[idx]);
-  res.json(db.clients[idx]);
+  res.json(enrichClient(db.clients[idx]));
 });
 
 apiRouter.delete("/clients/:id", (req, res) => {
@@ -3115,24 +3795,76 @@ apiRouter.put("/clients/:id/plan", (req, res) => {
   const c = db.clients.find((x) => x.id === req.params.id);
   if (!c) return res.status(404).json({ detail: "Cliente não encontrado" });
   const body = req.body || {};
+  const isUnlimited = Boolean(body.is_unlimited);
+  const total = isUnlimited ? 999 : Number(body.total || 4);
+  const used =
+    body.used != null
+      ? Number(body.used)
+      : c.plan?.name === body.name
+      ? c.plan?.used || 0
+      : 0;
+
+  let due = body.due;
+  if (!due) {
+    const d = new Date();
+    d.setDate(d.getDate() + 30);
+    due = d.toISOString().slice(0, 10);
+  }
+
   c.has_plan = true;
   c.plan = {
+    plan_id: body.plan_id || c.plan?.plan_id,
     name: body.name || "Assinatura Mensal",
-    total: Number(body.total || 4),
-    used: 0,
-    start: body.start || todayStr(),
-    due: body.due,
+    price: body.price != null ? Number(body.price) : c.plan?.price,
+    billing_cycle: body.billing_cycle || c.plan?.billing_cycle || "mensal",
+    is_unlimited: isUnlimited,
+    total,
+    used,
+    start: body.start || c.plan?.start || todayStr(),
+    due,
   };
+  persistClient(c);
   db.logChange(`Atribuiu plano '${c.plan.name}' para ${c.name}`, "client");
-  res.json(c);
+  res.json(enrichClient(c));
+});
+
+apiRouter.post("/clients/:id/plan/renew", (req, res) => {
+  const c = db.clients.find((x) => x.id === req.params.id);
+  if (!c) return res.status(404).json({ detail: "Cliente não encontrado" });
+  if (!c.plan)
+    return res
+      .status(400)
+      .json({ detail: "Cliente não possui plano para renovar" });
+
+  const today = todayStr();
+  const nextMonth = new Date();
+  nextMonth.setDate(nextMonth.getDate() + 30);
+  const newDue = nextMonth.toISOString().slice(0, 10);
+
+  c.plan.used = 0;
+  c.plan.start = today;
+  c.plan.due = newDue;
+  c.has_plan = true;
+  persistClient(c);
+  db.logChange(
+    `Renovou o plano '${c.plan.name}' do cliente ${c.name} até ${newDue}`,
+    "client"
+  );
+  res.json(enrichClient(c));
 });
 
 apiRouter.delete("/clients/:id/plan", (req, res) => {
   const c = db.clients.find((x) => x.id === req.params.id);
   if (!c) return res.status(404).json({ detail: "Cliente não encontrado" });
+  const oldPlanName = c.plan?.name || "Plano";
   c.has_plan = false;
   c.plan = undefined;
-  res.json(c);
+  persistClient(c);
+  db.logChange(
+    `Removeu o plano '${oldPlanName}' do cliente ${c.name}`,
+    "client"
+  );
+  res.json(enrichClient(c));
 });
 
 // Users
@@ -3530,7 +4262,7 @@ apiRouter.get("/barber/me", (req, res) => {
 apiRouter.post("/barber/atendimento", async (req, res) => {
   const user = authUser(req);
   const barber = db.barbers.find((b) => b.id === user?.barber_id) || db.barbers[0];
-  const { items, payment_method_id, payment_type, client_name, client_id, discount_amount, date, time } = req.body || {};
+  const { items, payment_method_id, payment_type, payment_channel, payment_method, client_name, client_id, discount_amount, date, time } = req.body || {};
 
   if (!items || !items.length) {
     return res.status(400).json({ detail: "Adicione ao menos um item" });
@@ -3579,6 +4311,8 @@ apiRouter.post("/barber/atendimento", async (req, res) => {
       payment_method_id: pm.id,
       payment_method_name: pm.name,
       payment_type: payment_type || "dinheiro",
+      payment_channel: payment_channel || "Caixa Físico / Gaveta",
+      payment_method: payment_method || (payment_type === "dinheiro" ? "Dinheiro" : payment_type === "pix" ? "PIX" : "Cartão"),
       barber_id: barber.id,
       barber_name: barber.name,
       client_name,
@@ -3635,12 +4369,30 @@ apiRouter.post("/barber/atendimento", async (req, res) => {
     console.error("[Storage] Erro ao persistir atendimento relacional:", storageErr?.message);
   }
 
+  // Se utilizou plano de assinatura do cliente, deduz crédito e vincula
+  let updatedClientPlan = undefined;
+  if (req.body?.use_plan) {
+    const targetCli = db.clients.find(
+      (c) =>
+        (client_id && c.id === client_id) ||
+        (client_name && c.name.toLowerCase() === client_name.trim().toLowerCase())
+    );
+    if (targetCli && targetCli.has_plan && targetCli.plan) {
+      if (!targetCli.plan.is_unlimited) {
+        targetCli.plan.used = (targetCli.plan.used || 0) + 1;
+      }
+      persistClient(targetCli);
+      updatedClientPlan = enrichClient(targetCli).plan;
+    }
+  }
+
   db.logChange(`Barbeiro '${barber.name}' lançou atendimento (${created.length} itens)`, "revenue");
   res.json({
     sale_group_id: group_id,
     items: created,
     total: Number(created.reduce((acc, r) => acc + r.paid_amount, 0).toFixed(2)),
     commission: Number(totalCommissionCalculated.toFixed(2)),
+    plan: updatedClientPlan,
   });
 });
 
@@ -3814,11 +4566,17 @@ apiRouter.get("/barber/clientes", (req, res) => {
   const user = authUser(req);
   const barber = db.barbers.find((b) => b.id === user?.barber_id) || db.barbers[0];
   const list = db.clients.map((c) => {
-    const revs = db.revenues.filter((r) => (r.client_id === c.id || r.client_name === c.name) && r.barber_id === barber.id);
+    const enriched = enrichClient(c);
+    const revs = db.revenues.filter(
+      (r) =>
+        (r.client_id === c.id ||
+          (r.client_name && r.client_name.toLowerCase() === c.name.toLowerCase())) &&
+        r.barber_id === barber.id
+    );
     return {
-      ...c,
+      ...enriched,
       atendimentos: revs.length,
-      total: Number(revs.reduce((acc, r) => acc + r.paid_amount, 0).toFixed(2)),
+      total: Number(revs.reduce((acc, r) => acc + (r.paid_amount || 0), 0).toFixed(2)),
       last_date: revs[0]?.date || null,
     };
   });

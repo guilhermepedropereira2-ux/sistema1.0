@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { emitirNFSeSimplificada, isValidCPF } from "@/lib/fiscalEngine";
 import { getActiveIdlePromotions } from "@/lib/marketingEngine";
+import ClientAutocomplete from "@/components/ClientAutocomplete";
 
 export default function PainelBalcao({
   onOpenNovoAtendimento,
@@ -31,6 +32,7 @@ export default function PainelBalcao({
   const [appointments, setAppointments] = useState([]);
   const [barbers, setBarbers] = useState([]);
   const [services, setServices] = useState([]);
+  const [clients, setClients] = useState([]);
   const [activeTab, setActiveTab] = useState("fila"); // "fila" | "agenda" | "concluidos"
   const [searchTerm, setSearchTerm] = useState("");
   
@@ -38,6 +40,7 @@ export default function PainelBalcao({
   const [modalFilaOpen, setModalFilaOpen] = useState(false);
   const [newClientName, setNewClientName] = useState("");
   const [newClientPhone, setNewClientPhone] = useState("");
+  const [newClientId, setNewClientId] = useState("");
   const [selectedBarberId, setSelectedBarberId] = useState("");
   const [selectedServiceId, setSelectedServiceId] = useState("");
   const [submittingQueue, setSubmittingQueue] = useState(false);
@@ -89,16 +92,18 @@ export default function PainelBalcao({
   const loadBalcaoData = async () => {
     try {
       setLoading(true);
-      const [qRes, aRes, bRes, sRes] = await Promise.all([
+      const [qRes, aRes, bRes, sRes, cRes] = await Promise.all([
         api.get(`/queue?date=${today}`).catch(() => []),
         api.get(`/appointments?date=${today}`).catch(() => []),
         api.get("/barbers").catch(() => []),
         api.get("/services").catch(() => []),
+        api.get("/clients").catch(() => []),
       ]);
       setQueue(Array.isArray(qRes) ? qRes : []);
       setAppointments(Array.isArray(aRes) ? aRes : []);
       setBarbers(Array.isArray(bRes) ? bRes.filter((b) => b.active) : []);
       setServices(Array.isArray(sRes) ? sRes.filter((s) => s.active) : []);
+      setClients(Array.isArray(cRes) ? cRes : []);
     } catch (err) {
       console.error("Erro ao carregar dados do balcão:", err);
       toast.error("Erro ao atualizar dados do balcão");
@@ -171,6 +176,7 @@ export default function PainelBalcao({
     setSubmittingQueue(true);
     try {
       await api.post("/queue", {
+        client_id: newClientId || null,
         client_name: newClientName.trim(),
         client_phone: newClientPhone.trim() || null,
         barber_id: selectedBarberId || null,
@@ -181,6 +187,7 @@ export default function PainelBalcao({
       toast.success(`${newClientName} adicionado à fila com sucesso!`);
       setNewClientName("");
       setNewClientPhone("");
+      setNewClientId("");
       setSelectedBarberId("");
       setSelectedServiceId("");
       setModalFilaOpen(false);
@@ -704,12 +711,27 @@ export default function PainelBalcao({
           <form onSubmit={handleAddToQueue} className="space-y-4 pt-2">
             <div className="space-y-1.5">
               <Label className="text-xs font-semibold text-slate-300">Nome do Cliente *</Label>
-              <Input
-                required
-                placeholder="Ex: Carlos Eduardo"
+              <ClientAutocomplete
                 value={newClientName}
-                onChange={(e) => setNewClientName(e.target.value)}
-                className="bg-[#0A0D14] border-white/10 text-white text-xs h-9 rounded-[4px]"
+                clients={clients}
+                placeholder="Ex: Carlos Eduardo (ou digite um novo)"
+                required
+                onChange={(typedName, client) => {
+                  setNewClientName(typedName);
+                  if (client) {
+                    setNewClientId(client.id);
+                    if (client.phone) setNewClientPhone(client.phone);
+                  } else {
+                    setNewClientId("");
+                  }
+                }}
+                onSelectClient={(client) => {
+                  setNewClientName(client.name);
+                  setNewClientId(client.id);
+                  if (client.phone) setNewClientPhone(client.phone);
+                }}
+                inputClassName="bg-[#0A0D14] border-white/10 text-white text-xs h-9 rounded-[4px]"
+                testId="balcao-client-autocomplete"
               />
             </div>
 

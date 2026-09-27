@@ -10,31 +10,32 @@ import { Button } from "@/components/ui/button";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import SubscriptionExpiredModal from "@/components/SubscriptionExpiredModal";
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
-} from "@/components/ui/dialog";
-import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
   DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-  CalendarClock, Users, LineChart, Wallet, Plus, UserCircle2, LogOut,
-  Scissors, ShieldCheck, Link2, Copy, Check, ExternalLink, Share2, Globe,
-  WifiOff, RefreshCw,
+  Home, Users, TrendingUp, User, Plus, LogOut,
+  Scissors, ShieldCheck, Share2, Globe, Link2,
+  WifiOff, RefreshCw, Users2, Check,
 } from "lucide-react";
 import LancarAtendimentoModal from "@/components/LancarAtendimentoModal";
 import { useOfflineSync } from "@/hooks/useOfflineSync";
 
 export default function BarberLayout() {
-  const { user, ready, logout } = useAuth();
+  const { user, ready, logout, switchAccount } = useAuth();
   const { subscription, isSubscriptionExpired: unitSubscriptionExpired } = useUnit();
   const navigate = useNavigate();
   const location = useLocation();
   const [shop, setShop] = useState(null);
   const [barberData, setBarberData] = useState(null);
-  const [copiedLink, setCopiedLink] = useState(false);
-  const [linkModalOpen, setLinkModalOpen] = useState(false);
+  const [photoError, setPhotoError] = useState(false);
   const [lancarModalOpen, setLancarModalOpen] = useState(false);
+  const [switchableUsers, setSwitchableUsers] = useState([]);
   const { isOnline, pendingCount, isSyncing, syncNow } = useOfflineSync();
+
+  useEffect(() => {
+    api.get("/auth/switchable-users").then(setSwitchableUsers).catch(() => {});
+  }, []);
 
   useEffect(() => {
     const handleOpen = () => setLancarModalOpen(true);
@@ -91,46 +92,49 @@ export default function BarberLayout() {
   const shopSlug = shop?.slug || "barbearia-vintage";
   const myBookingUrl = `${window.location.origin}/agendar/${shopSlug}?barber=${barberId}`;
 
-  const copyBookingLink = () => {
-    navigator.clipboard.writeText(myBookingUrl);
-    setCopiedLink(true);
-    toast.success("Link de agendamento exclusivo copiado!");
-    setTimeout(() => setCopiedLink(false), 2500);
-  };
+  const barberPhoto = barberData?.barber?.photo_url || user?.photo_url || user?.avatar_url || null;
+  const initials = (userName || "B")
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0])
+    .join("")
+    .toUpperCase() || "B";
+  const roleAndUnit = `Barbeiro Premium • ${shop?.name || "Barbearia do Centro"}`;
 
-  const openLinkModal = () => {
-    copyBookingLink();
-    setLinkModalOpen(true);
+  const copyBookingLink = () => {
+    if (!myBookingUrl) return;
+    navigator.clipboard.writeText(myBookingUrl);
+    toast.success("Link exclusivo de agendamento copiado!");
   };
 
   const navItems = [
-    { to: "/barbeiro", label: "Início", icon: CalendarClock, end: true, testId: "bnav-inicio" },
+    { to: "/barbeiro", label: "Início", icon: Home, end: true, testId: "bnav-inicio" },
     { to: "/barbeiro/clientes", label: "Clientes", icon: Users, testId: "bnav-clientes" },
-    { to: "/barbeiro/desempenho", label: "Desempenho", icon: LineChart, testId: "bnav-desempenho" },
-    { to: "/barbeiro/comissao", label: "Comissão", icon: Wallet, testId: "bnav-comissao" },
-    { to: "/barbeiro/perfil", label: "Perfil", icon: UserCircle2, testId: "bnav-perfil" },
+    { to: "/barbeiro/desempenho", label: "Desempenho", icon: TrendingUp, testId: "bnav-desempenho" },
+    { to: "/barbeiro/perfil", label: "Perfil", icon: User, testId: "bnav-perfil" },
   ];
 
   return (
     <div className="min-h-screen pb-24 bg-[#0B0D14] text-[#F8FAFC]">
-      <header className="sticky top-0 z-30 flex items-center justify-between border-b border-white/[0.08] bg-[#0F121C] px-4 py-3">
-        <div className="flex items-center gap-3">
+      <header className="sticky top-0 z-30 flex items-center justify-between border-b border-white/[0.08] bg-[#0F121C]/95 px-3 sm:px-4 py-2.5 backdrop-blur-md">
+        <div className="flex items-center gap-2.5">
           <img 
             src="/logo.png" 
-            alt="KortePro" 
-            className="h-10 w-10 rounded-full object-cover border border-[#D4AF37]/30 shadow-md shrink-0" 
+            alt="KingPro" 
+            className="h-9 w-9 rounded-full object-cover border border-[#D4AF37]/30 shadow-md shrink-0" 
           />
-          <div className="leading-tight">
+          <div className="leading-tight hidden min-[400px]:block">
             <span className="font-display font-extrabold text-sm tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-[#D4AF37] to-amber-500 block">
-              KortePro
+              KingPro
             </span>
-            <p className="text-[11px] text-slate-400 font-medium truncate max-w-[160px]">
-              {userName ? `${userName} • ${shop?.name || "Barbeiro"}` : (shop?.name || "Portal do Barbeiro")}
+            <p className="text-[10px] text-slate-400 font-medium">
+              Hub do Barbeiro
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 sm:gap-3">
           {/* Status Offline / Sincronização Pendente */}
           {(!isOnline || pendingCount > 0) && (
             <button
@@ -168,56 +172,128 @@ export default function BarberLayout() {
             </button>
           )}
 
-          {/* Acesso rápido à Landing Page / Início */}
-          <a
-            href="/landing"
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex items-center h-8 px-2 text-xs text-slate-300 hover:text-white hover:bg-white/5 gap-1.5 rounded-[4px] border border-white/10 transition-colors"
-            title="Página de Vendas / Início"
-          >
-            <Globe className="h-3.5 w-3.5 text-[#D4AF37]" />
-            <span className="hidden sm:inline">Início</span>
-          </a>
-
-          {/* Acesso rápido ao link no header também */}
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={openLinkModal}
-            className="hidden sm:inline-flex h-8 px-2.5 text-xs text-[#D4AF37] hover:text-[#D4AF37] hover:bg-[#D4AF37]/10 gap-1.5 rounded-[4px] border border-[#D4AF37]/30"
-            title="Copiar link de agendamento"
-          >
-            <Link2 className="h-3.5 w-3.5" />
-            <span>Meu Link</span>
-          </Button>
-
+          {/* Menu de Perfil do Barbeiro com foto circular e dados destacados */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-9 w-9 text-slate-400 hover:text-white hover:bg-white/5 rounded-[4px]" data-testid="barber-user-menu">
-                <div className="h-8 w-8 rounded-full bg-gradient-to-br from-[#EAB308] to-[#D4AF37] flex items-center justify-center text-[#0B0D14] font-bold text-xs border border-[#D4AF37]/40">
-                  {userName.substring(0, 2).toUpperCase()}
+              <button
+                type="button"
+                className="flex items-center gap-2 sm:gap-2.5 p-1 rounded-full sm:rounded-lg hover:bg-white/5 transition-colors cursor-pointer text-right focus:outline-none"
+                data-testid="barber-user-menu"
+              >
+                <div className="text-right leading-tight max-w-[130px] sm:max-w-[220px]">
+                  <span className="font-semibold text-xs sm:text-sm text-white block truncate tracking-tight">
+                    {userName}
+                  </span>
+                  <span className="text-[10px] text-slate-400 font-normal block truncate">
+                    {roleAndUnit}
+                  </span>
                 </div>
-              </Button>
+                <div className="relative h-9 w-9 rounded-full ring-1 ring-white/15 border border-[#D4AF37]/40 overflow-hidden bg-gradient-to-br from-[#EAB308] to-[#D4AF37] flex items-center justify-center text-[#0B0D14] font-bold text-xs shrink-0 shadow-sm">
+                  {barberPhoto && !photoError ? (
+                    <img
+                      src={barberPhoto}
+                      alt={userName}
+                      className="h-full w-full object-cover"
+                      onError={() => setPhotoError(true)}
+                    />
+                  ) : (
+                    <span className="font-bold text-xs">
+                      {initials}
+                    </span>
+                  )}
+                </div>
+              </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56 bg-[#131622] border border-white/10 text-white p-1.5 rounded-[4px] shadow-xl">
+            <DropdownMenuContent align="end" className="w-72 sm:w-80 bg-[#131622] border border-white/10 text-white p-2 rounded-[4px] shadow-2xl z-50 max-h-[85vh] overflow-y-auto">
               <DropdownMenuLabel className="px-2 py-1.5">
                 <span className="font-bold text-sm block">{userName}</span>
-                <span className="text-[11px] text-muted-foreground">{user?.email || "barbeiro@barbearia.com"}</span>
+                <span className="text-[11px] text-muted-foreground">{roleAndUnit}</span>
               </DropdownMenuLabel>
-              <DropdownMenuSeparator className="bg-white/10" />
-              <DropdownMenuItem onClick={openLinkModal} className="cursor-pointer text-xs focus:bg-white/10 focus:text-white rounded-[2px]" data-testid="menu-copiar-link">
+              <DropdownMenuSeparator className="bg-white/10 my-1" />
+
+              {/* Troca Rápida de Conta */}
+              <div className="px-2 py-1">
+                <div className="flex items-center justify-between pb-1">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-[#D4AF37] flex items-center gap-1">
+                    <Users2 className="h-3 w-3" /> Alternar de Conta
+                  </span>
+                  <span className="text-[9px] text-slate-400">Troca rápida</span>
+                </div>
+                <div className="space-y-1 max-h-40 overflow-y-auto pr-0.5">
+                  {(switchableUsers.length ? switchableUsers : [
+                    { id: "usr_dono", name: "Administrador / Dono", username: "dono", role: "dono" },
+                    { id: "usr_dono_quick", name: "Dono Teste (1)", username: "1", role: "dono" },
+                    { id: "usr_gerente", name: "Gerente Geral", username: "gerente", role: "gerente" },
+                    { id: "usr_carlos", name: "Carlos Souza", username: "carlos", role: "barbeiro" },
+                    { id: "usr_barbeiro_quick", name: "Barbeiro Teste (3)", username: "3", role: "barbeiro" },
+                  ]).map((acc) => {
+                    const isCurrent = user?.id === acc.id || user?.username === acc.username;
+                    const roleName = acc.role === "dono" ? "Dono" : acc.role === "gerente" ? "Gerente" : "Barbeiro";
+                    const roleGrad = acc.role === "dono"
+                      ? "from-[#EAB308] to-[#D4AF37]"
+                      : acc.role === "gerente"
+                      ? "from-blue-500 to-indigo-600"
+                      : "from-emerald-500 to-teal-600";
+
+                    return (
+                      <button
+                        key={acc.id || acc.username}
+                        type="button"
+                        onClick={async () => {
+                          if (isCurrent) return;
+                          try {
+                            const u = await switchAccount(acc.id || acc.username);
+                            toast.success(`Alternado para: ${u.name}`);
+                            if (u.role === "barbeiro") {
+                              navigate("/barbeiro");
+                            } else {
+                              navigate("/");
+                            }
+                          } catch {
+                            toast.error("Erro ao alternar de conta.");
+                          }
+                        }}
+                        className={`w-full flex items-center justify-between p-1.5 rounded-[4px] text-left transition-all cursor-pointer ${
+                          isCurrent
+                            ? "bg-[#D4AF37]/15 border border-[#D4AF37]/40 text-white"
+                            : "hover:bg-white/5 text-slate-300 hover:text-white border border-transparent"
+                        }`}
+                        data-testid={`barber-switch-to-${acc.username}`}
+                      >
+                        <div className="flex items-center gap-2 min-w-0">
+                          <div className={`h-6 w-6 rounded-full bg-gradient-to-br ${roleGrad} flex items-center justify-center text-[#0B0F19] font-black text-[9px] shrink-0`}>
+                            {(acc.name || "U").substring(0, 2).toUpperCase()}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="text-xs font-bold truncate leading-tight">{acc.name}</p>
+                            <p className="text-[10px] text-slate-400 truncate">@{acc.username}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1.5 shrink-0 ml-1">
+                          <span className="text-[9px] font-bold px-1.5 py-0.2 rounded uppercase border border-white/20 bg-white/5">
+                            {roleName}
+                          </span>
+                          {isCurrent && <Check className="h-3.5 w-3.5 text-[#D4AF37] stroke-[3]" />}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <DropdownMenuSeparator className="bg-white/10 my-1" />
+              <DropdownMenuItem onClick={copyBookingLink} className="cursor-pointer text-xs focus:bg-white/10 focus:text-white rounded-[2px]" data-testid="menu-copiar-link">
                 <Link2 className="mr-2 h-4 w-4 text-[#D4AF37]" /> Copiar Link de Agendamento
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => navigate("/barbeiro/perfil")} className="cursor-pointer text-xs focus:bg-white/10 focus:text-white rounded-[2px]" data-testid="menu-perfil">
-                <UserCircle2 className="mr-2 h-4 w-4 text-[#D4AF37]" /> Meu Perfil
+                <User className="mr-2 h-4 w-4 text-[#D4AF37]" /> Meu Perfil
               </DropdownMenuItem>
               {isAdmin(user) && (
                 <DropdownMenuItem onClick={() => navigate("/")} className="cursor-pointer text-xs focus:bg-white/10 focus:text-white rounded-[2px]" data-testid="switch-to-admin">
                   <ShieldCheck className="mr-2 h-4 w-4 text-[#10B981]" /> Voltar para Administração
                 </DropdownMenuItem>
               )}
-              <DropdownMenuSeparator className="bg-white/10" />
+              <DropdownMenuSeparator className="bg-white/10 my-1" />
               <DropdownMenuItem onClick={() => { logout(); navigate("/login"); }} className="cursor-pointer text-xs text-[#EF4444] focus:bg-[#EF4444]/15 focus:text-[#EF4444] rounded-[2px]" data-testid="barber-logout">
                 <LogOut className="mr-2 h-4 w-4" /> Sair
               </DropdownMenuItem>
@@ -252,10 +328,10 @@ export default function BarberLayout() {
         }}
       />
 
-      {/* Barra de Navegação Inferior Otimizada e Minimalista */}
-      <nav className="fixed bottom-0 left-0 right-0 z-30 border-t border-white/[0.08] bg-[#0F121C] px-2 py-1.5 shadow-xl">
-        <div className="mx-auto max-w-lg flex items-center justify-around">
-          {navItems.slice(0, 2).map((it) => {
+      {/* Barra de Navegação Inferior Otimizada e Minimalista (4 Itens Fixos) */}
+      <nav className="fixed bottom-0 left-0 right-0 z-30 border-t border-white/[0.08] bg-[#0F121C] px-2 py-2 shadow-2xl safe-area-pb">
+        <div className="mx-auto max-w-lg grid grid-cols-4 w-full items-center gap-1">
+          {navItems.map((it) => {
             const Icon = it.icon;
             return (
               <NavLink
@@ -264,103 +340,22 @@ export default function BarberLayout() {
                 end={it.end}
                 data-testid={it.testId}
                 className={({ isActive }) =>
-                  `flex flex-col items-center gap-1 rounded-[3px] px-2.5 py-1.5 text-[11px] font-medium transition-colors ${
+                  `flex flex-col items-center justify-center gap-1 rounded-[6px] py-1.5 px-1 text-center transition-colors w-full ${
                     isActive
-                      ? "text-[#D4AF37] bg-[#D4AF37]/10 font-bold"
-                      : "text-slate-400 hover:text-white"
+                      ? "text-[#D4AF37] bg-[#D4AF37]/12 font-bold"
+                      : "text-slate-400 hover:text-white hover:bg-white/5 font-medium"
                   }`
                 }
               >
-                <Icon className="h-5 w-5" />
-                <span>{it.label}</span>
-              </NavLink>
-            );
-          })}
-
-          {/* Botão Compacto: Link de Agendamento */}
-          <button
-            type="button"
-            onClick={openLinkModal}
-            data-testid="bnav-link"
-            title="Copiar meu link exclusivo de agendamento"
-            className="flex flex-col items-center gap-1 rounded-[3px] px-2.5 py-1.5 text-[11px] font-medium text-slate-400 hover:text-[#D4AF37] hover:bg-[#D4AF37]/10 transition-colors"
-          >
-            <div className="relative">
-              <Link2 className="h-5 w-5" />
-              {copiedLink && (
-                <Check className="h-3 w-3 text-[#10B981] absolute -top-1 -right-1 stroke-[3]" />
-              )}
-            </div>
-            <span>{copiedLink ? "Copiado!" : "Meu Link"}</span>
-          </button>
-
-          {navItems.slice(2).map((it) => {
-            const Icon = it.icon;
-            return (
-              <NavLink
-                key={it.to}
-                to={it.to}
-                end={it.end}
-                data-testid={it.testId}
-                className={({ isActive }) =>
-                  `flex flex-col items-center gap-1 rounded-[3px] px-2.5 py-1.5 text-[11px] font-medium transition-colors ${
-                    isActive
-                      ? "text-[#D4AF37] bg-[#D4AF37]/10 font-bold"
-                      : "text-slate-400 hover:text-white"
-                  }`
-                }
-              >
-                <Icon className="h-5 w-5" />
-                <span>{it.label}</span>
+                <Icon className="h-5 w-5 shrink-0" />
+                <span className="text-[11px] leading-tight block whitespace-nowrap overflow-visible">
+                  {it.label}
+                </span>
               </NavLink>
             );
           })}
         </div>
       </nav>
-
-      {/* Modal Compacto do Link de Agendamento */}
-      <Dialog open={linkModalOpen} onOpenChange={setLinkModalOpen}>
-        <DialogContent className="max-w-md bg-[#12141F] border border-white/10 text-white p-6 rounded-[6px] shadow-xl">
-          <DialogHeader>
-            <DialogTitle className="font-display text-base font-bold flex items-center gap-2 text-white">
-              <Link2 className="h-4 w-4 text-[#D4AF37]" />
-              Meu Link de Agendamento
-            </DialogTitle>
-            <DialogDescription className="text-xs text-muted-foreground">
-              Seus clientes caem diretamente no seu perfil com você pré-selecionado para corte e agendamento.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-4 pt-2">
-            <div className="p-3 rounded-[4px] bg-[#090B10] border border-white/10 break-all font-mono text-xs text-[#D4AF37]/90 select-all">
-              {myBookingUrl}
-            </div>
-
-            <div className="grid grid-cols-2 gap-2.5">
-              <Button
-                type="button"
-                onClick={copyBookingLink}
-                className="w-full bg-[#D4AF37] hover:bg-[#C59F2E] text-[#0B0D14] font-bold text-xs h-9 rounded-[4px] gap-1.5 shadow-none"
-                data-testid="btn-copy-barber-my-link"
-              >
-                {copiedLink ? <Check className="h-4 w-4 stroke-[3]" /> : <Copy className="h-4 w-4" />}
-                <span>{copiedLink ? "Copiado!" : "Copiar Link"}</span>
-              </Button>
-
-              <a
-                href={myBookingUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-full h-9 rounded-[4px] border border-white/10 hover:border-[#D4AF37]/40 bg-[#141724] hover:bg-[#1A1D2B] text-white text-xs font-semibold inline-flex items-center justify-center gap-1.5 transition-colors"
-                data-testid="btn-test-barber-my-link"
-              >
-                <span>Testar Link</span>
-                <ExternalLink className="h-3.5 w-3.5 text-muted-foreground" />
-              </a>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
 
       {/* Modal de Bloqueio por Assinatura Expirada */}
       <ErrorBoundary fallback={null}>

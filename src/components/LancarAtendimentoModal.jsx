@@ -40,15 +40,26 @@ import {
   Loader2,
   WifiOff,
 } from "lucide-react";
+import PaymentChannelSelector from "@/components/PaymentChannelSelector";
+import {
+  getChannelNameById,
+  getMethodNameById,
+  toLegacyPaymentType,
+} from "@/lib/paymentChannels";
 import {
   saveToOfflineQueue,
   cacheBarberMetadata,
   getCachedBarberMetadata,
 } from "@/lib/offlineSync";
+import ClientAutocomplete from "@/components/ClientAutocomplete";
+import { useAuth } from "@/context/AuthContext";
+import { isBarber, canManagePaymentMethods } from "@/lib/roles";
 
 const WALKIN = "__walkin__";
 
 export default function LancarAtendimentoModal({ open, onClose, onSuccess }) {
+  const { user } = useAuth() || {};
+  const isUserBarber = isBarber(user) || !canManagePaymentMethods(user);
   const { data: meRaw } = useFetch((api) => api.get("/barber/me"));
   const { data: servicesRaw } = useFetch((api) => api.get("/services"));
   const { data: productsRaw } = useFetch((api) => api.get("/products"));
@@ -87,6 +98,8 @@ export default function LancarAtendimentoModal({ open, onClose, onSuccess }) {
   const [discount, setDiscount] = useState("");
   const [pmId, setPmId] = useState("");
   const [ptype, setPtype] = useState("dinheiro");
+  const [paymentChannel, setPaymentChannel] = useState("caixa_fisico");
+  const [paymentMethod, setPaymentMethod] = useState("cash");
   const [saving, setSaving] = useState(false);
 
   // Modal interno de cadastro de novo cliente
@@ -97,8 +110,6 @@ export default function LancarAtendimentoModal({ open, onClose, onSuccess }) {
   useEffect(() => {
     if (methods?.length && !pmId) {
       setPmId(methods[0].id);
-      const ks = Object.keys(methods[0].fees || {});
-      if (ks.length) setPtype(ks[0]);
     }
   }, [methods, pmId]);
 
@@ -110,6 +121,9 @@ export default function LancarAtendimentoModal({ open, onClose, onSuccess }) {
       setWalkinName("");
       setUsePlan(false);
       setDiscount("");
+      setPaymentChannel("caixa_fisico");
+      setPaymentMethod("cash");
+      setPtype("dinheiro");
       setSaving(false);
       reloadDash();
       reloadClients();
@@ -147,12 +161,31 @@ export default function LancarAtendimentoModal({ open, onClose, onSuccess }) {
   );
 
   const selectedClient = (clients || []).find((c) => c.id === clientSel);
-  const activePlan =
-    selectedClient?.plan &&
-    selectedClient.plan.status === "ativo" &&
-    selectedClient.plan.remaining > 0
-      ? selectedClient.plan
-      : null;
+  const activePlan = useMemo(() => {
+    if (!selectedClient?.has_plan || !selectedClient?.plan) return null;
+    const p = selectedClient.plan;
+    const isUnlimited = Boolean(p.is_unlimited);
+    const total = Number(p.totalServices ?? p.total ?? p.total_credits ?? 4);
+    const used = Number(p.used ?? 0);
+    let remaining = isUnlimited ? "Ilimitado" : Math.max(0, total - used);
+    if (!isUnlimited && p.remaining != null && !isNaN(Number(p.remaining))) {
+      remaining = Number(p.remaining);
+    }
+    const status = p.status || (remaining === 0 && !isUnlimited ? "esgotado" : "ativo");
+
+    if (status !== "ativo") return null;
+    if (!isUnlimited && remaining <= 0) return null;
+
+    return {
+      ...p,
+      name: p.name || "Plano de Assinatura",
+      is_unlimited: isUnlimited,
+      total,
+      used,
+      remaining,
+      status,
+    };
+  }, [selectedClient]);
 
   const addItem = (kind, id) => {
     const list = kind === "servico" ? services : products;
@@ -246,13 +279,19 @@ export default function LancarAtendimentoModal({ open, onClose, onSuccess }) {
     setSaving(true);
 
     const isRegistered = clientSel !== WALKIN && selectedClient;
+    const channelName = getChannelNameById(paymentChannel, methods);
+    const methodName = getMethodNameById(paymentMethod);
+    const legacyType = toLegacyPaymentType(paymentChannel, paymentMethod);
+
     const payload = {
       date: todayISO(),
       client_id: isRegistered ? clientSel : null,
       client_name: isRegistered ? selectedClient.name : walkinName || null,
       use_plan: !!(usePlan && activePlan),
-      payment_method_id: pmId,
-      payment_type: ptype,
+      payment_method_id: pmId || "pm_dinheiro",
+      payment_type: legacyType,
+      payment_channel: channelName,
+      payment_method: methodName,
       discount_amount: parseFloat(discount) || 0,
       items: items.map((i) => ({
         item_kind: i.item_kind,
@@ -265,7 +304,7 @@ export default function LancarAtendimentoModal({ open, onClose, onSuccess }) {
 
     const handleSaveOffline = () => {
       const offlineItem = saveToOfflineQueue(payload, {
-        payment_method_name: method?.name || "Dinheiro",
+        payment_method_name: `${channelName} - ${methodName}`,
         commission_percent: barber?.commission_percent ?? 50,
       });
 
@@ -303,7 +342,9 @@ export default function LancarAtendimentoModal({ open, onClose, onSuccess }) {
 
       if (res.plan) {
         toast.success(
-          `Atendimento registrado! Plano: restam ${res.plan.remaining}/${res.plan.total}`
+          res.plan.is_unlimited
+            ? "Atendimento registrado! Plano: Assinatura Ativa · Cortes Ilimitados"
+            : `Atendimento registrado! Restam ${res.plan.remaining_count ?? res.plan.remaining} de ${res.plan.total} cortes no mês`
         );
       } else {
         toast.success(
@@ -422,41 +463,52 @@ export default function LancarAtendimentoModal({ open, onClose, onSuccess }) {
                 </Button>
               </div>
 
-              {/* 1. Seleção / Cadastro de Cliente */}
+              {/* 1. Seleção / Cadastro de Cliente com Autocomplete Inteligente */}
               <Card className="p-3.5 sm:p-4 rounded-[6px] bg-[#121522] border-white/10 space-y-3 shadow-none text-white">
                 <div className="flex items-end gap-2">
-                  <div className="flex-1">
-                    <Label className="text-xs text-slate-300 font-semibold mb-1.5 block">
-                      Cliente
-                    </Label>
-                    <Select
-                      value={clientSel}
-                      onValueChange={(v) => {
-                        setClientSel(v);
+                  <div className="flex-1 space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-xs text-slate-300 font-semibold block">
+                        Cliente (Busca Inteligente / Novo)
+                      </Label>
+                      {clientSel !== WALKIN && selectedClient && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setClientSel(WALKIN);
+                            setWalkinName("");
+                            setUsePlan(false);
+                          }}
+                          className="text-[11px] text-[#D4AF37] hover:underline flex items-center gap-1 cursor-pointer"
+                        >
+                          <X className="h-3 w-3" /> Limpar seleção
+                        </button>
+                      )}
+                    </div>
+                    
+                    <ClientAutocomplete
+                      value={clientSel !== WALKIN && selectedClient ? selectedClient.name : walkinName}
+                      clients={clients || []}
+                      placeholder="Digite o nome ou telefone do cliente..."
+                      onChange={(typedName, client) => {
+                        setWalkinName(typedName);
+                        if (!client) {
+                          // Se estiver editando livremente, desvincula do ID fixo a menos que seja selecionado
+                          if (clientSel !== WALKIN) {
+                            setClientSel(WALKIN);
+                            setUsePlan(false);
+                          }
+                        }
+                      }}
+                      onSelectClient={(client) => {
+                        setClientSel(client.id);
+                        setWalkinName(client.name);
                         setUsePlan(false);
                       }}
-                    >
-                      <SelectTrigger
-                        data-testid="lancar-client-select"
-                        className="h-10 bg-[#0A0D14] border-white/15 text-white"
-                      >
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent className="bg-[#121522] border-white/15 text-white">
-                        <SelectItem value={WALKIN}>
-                          Sem cadastro / avulso
-                        </SelectItem>
-                        {(clients || []).map((c) => (
-                          <SelectItem key={c.id} value={c.id}>
-                            {c.name}
-                            {c.has_plan && c.plan
-                              ? ` · plano ${c.plan.remaining}/${c.plan.total}`
-                              : ""}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                      testId="lancar-client-autocomplete"
+                    />
                   </div>
+
                   <Button
                     variant="outline"
                     size="icon"
@@ -469,18 +521,18 @@ export default function LancarAtendimentoModal({ open, onClose, onSuccess }) {
                   </Button>
                 </div>
 
-                {clientSel === WALKIN && (
-                  <div>
-                    <Label className="text-xs text-slate-400 mb-1 block">
-                      Nome do cliente avulso (opcional)
-                    </Label>
-                    <Input
-                      value={walkinName}
-                      onChange={(e) => setWalkinName(e.target.value)}
-                      placeholder="Ex: João da Silva"
-                      className="h-9 bg-[#0A0D14] border-white/15 text-white placeholder:text-slate-600 text-xs"
-                      data-testid="lancar-client"
-                    />
+                {/* Feedback sutil do cliente selecionado */}
+                {clientSel !== WALKIN && selectedClient && (
+                  <div className="flex items-center justify-between rounded bg-[#0A0D14] border border-[#D4AF37]/30 px-3 py-1.5 text-xs">
+                    <span className="text-slate-300 flex items-center gap-1.5">
+                      <Check className="h-3.5 w-3.5 text-[#D4AF37]" />
+                      Cliente vinculado: <strong className="text-white">{selectedClient.name}</strong>
+                    </span>
+                    {selectedClient.phone && (
+                      <span className="text-[11px] text-slate-400">
+                        {selectedClient.phone}
+                      </span>
+                    )}
                   </div>
                 )}
 
@@ -495,8 +547,10 @@ export default function LancarAtendimentoModal({ open, onClose, onSuccess }) {
                         <Ticket className="h-4 w-4" /> Cliente possui plano
                         ativo
                       </p>
-                      <Badge className="bg-[#D4AF37]/30 text-[#D4AF37] border-[#D4AF37]/50 text-[10px]">
-                        {activePlan.remaining}/{activePlan.total} restantes
+                      <Badge className="bg-[#D4AF37]/30 text-[#D4AF37] border-[#D4AF37]/50 text-[10px] font-semibold">
+                        {activePlan.is_unlimited
+                          ? "Cortes Ilimitados"
+                          : `Restam ${activePlan.remaining} de ${activePlan.total} cortes`}
                       </Badge>
                     </div>
                     <p className="text-[11px] text-slate-300">
@@ -638,57 +692,38 @@ export default function LancarAtendimentoModal({ open, onClose, onSuccess }) {
 
               {/* 3. Forma de Pagamento e Desconto */}
               <Card className="p-3.5 sm:p-4 rounded-[6px] bg-[#121522] border-white/10 space-y-3 shadow-none text-white">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <Label className="text-xs text-slate-300 font-semibold mb-1.5 block">
-                      Forma de pagamento
-                    </Label>
-                    <Select
-                      value={pmId}
-                      onValueChange={(v) => {
-                        setPmId(v);
-                        const m = methods.find((x) => x.id === v);
-                        const ks = m ? Object.keys(m.fees || {}) : [];
-                        if (ks.length && !ks.includes(ptype)) setPtype(ks[0]);
-                      }}
-                    >
-                      <SelectTrigger
-                        data-testid="lancar-method"
-                        className="h-10 bg-[#0A0D14] border-white/15 text-white text-xs"
-                      >
-                        <SelectValue placeholder="Selecione o método" />
-                      </SelectTrigger>
-                      <SelectContent className="bg-[#121522] border-white/15 text-white">
-                        {methods.map((m) => (
-                          <SelectItem key={m.id} value={m.id}>
-                            {m.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div>
-                    <Label className="text-xs text-slate-300 font-semibold mb-1.5 block">
-                      Tipo de Lançamento
-                    </Label>
-                    <Select value={ptype} onValueChange={setPtype}>
-                      <SelectTrigger
-                        data-testid="lancar-paytype"
-                        className="h-10 bg-[#0A0D14] border-white/15 text-white text-xs"
-                      >
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent className="bg-[#121522] border-white/15 text-white">
-                        {availableTypes.map((t) => (
-                          <SelectItem key={t.value} value={t.value}>
-                            {t.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
+                <PaymentChannelSelector
+                  channel={paymentChannel}
+                  method={paymentMethod}
+                  paymentMethods={methods}
+                  showQuickAdd={!isUserBarber}
+                  isBarberView={isUserBarber}
+                  onChannelChange={(ch, chObj) => {
+                    setPaymentChannel(ch);
+                    // Sincroniza pmId e ptype correspondentes para cálculo de taxas e settlement
+                    const legType = toLegacyPaymentType(ch, paymentMethod);
+                    setPtype(legType);
+                    let targetPmId = chObj?.pmId;
+                    if (!targetPmId && methods?.length) {
+                      if (ch === "caixa_fisico") {
+                        const m = methods.find((x) => x.kind === "dinheiro") || methods[0];
+                        targetPmId = m.id;
+                      } else if (ch === "pix_direto") {
+                        const m = methods.find((x) => x.kind === "pix") || methods[0];
+                        targetPmId = m.id;
+                      } else {
+                        const m = methods.find((x) => x.id === ch || x.kind === "maquininha" || x.kind === "cartao") || methods[0];
+                        targetPmId = m.id;
+                      }
+                    }
+                    if (targetPmId) setPmId(targetPmId);
+                  }}
+                  onMethodChange={(m) => {
+                    setPaymentMethod(m);
+                    const legType = toLegacyPaymentType(paymentChannel, m);
+                    setPtype(legType);
+                  }}
+                />
 
                 <div>
                   <Label className="text-xs text-slate-300 font-semibold mb-1.5 block">

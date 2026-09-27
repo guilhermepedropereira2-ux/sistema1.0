@@ -68,7 +68,7 @@ export default function MercadoPagoCheckoutModal({
                 Assinar {planName}
               </DialogTitle>
               <DialogDescription className="text-xs text-slate-300 mt-0.5">
-                Escolha o Checkout Pro oficial do Mercado Pago para ativação instantânea no KortePro.
+                Escolha o Checkout Pro oficial do Mercado Pago para ativação instantânea no KingPro.
               </DialogDescription>
             </div>
           </div>

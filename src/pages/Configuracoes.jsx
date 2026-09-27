@@ -12,7 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import {
   Save, Calendar, Users, Layers,
   CheckCircle2, Link2, Copy, Check, ExternalLink, Globe, Scissors,
-  Crown, Building2, Sparkles, Store,
+  Crown, Building2, Sparkles, Store, MessageCircle,
 } from "lucide-react";
 import { useUnit } from "@/context/UnitContext";
 
@@ -155,6 +155,17 @@ export default function Configuracoes() {
               </Button>
 
               <a
+                href={`https://api.whatsapp.com/send?text=${encodeURIComponent(`Olá! Agende seu horário de corte na barbearia pelo KingPro: ${shopPublicUrl}`)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="h-10 px-3.5 rounded-[4px] bg-[#25D366]/15 hover:bg-[#25D366]/25 border border-[#25D366]/30 text-xs text-[#25D366] font-semibold flex items-center justify-center gap-1.5 transition-colors shrink-0"
+                title="Compartilhar no WhatsApp"
+              >
+                <MessageCircle className="h-4 w-4" />
+                <span>WhatsApp</span>
+              </a>
+
+              <a
                 href={shopPublicUrl}
                 target="_blank"
                 rel="noreferrer"
@@ -190,18 +201,31 @@ export default function Configuracoes() {
                         </span>
                       </div>
 
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => copyBarberLink(barber.id, barber.name)}
-                        className={`h-7 px-2 text-[10px] font-bold rounded-[4px] gap-1 cursor-pointer ${
-                          isCopied ? "text-emerald-400 bg-emerald-500/10" : "text-[#D4AF37] hover:bg-[#D4AF37]/10"
-                        }`}
-                      >
-                        {isCopied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
-                        <span>{isCopied ? "Copiado" : "Copiar"}</span>
-                      </Button>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => copyBarberLink(barber.id, barber.name)}
+                          className={`h-7 px-2 text-[10px] font-bold rounded-[4px] gap-1 cursor-pointer ${
+                            isCopied ? "text-emerald-400 bg-emerald-500/10" : "text-[#D4AF37] hover:bg-[#D4AF37]/10"
+                          }`}
+                        >
+                          {isCopied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+                          <span>{isCopied ? "Copiado" : "Copiar"}</span>
+                        </Button>
+
+                        <a
+                          href={`https://api.whatsapp.com/send?text=${encodeURIComponent(`Olá! Agende seu horário com ${barber.name} no KingPro: ${window.location.origin}/agendar/${currentSlug}?barber=${barber.id}`)}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="h-7 px-2 text-[10px] font-bold rounded-[4px] gap-1 cursor-pointer inline-flex items-center text-[#25D366] hover:bg-[#25D366]/10 border border-[#25D366]/30"
+                          title="Compartilhar no WhatsApp"
+                        >
+                          <MessageCircle className="h-3 w-3" />
+                          <span className="hidden sm:inline">WhatsApp</span>
+                        </a>
+                      </div>
                     </div>
                   );
                 })}

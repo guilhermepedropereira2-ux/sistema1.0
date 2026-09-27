@@ -12,8 +12,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { brl, fmtDate, paymentTypeLabel, PERIOD_OPTIONS, periodRange } from "@/lib/format";
 import {
-  ArrowLeft, Users, Scissors, Package, PiggyBank, Percent, HandCoins, CheckCircle2, Clock,
+  ArrowLeft, Users, Scissors, Package, PiggyBank, Percent, HandCoins, CheckCircle2, Clock, FileSpreadsheet,
 } from "lucide-react";
+import { downloadCsv, formatBrlNumber } from "@/lib/exportCsv";
 
 const STATUS_FILTER = [
   { value: "todos", label: "Todos os status" },
@@ -58,6 +59,54 @@ export default function BarberReport() {
     } catch { toast.error("Erro ao pagar comissões"); }
   };
 
+  const handleExportCsv = () => {
+    if (!revenues || !revenues.length) {
+      toast.error("Nenhuma venda no período selecionado para exportar.");
+      return;
+    }
+
+    const headers = [
+      "Data/Hora",
+      "Barbeiro/Profissional",
+      "Serviço/Produto",
+      "Forma de Pagamento",
+      "Valor Bruto (R$)",
+      "Comissão (R$)",
+      "Líquido da Casa (R$)",
+      "Status",
+      "Cliente",
+    ];
+
+    const rows = revenues.map((v) => {
+      const dateTime = `${fmtDate(v.date)} ${v.time || ""}`.trim();
+      const barberName = v.barber_name || r?.barber?.name || "Profissional";
+      const itemName = v.service_name || (v.item_kind === "produto" ? "Produto" : "Serviço");
+      const payMethod = `${v.payment_method_name || ""} (${paymentTypeLabel(v.payment_type)})`.trim();
+      const grossVal = formatBrlNumber(v.gross_amount ?? v.paid_amount);
+      const commissionVal = formatBrlNumber(v.commission_amount ?? 0);
+      const shopVal = formatBrlNumber(v.shop_amount ?? (v.net_amount - (v.commission_amount || 0)));
+      const statusLabel = v.status === "cancelado" ? "Cancelado" : v.status === "estornado" ? "Estornado" : "Ativo";
+      const clientName = v.client_name || "-";
+
+      return [
+        dateTime,
+        barberName,
+        itemName,
+        payMethod,
+        grossVal,
+        commissionVal,
+        shopVal,
+        statusLabel,
+        clientName,
+      ];
+    });
+
+    const safeName = (r?.barber?.name || "barbeiro").replace(/\s+/g, "_");
+    const filename = `KingPro_Relatorio_${safeName}_${start}_${end}.csv`;
+    downloadCsv({ filename, headers, rows });
+    toast.success("Relatório exportado com sucesso!");
+  };
+
   if (loading || !report) return <Loading />;
   const r = report;
 
@@ -71,9 +120,21 @@ export default function BarberReport() {
             <p className="text-sm text-muted-foreground">Relatório individual · {fmtDate(start)} a {fmtDate(end)}</p>
           </div>
         </div>
-        <Button onClick={payCommissions} className="gap-2" data-testid="pay-commissions-btn" disabled={r.comissao_pendente <= 0}>
-          <HandCoins className="h-4 w-4" /> Pagar comissão pendente
-        </Button>
+        <div className="flex items-center gap-2.5">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleExportCsv}
+            className="rounded-[4px] border-[#D4AF37]/40 bg-[#12141F] text-[#D4AF37] hover:bg-[#D4AF37]/10 hover:border-[#D4AF37] font-semibold text-xs sm:text-sm gap-2 shadow-none transition-all cursor-pointer"
+            data-testid="export-csv-btn"
+          >
+            <FileSpreadsheet className="h-4 w-4 text-[#D4AF37]" />
+            <span>Exportar para Excel (.csv)</span>
+          </Button>
+          <Button onClick={payCommissions} className="gap-2" data-testid="pay-commissions-btn" disabled={r.comissao_pendente <= 0}>
+            <HandCoins className="h-4 w-4" /> Pagar comissão pendente
+          </Button>
+        </div>
       </div>
 
       {/* Filters */}

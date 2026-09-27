@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { toast } from "sonner";
 import { api } from "@/lib/api";
 import { brl as formatBRL } from "@/lib/format";
@@ -38,12 +38,112 @@ import {
   Layers,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
   UserCheck,
   Timer,
   AlertCircle,
   Phone,
   Sparkles,
 } from "lucide-react";
+import ClientAutocomplete from "@/components/ClientAutocomplete";
+import PaymentChannelSelector from "@/components/PaymentChannelSelector";
+import {
+  getChannelNameById,
+  getMethodNameById,
+  toLegacyPaymentType,
+} from "@/lib/paymentChannels";
+
+// Dropdown de Filtro de Barbeiro com suporte estrito a Toggle e Click-Outside
+function BarberFilterDropdown({ barbers, selected, onChange }) {
+  const [open, setOpen] = useState(false);
+  const containerRef = useRef(null);
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (containerRef.current && !containerRef.current.contains(event.target)) {
+        setOpen(false);
+      }
+    }
+    if (open) {
+      document.addEventListener("mousedown", handleClickOutside);
+      document.addEventListener("touchstart", handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("touchstart", handleClickOutside);
+    };
+  }, [open]);
+
+  const selectedBarber = barbers.find((b) => b.id === selected);
+  const label =
+    selected === "todos"
+      ? "Todos os Barbeiros"
+      : selectedBarber?.name || "Todos os Barbeiros";
+
+  return (
+    <div ref={containerRef} className="relative inline-block w-full sm:w-auto">
+      <button
+        type="button"
+        onClick={() => setOpen((prev) => !prev)}
+        className={`flex h-9 w-full sm:w-[195px] items-center justify-between gap-2 whitespace-nowrap rounded-[4px] border px-3 py-1.5 text-xs font-semibold shadow-none transition-colors cursor-pointer focus:outline-none ${
+          open
+            ? "border-[#D4AF37]/80 bg-[#151928] text-white"
+            : "border-white/10 bg-[#0A0D14] hover:bg-[#121522] text-slate-200"
+        }`}
+        data-testid="barber-filter-trigger"
+        aria-expanded={open}
+      >
+        <span className="truncate">{label}</span>
+        <ChevronDown
+          className={`h-3.5 w-3.5 text-slate-400 transition-transform duration-200 shrink-0 ${
+            open ? "rotate-180 text-[#D4AF37]" : ""
+          }`}
+        />
+      </button>
+
+      {open && (
+        <div
+          className="absolute right-0 sm:left-auto z-50 mt-1 w-full sm:w-[220px] rounded-[4px] border border-white/10 bg-[#121522] py-1 text-slate-200 shadow-2xl animate-in fade-in-50 zoom-in-95 duration-100"
+          data-testid="barber-filter-menu"
+        >
+          <button
+            type="button"
+            onClick={() => {
+              onChange("todos");
+              setOpen(false);
+            }}
+            className={`flex w-full items-center justify-between px-3 py-2 text-xs text-left transition-colors cursor-pointer ${
+              selected === "todos"
+                ? "bg-[#D4AF37]/15 text-[#D4AF37] font-semibold"
+                : "hover:bg-white/5 text-slate-300 hover:text-white"
+            }`}
+          >
+            <span>Todos os Barbeiros</span>
+            {selected === "todos" && <Check className="h-3.5 w-3.5 text-[#D4AF37]" />}
+          </button>
+          {barbers.map((b) => (
+            <button
+              key={b.id}
+              type="button"
+              onClick={() => {
+                onChange(b.id);
+                setOpen(false);
+              }}
+              className={`flex w-full items-center justify-between px-3 py-2 text-xs text-left transition-colors cursor-pointer ${
+                selected === b.id
+                  ? "bg-[#D4AF37]/15 text-[#D4AF37] font-semibold"
+                  : "hover:bg-white/5 text-slate-300 hover:text-white"
+              }`}
+            >
+              <span className="truncate">{b.name}</span>
+              {selected === b.id && <Check className="h-3.5 w-3.5 text-[#D4AF37]" />}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function Operacional() {
   const [loading, setLoading] = useState(true);
@@ -53,6 +153,7 @@ export default function Operacional() {
   const [paymentMethods, setPaymentMethods] = useState([]);
   const [queue, setQueue] = useState([]);
   const [appointments, setAppointments] = useState([]);
+  const [clients, setClients] = useState([]);
 
   // Date selection (default today)
   const [selectedDate, setSelectedDate] = useState(() => {
@@ -73,13 +174,14 @@ export default function Operacional() {
   // Load all operational data
   const loadData = async () => {
     try {
-      const [sRes, bRes, svRes, pmRes, qRes, aRes] = await Promise.all([
+      const [sRes, bRes, svRes, pmRes, qRes, aRes, clRes] = await Promise.all([
         api.get("/settings"),
         api.get("/barbers"),
         api.get("/services"),
         api.get("/payment-methods"),
         api.get(`/queue?date=${selectedDate}`),
         api.get(`/appointments?date=${selectedDate}`),
+        api.get("/clients"),
       ]);
 
       setSettings(sRes);
@@ -88,6 +190,7 @@ export default function Operacional() {
       setPaymentMethods(pmRes.filter((p) => p.active));
       setQueue(qRes);
       setAppointments(aRes);
+      setClients(clRes || []);
 
       // Auto set active tab if mode is not hybrid
       if (sRes.operational_mode === "fila") {
@@ -353,60 +456,79 @@ export default function Operacional() {
         </Card>
       </div>
 
-      {/* Filter and Tab Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-[#12141F] p-3 rounded-[4px] border border-white/10 shadow-none">
+      {/* Filter and Tab Bar (Mobile-friendly horizontal scroll segmented control & toggle barber filter) */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 bg-[#12141F] p-3 rounded-[4px] border border-white/10 shadow-none">
         {/* Mode Switcher Tabs (Only if Hybrid mode or for exploration) */}
         {operationalMode === "hibrido" ? (
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-auto">
-            <TabsList className="bg-[#0A0D14] border border-white/10 p-0.5 rounded-[4px]">
-              <TabsTrigger
-                value="fila"
-                className="text-xs data-[state=active]:bg-[#12141F] data-[state=active]:text-[#D4AF37] data-[state=active]:shadow-none gap-2 px-3 py-1.5 rounded-[3px]"
+          <div className="w-full md:w-auto overflow-x-auto scrollbar-none pb-0.5">
+            <div className="inline-flex items-center gap-1.5 p-1 bg-[#0A0D14] border border-white/10 rounded-[6px] min-w-max">
+              <button
+                type="button"
+                onClick={() => setActiveTab("fila")}
+                className={`flex items-center gap-2 px-3.5 py-2 rounded-[4px] text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
+                  activeTab === "fila"
+                    ? "bg-[#161A28] text-[#D4AF37] border border-[#D4AF37]/40 shadow-sm"
+                    : "text-slate-400 hover:text-white hover:bg-white/5"
+                }`}
                 data-testid="tab-fila"
               >
-                <Users className="h-3.5 w-3.5" />
-                Ordem de Chegada (Fila)
-                <span className="rounded-[2px] bg-[#0A0D14] border border-white/10 px-1.5 py-0.2 text-[10px] text-slate-300">
+                <Users className="h-3.5 w-3.5 shrink-0" />
+                <span>Ordem de Chegada (Fila)</span>
+                <span
+                  className={`px-1.5 py-0.5 text-[10px] font-bold rounded-[3px] border ${
+                    activeTab === "fila"
+                      ? "bg-[#D4AF37]/20 text-[#D4AF37] border-[#D4AF37]/30"
+                      : "bg-white/5 text-slate-400 border-white/5"
+                  }`}
+                >
                   {queueWaiting.length + queueInChair.length}
                 </span>
-              </TabsTrigger>
-              <TabsTrigger
-                value="agenda"
-                className="text-xs data-[state=active]:bg-[#12141F] data-[state=active]:text-[#D4AF37] data-[state=active]:shadow-none gap-2 px-3 py-1.5 rounded-[3px]"
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setActiveTab("agenda")}
+                className={`flex items-center gap-2 px-3.5 py-2 rounded-[4px] text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
+                  activeTab === "agenda"
+                    ? "bg-[#161A28] text-[#D4AF37] border border-[#D4AF37]/40 shadow-sm"
+                    : "text-slate-400 hover:text-white hover:bg-white/5"
+                }`}
                 data-testid="tab-agenda"
               >
-                <CalendarIcon className="h-3.5 w-3.5" />
-                Agenda de Horários
-                <span className="rounded-[2px] bg-[#0A0D14] border border-white/10 px-1.5 py-0.2 text-[10px] text-slate-300">
+                <CalendarIcon className="h-3.5 w-3.5 shrink-0" />
+                <span>Grade de Horários Agendados</span>
+                <span
+                  className={`px-1.5 py-0.5 text-[10px] font-bold rounded-[3px] border ${
+                    activeTab === "agenda"
+                      ? "bg-[#D4AF37]/20 text-[#D4AF37] border-[#D4AF37]/30"
+                      : "bg-white/5 text-slate-400 border-white/5"
+                  }`}
+                >
                   {filteredAppointments.length}
                 </span>
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
+              </button>
+            </div>
+          </div>
         ) : (
           <div className="flex items-center gap-2 px-2">
             <span className="text-xs font-semibold text-white">
-              {operationalMode === "fila" ? "Visão Fila Virtual" : "Visão Agenda de Horários"}
+              {operationalMode === "fila"
+                ? "Visão: Ordem de Chegada (Fila)"
+                : "Visão: Grade de Horários Agendados"}
             </span>
           </div>
         )}
 
-        {/* Barber Filter */}
-        <div className="flex items-center gap-2">
-          <Label className="text-xs text-slate-400 whitespace-nowrap">Filtrar Barbeiro:</Label>
-          <Select value={selectedBarberFilter} onValueChange={setSelectedBarberFilter}>
-            <SelectTrigger className="w-[180px] h-8 bg-[#0A0D14] border-white/10 text-xs text-slate-200 rounded-[4px]">
-              <SelectValue placeholder="Todos os barbeiros" />
-            </SelectTrigger>
-            <SelectContent className="bg-[#12141F] border-white/10 text-slate-200 rounded-[4px]">
-              <SelectItem value="todos">Todos os Barbeiros</SelectItem>
-              {barbers.map((b) => (
-                <SelectItem key={b.id} value={b.id}>
-                  {b.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+        {/* Barber Filter with Toggle / Click-Outside behavior */}
+        <div className="flex items-center gap-2 w-full md:w-auto justify-between md:justify-end">
+          <Label className="text-xs text-slate-400 whitespace-nowrap shrink-0">
+            Filtrar Barbeiro:
+          </Label>
+          <BarberFilterDropdown
+            barbers={barbers}
+            selected={selectedBarberFilter}
+            onChange={setSelectedBarberFilter}
+          />
         </div>
       </div>
 
@@ -838,6 +960,7 @@ export default function Operacional() {
         onOpenChange={setShowAddQueueModal}
         barbers={barbers}
         services={services}
+        clients={clients}
         date={selectedDate}
         onSuccess={() => {
           setShowAddQueueModal(false);
@@ -851,6 +974,7 @@ export default function Operacional() {
         onOpenChange={setShowAddAppointmentModal}
         barbers={barbers}
         services={services}
+        clients={clients}
         date={selectedDate}
         onSuccess={() => {
           setShowAddAppointmentModal(false);
@@ -913,9 +1037,10 @@ export default function Operacional() {
 // ------------------------------------------------------------------------------------------------
 // MODAL: ADICIONAR À FILA
 // ------------------------------------------------------------------------------------------------
-function AddQueueModal({ open, onOpenChange, barbers, services, date, onSuccess }) {
+function AddQueueModal({ open, onOpenChange, barbers, services, clients = [], date, onSuccess }) {
   const [clientName, setClientName] = useState("");
   const [clientPhone, setClientPhone] = useState("");
+  const [clientId, setClientId] = useState("");
   const [barberId, setBarberId] = useState("qualquer");
   const [selectedServiceIds, setSelectedServiceIds] = useState([]);
   const [notes, setNotes] = useState("");
@@ -925,6 +1050,7 @@ function AddQueueModal({ open, onOpenChange, barbers, services, date, onSuccess 
     if (open) {
       setClientName("");
       setClientPhone("");
+      setClientId("");
       setBarberId("qualquer");
       setSelectedServiceIds(services[0] ? [services[0].id] : []);
       setNotes("");
@@ -955,6 +1081,7 @@ function AddQueueModal({ open, onOpenChange, barbers, services, date, onSuccess 
     setSaving(true);
     try {
       await api.post("/queue", {
+        client_id: clientId || undefined,
         client_name: clientName.trim(),
         client_phone: clientPhone.trim() || undefined,
         barber_id: barberId === "qualquer" ? undefined : barberId,
@@ -986,13 +1113,27 @@ function AddQueueModal({ open, onOpenChange, barbers, services, date, onSuccess 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label className="text-xs text-slate-300">Nome do Cliente *</Label>
-              <Input
+              <ClientAutocomplete
                 value={clientName}
-                onChange={(e) => setClientName(e.target.value)}
+                clients={clients}
                 placeholder="Ex: Lucas Mendes"
-                className="bg-[#0A0D14] border-white/10 text-xs text-white rounded-[4px]"
                 required
-                data-testid="input-queue-client-name"
+                onChange={(typedName, client) => {
+                  setClientName(typedName);
+                  if (client) {
+                    setClientId(client.id);
+                    if (client.phone) setClientPhone(client.phone);
+                  } else {
+                    setClientId("");
+                  }
+                }}
+                onSelectClient={(client) => {
+                  setClientName(client.name);
+                  setClientId(client.id);
+                  if (client.phone) setClientPhone(client.phone);
+                }}
+                inputClassName="bg-[#0A0D14] border-white/10 text-xs text-white rounded-[4px]"
+                testId="input-queue-client-name"
               />
             </div>
             <div className="space-y-1.5">
@@ -1092,9 +1233,10 @@ function AddQueueModal({ open, onOpenChange, barbers, services, date, onSuccess 
 // ------------------------------------------------------------------------------------------------
 // MODAL: NOVO AGENDAMENTO
 // ------------------------------------------------------------------------------------------------
-function AddAppointmentModal({ open, onOpenChange, barbers, services, date, onSuccess }) {
+function AddAppointmentModal({ open, onOpenChange, barbers, services, clients = [], date, onSuccess }) {
   const [clientName, setClientName] = useState("");
   const [clientPhone, setClientPhone] = useState("");
+  const [clientId, setClientId] = useState("");
   const [barberId, setBarberId] = useState("");
   const [time, setTime] = useState("14:00");
   const [selectedServiceIds, setSelectedServiceIds] = useState([]);
@@ -1105,6 +1247,7 @@ function AddAppointmentModal({ open, onOpenChange, barbers, services, date, onSu
     if (open) {
       setClientName("");
       setClientPhone("");
+      setClientId("");
       setBarberId(barbers[0]?.id || "");
       setTime("14:00");
       setSelectedServiceIds(services[0] ? [services[0].id] : []);
@@ -1141,6 +1284,7 @@ function AddAppointmentModal({ open, onOpenChange, barbers, services, date, onSu
     setSaving(true);
     try {
       await api.post("/appointments", {
+        client_id: clientId || undefined,
         client_name: clientName.trim(),
         client_phone: clientPhone.trim() || undefined,
         barber_id: barberId,
@@ -1175,13 +1319,27 @@ function AddAppointmentModal({ open, onOpenChange, barbers, services, date, onSu
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label className="text-xs text-slate-300">Nome do Cliente *</Label>
-              <Input
+              <ClientAutocomplete
                 value={clientName}
-                onChange={(e) => setClientName(e.target.value)}
+                clients={clients}
                 placeholder="Ex: Carlos Eduardo"
-                className="bg-[#0A0D14] border-white/10 text-xs text-white rounded-[4px]"
                 required
-                data-testid="input-apt-client-name"
+                onChange={(typedName, client) => {
+                  setClientName(typedName);
+                  if (client) {
+                    setClientId(client.id);
+                    if (client.phone) setClientPhone(client.phone);
+                  } else {
+                    setClientId("");
+                  }
+                }}
+                onSelectClient={(client) => {
+                  setClientName(client.name);
+                  setClientId(client.id);
+                  if (client.phone) setClientPhone(client.phone);
+                }}
+                inputClassName="bg-[#0A0D14] border-white/10 text-xs text-white rounded-[4px]"
+                testId="input-apt-client-name"
               />
             </div>
             <div className="space-y-1.5">
@@ -1299,8 +1457,10 @@ function AddAppointmentModal({ open, onOpenChange, barbers, services, date, onSu
 function CheckoutModal({ open, onOpenChange, item, barbers, paymentMethods, onSuccess }) {
   const [grossAmount, setGrossAmount] = useState(item.estimated_price || 50);
   const [discountAmount, setDiscountAmount] = useState(0);
-  const [paymentMethodId, setPaymentMethodId] = useState(paymentMethods[0]?.id || "pm_pix");
-  const [paymentType, setPaymentType] = useState("pix");
+  const [paymentChannel, setPaymentChannel] = useState("infinitepay");
+  const [paymentMethod, setPaymentMethod] = useState("credit_card");
+  const [paymentMethodId, setPaymentMethodId] = useState(paymentMethods[0]?.id || "pm_cartao");
+  const [paymentType, setPaymentType] = useState("credito_vista");
   const [selectedBarberId, setSelectedBarberId] = useState(item.barber_id || barbers[0]?.id || "");
   const [saving, setSaving] = useState(false);
 
@@ -1336,13 +1496,19 @@ function CheckoutModal({ open, onOpenChange, item, barbers, paymentMethods, onSu
   const handleFinish = async (e) => {
     e.preventDefault();
     setSaving(true);
+    const channelName = getChannelNameById(paymentChannel, paymentMethods);
+    const methodName = getMethodNameById(paymentMethod);
+    const legType = toLegacyPaymentType(paymentChannel, paymentMethod);
+
     try {
       if (item.isAppointment) {
         await api.post(`/appointments/${item.id}/finish`, {
           gross_amount: gross,
           discount_amount: discount,
           payment_method_id: paymentMethodId,
-          payment_type: paymentType,
+          payment_type: legType,
+          payment_channel: channelName,
+          payment_method: methodName,
           barber_id: selectedBarberId,
         });
       } else {
@@ -1350,7 +1516,9 @@ function CheckoutModal({ open, onOpenChange, item, barbers, paymentMethods, onSu
           gross_amount: gross,
           discount_amount: discount,
           payment_method_id: paymentMethodId,
-          payment_type: paymentType,
+          payment_type: legType,
+          payment_channel: channelName,
+          payment_method: methodName,
           barber_id: selectedBarberId,
         });
       }
@@ -1411,52 +1579,51 @@ function CheckoutModal({ open, onOpenChange, item, barbers, paymentMethods, onSu
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label className="text-xs text-slate-300">Barbeiro Responsável</Label>
-              <Select value={selectedBarberId} onValueChange={setSelectedBarberId}>
-                <SelectTrigger className="bg-[#0A0D14] border-white/10 text-xs text-white rounded-[4px]">
-                  <SelectValue placeholder="Selecione o barbeiro" />
-                </SelectTrigger>
-                <SelectContent className="bg-[#12141F] border-white/10 text-slate-200 rounded-[4px]">
-                  {barbers.map((b) => (
-                    <SelectItem key={b.id} value={b.id}>
-                      {b.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-1.5">
-              <Label className="text-xs text-slate-300">Forma de Pagamento</Label>
-              <Select
-                value={paymentType}
-                onValueChange={(type) => {
-                  setPaymentType(type);
-                  // Match payment method if necessary
-                  if (type === "pix") {
-                    const pm = paymentMethods.find((p) => p.kind === "pix");
-                    if (pm) setPaymentMethodId(pm.id);
-                  } else if (type === "dinheiro") {
-                    const pm = paymentMethods.find((p) => p.kind === "dinheiro");
-                    if (pm) setPaymentMethodId(pm.id);
-                  }
-                }}
-              >
-                <SelectTrigger className="bg-[#0A0D14] border-white/10 text-xs text-white rounded-[4px]">
-                  <SelectValue placeholder="Selecione" />
-                </SelectTrigger>
-                <SelectContent className="bg-[#12141F] border-white/10 text-slate-200 rounded-[4px]">
-                  <SelectItem value="pix">PIX</SelectItem>
-                  <SelectItem value="dinheiro">Dinheiro em Espécie</SelectItem>
-                  <SelectItem value="debito">Cartão de Débito</SelectItem>
-                  <SelectItem value="credito_vista">Cartão de Crédito à Vista</SelectItem>
-                  <SelectItem value="credito_parcelado">Cartão de Crédito Parcelado</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs text-slate-300">Barbeiro Responsável</Label>
+            <Select value={selectedBarberId} onValueChange={setSelectedBarberId}>
+              <SelectTrigger className="bg-[#0A0D14] border-white/10 text-xs text-white rounded-[4px]">
+                <SelectValue placeholder="Selecione o barbeiro" />
+              </SelectTrigger>
+              <SelectContent className="bg-[#12141F] border-white/10 text-slate-200 rounded-[4px]">
+                {barbers.map((b) => (
+                  <SelectItem key={b.id} value={b.id}>
+                    {b.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
+
+          <PaymentChannelSelector
+            channel={paymentChannel}
+            method={paymentMethod}
+            paymentMethods={paymentMethods}
+            onChannelChange={(ch, chObj) => {
+              setPaymentChannel(ch);
+              const leg = toLegacyPaymentType(ch, paymentMethod);
+              setPaymentType(leg);
+              let targetPmId = chObj?.pmId;
+              if (!targetPmId && paymentMethods?.length) {
+                if (ch === "caixa_fisico") {
+                  const pm = paymentMethods.find((p) => p.kind === "dinheiro") || paymentMethods[0];
+                  targetPmId = pm.id;
+                } else if (ch === "pix_direto") {
+                  const pm = paymentMethods.find((p) => p.kind === "pix") || paymentMethods[0];
+                  targetPmId = pm.id;
+                } else {
+                  const pm = paymentMethods.find((p) => p.id === ch || p.kind === "maquininha" || p.kind === "cartao") || paymentMethods[0];
+                  targetPmId = pm.id;
+                }
+              }
+              if (targetPmId) setPaymentMethodId(targetPmId);
+            }}
+            onMethodChange={(m) => {
+              setPaymentMethod(m);
+              const leg = toLegacyPaymentType(paymentChannel, m);
+              setPaymentType(leg);
+            }}
+          />
 
           {/* Real-time Financial Breakdown Preview */}
           <div className="rounded-[3px] border border-white/10 bg-[#0A0D14] p-3.5 space-y-2 text-xs">

@@ -230,7 +230,7 @@ export default function MercadoPagoCardPayment({
                     ...cardFormData,
                     plan_id: plan.id,
                     plan_name: planName,
-                    description: `Assinatura KortePro - ${planName}`,
+                    description: `Assinatura KingPro - ${planName}`,
                     payer: {
                       ...cardFormData?.payer,
                       email: cardFormData?.payer?.email || user?.email,

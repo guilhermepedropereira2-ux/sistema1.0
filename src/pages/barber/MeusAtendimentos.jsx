@@ -126,7 +126,15 @@ export default function MeusAtendimentos() {
               <p className="text-muted-foreground">{fmtDate(sel.date)} {sel.time} · {sel.client_name || "Sem cliente"}</p>
               <div className="space-y-1">
                 {(sel.items || []).map((i, idx) => (
-                  <div key={idx} className="flex justify-between"><span>{i.name}{i.quantity > 1 ? ` x${i.quantity}` : ""} <span className="text-xs text-muted-foreground">({i.kind})</span></span><span>{brl(i.paid)}</span></div>
+                  <div key={idx} className="flex justify-between">
+                    <span>
+                      {i.name}{i.quantity > 1 ? ` x${i.quantity}` : ""}{" "}
+                      <span className="text-xs text-muted-foreground">
+                        ({i.kind === "produto" ? "Produto" : "Serviço"})
+                      </span>
+                    </span>
+                    <span>{brl(i.paid)}</span>
+                  </div>
                 ))}
               </div>
               <div className="space-y-1 border-t border-border pt-2">

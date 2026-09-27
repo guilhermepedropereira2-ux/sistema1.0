@@ -12,30 +12,35 @@ import {
 import {
   Scissors, Plus, RefreshCw, Calendar, Clock, ChevronRight,
   CalendarDays, CheckCircle2, User, Sparkles, Filter,
-  WifiOff, CloudOff,
+  WifiOff, CloudOff, Package,
 } from "lucide-react";
 import LancarAtendimentoModal from "@/components/LancarAtendimentoModal";
 import { useOfflineSync } from "@/hooks/useOfflineSync";
 
 // Componente memoizado para os cards de métricas do barbeiro
 const BarberStatsGrid = memo(function BarberStatsGrid({ faturamento, comissao, atendimentos }) {
+  const formattedComissao = brl(comissao || 0);
+  const comissaoText = formattedComissao.startsWith("R$")
+    ? `+${formattedComissao}`
+    : `+R$ ${formattedComissao}`;
+
   return (
     <div className="grid grid-cols-3 gap-2.5 sm:gap-3" data-testid="barber-stats-grid">
-      <div className="rounded-[4px] bg-[#12141F] border border-white/10 p-3 text-left">
-        <p className="text-[10px] sm:text-xs font-medium text-slate-400">Faturamento Hoje</p>
-        <p className="text-sm sm:text-lg font-bold font-mono text-white mt-0.5" data-testid="barber-stat-faturamento">
+      <div className="rounded-2xl bg-[#10131E] border border-white/[0.08] p-3.5 sm:p-4 text-left shadow-sm">
+        <p className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-slate-400">Faturamento Hoje</p>
+        <p className="text-base sm:text-xl font-extrabold font-mono text-white mt-1 tracking-tight" data-testid="barber-stat-faturamento">
           {brl(faturamento || 0)}
         </p>
       </div>
-      <div className="rounded-[4px] bg-[#12141F] border border-white/10 p-3 text-left">
-        <p className="text-[10px] sm:text-xs font-medium text-slate-400">Minha Comissão</p>
-        <p className="text-sm sm:text-lg font-bold font-mono text-[#10B981] mt-0.5" data-testid="barber-stat-comissao">
-          {brl(comissao || 0)}
+      <div className="rounded-2xl bg-[#10131E] border border-white/[0.08] p-3.5 sm:p-4 text-left shadow-sm">
+        <p className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-slate-400">Minha Comissão</p>
+        <p className="text-base sm:text-xl font-extrabold font-mono text-emerald-400 mt-1 tracking-tight" data-testid="barber-stat-comissao">
+          {comissaoText}
         </p>
       </div>
-      <div className="rounded-[4px] bg-[#12141F] border border-white/10 p-3 text-left">
-        <p className="text-[10px] sm:text-xs font-medium text-slate-400">Atendimentos</p>
-        <p className="text-sm sm:text-lg font-bold font-mono text-[#D4AF37] mt-0.5" data-testid="barber-stat-atendimentos">
+      <div className="rounded-2xl bg-[#10131E] border border-white/[0.08] p-3.5 sm:p-4 text-left shadow-sm">
+        <p className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-slate-400">Atendimentos</p>
+        <p className="text-base sm:text-xl font-extrabold font-mono text-[#D4AF37] mt-1 tracking-tight" data-testid="barber-stat-atendimentos">
           {atendimentos}
         </p>
       </div>
@@ -53,28 +58,52 @@ const BarberAtendimentoRow = memo(function BarberAtendimentoRow({ atendimento, o
   const commissionVal = atendimento?.commission ?? atendimento?.commission_amount ?? 0;
   const isPaid = Boolean(atendimento?.commission_paid);
 
+  const isProduct =
+    atendimento?.item_kind === "produto" ||
+    atendimento?.service_type === "produto" ||
+    (Array.isArray(atendimento?.items) &&
+      atendimento.items.some((i) => i?.item_kind === "produto")) ||
+    /pomada|óleo|shampoo|cera|minoxidil|balm|produto|creme|gel/i.test(serviceNames);
+
   return (
     <div
       onClick={() => onSelect(atendimento)}
-      className="flex items-center justify-between rounded-[3px] bg-[#0A0D14] border border-white/10 p-3 hover:border-[#D4AF37]/40 cursor-pointer select-none"
+      className="flex items-center justify-between rounded-xl bg-[#0B0D14] border border-white/[0.08] p-3 hover:border-[#D4AF37]/40 cursor-pointer select-none transition-colors"
       data-testid={testId}
     >
-      <div className="min-w-0 pr-3">
-        <p className="truncate text-xs sm:text-sm font-semibold text-white">
-          {serviceNames}
-        </p>
-        <p className="text-[11px] text-muted-foreground mt-0.5 truncate">
-          {fmtDate(atendimento?.date)} às {atendimento?.time || "12:00"} · {atendimento?.client_name || "Sem cliente"} · {atendimento?.payment_method_name || "Dinheiro"}
-        </p>
+      <div className="flex items-center gap-3 min-w-0 pr-2">
+        {/* Miniatura / Ícone estilizado à esquerda */}
+        <div
+          className={`h-10 w-10 rounded-xl flex items-center justify-center shrink-0 border ${
+            isProduct
+              ? "bg-emerald-500/10 border-emerald-500/25 text-emerald-400"
+              : "bg-[#D4AF37]/10 border-[#D4AF37]/25 text-[#D4AF37]"
+          }`}
+        >
+          {isProduct ? (
+            <Package className="h-5 w-5" />
+          ) : (
+            <Scissors className="h-5 w-5" />
+          )}
+        </div>
+
+        <div className="min-w-0">
+          <p className="truncate text-xs sm:text-sm font-semibold text-white">
+            {serviceNames}
+          </p>
+          <p className="text-[11px] text-muted-foreground mt-0.5 truncate">
+            {fmtDate(atendimento?.date)} às {atendimento?.time || "12:00"} · {atendimento?.client_name || "Sem cliente"} · {atendimento?.payment_method_name || "Dinheiro"}
+          </p>
+        </div>
       </div>
 
-      <div className="flex items-center gap-3 shrink-0">
+      <div className="flex items-center gap-2.5 shrink-0">
         <div className="text-right">
           <p className="text-xs sm:text-sm font-bold text-white">
             {brl(paidVal)}
           </p>
-          <p className="text-[11px] font-bold text-[#10B981]">
-            +{brl(commissionVal)} comissão
+          <p className="text-[11px] font-bold text-emerald-400">
+            +{brl(commissionVal)}
           </p>
         </div>
 
@@ -141,26 +170,11 @@ export default function BarberHome() {
   }, [outletCtx]);
 
   const barberName = user?.name || data?.barber_name || "Barbeiro";
+  const primeiroNome = (barberName || "Barbeiro").trim().split(" ")[0];
   const barberId = data?.barber_id || user?.barber_id || "b1";
 
-  // Saudação simples e discreta apenas no primeiro acesso do dia
+  // Data de hoje
   const todayStr = useMemo(() => new Date().toISOString().slice(0, 10), []);
-  const greetingStorageKey = `barber_greeting_seen_${barberId}_${todayStr}`;
-  
-  const [showDailyGreeting, setShowDailyGreeting] = useState(() => {
-    try {
-      return !localStorage.getItem(greetingStorageKey);
-    } catch {
-      return false;
-    }
-  });
-
-  const dismissDailyGreeting = useCallback(() => {
-    try {
-      localStorage.setItem(greetingStorageKey, "true");
-    } catch {}
-    setShowDailyGreeting(false);
-  }, [greetingStorageKey]);
 
   // Filtro operacional de atendimentos: "hoje", "semana", "mes"
   const [timeFilter, setTimeFilter] = useState("hoje");
@@ -248,36 +262,27 @@ export default function BarberHome() {
 
   return (
     <div className="space-y-4" data-testid="barber-home">
-      {/* 1. Saudação Simples e Discreta (apenas no primeiro acesso do dia) */}
-      {showDailyGreeting && (
-        <div
-          className="flex items-center justify-between px-3.5 py-2 rounded-[4px] bg-[#12141F] border border-white/10 text-xs text-muted-foreground animate-in fade-in slide-in-from-top-1 duration-200"
-          data-testid="barber-daily-greeting"
-        >
-          <div className="flex items-center gap-2">
-            <span className="h-1.5 w-1.5 rounded-full bg-[#D4AF37] animate-pulse shrink-0" />
-            <span className="text-white font-medium">Olá, {barberName}</span>
-            <span className="text-muted-foreground hidden sm:inline">• Tenha um excelente dia de atendimentos!</span>
-          </div>
-          <button
-            onClick={dismissDailyGreeting}
-            className="text-muted-foreground hover:text-white text-xs px-1.5 py-0.5 rounded-[2px] hover:bg-white/10 transition-colors cursor-pointer"
-            title="Dispensar aviso"
-            data-testid="btn-dismiss-greeting"
-          >
-            ✕
-          </button>
+      {/* 1. Saudação e Boas-Vindas Fixa */}
+      <div
+        className="flex items-center px-4 py-3 rounded-2xl bg-[#10131E] border border-white/[0.08] text-xs shadow-sm"
+        data-testid="barber-daily-greeting"
+      >
+        <div className="flex items-center gap-2.5">
+          <span className="h-2 w-2 rounded-full bg-[#D4AF37] animate-pulse shrink-0" />
+          <p className="text-slate-200 text-xs sm:text-sm font-medium">
+            • Olá, <span className="font-bold text-white">{primeiroNome}</span>. Bem-vindo ao seu Hub Pessoal de Sucesso.
+          </p>
         </div>
-      )}
+      </div>
 
       {/* 1.1 Banner Informativo de Conexão Offline e Sincronização Local */}
       {(!isOnline || pendingCount > 0) && (
         <div
-          className="rounded-[4px] border border-amber-500/40 bg-amber-500/10 p-3 text-xs flex flex-wrap items-center justify-between gap-2.5 text-amber-200 animate-in fade-in duration-150"
+          className="rounded-2xl border border-amber-500/40 bg-amber-500/10 p-3.5 text-xs flex flex-wrap items-center justify-between gap-2.5 text-amber-200 animate-in fade-in duration-150 shadow-sm"
           data-testid="offline-sync-banner"
         >
           <div className="flex items-center gap-2.5">
-            <div className="h-8 w-8 rounded-[4px] bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-300 shrink-0">
+            <div className="h-8 w-8 rounded-xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-300 shrink-0">
               {!isOnline ? <WifiOff className="h-4 w-4" /> : <CloudOff className="h-4 w-4" />}
             </div>
             <div>
@@ -298,7 +303,7 @@ export default function BarberHome() {
               size="sm"
               onClick={syncNow}
               disabled={isOfflineSyncing}
-              className="h-8 px-3 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs rounded-[3px] shadow-none gap-1.5 cursor-pointer ml-auto"
+              className="h-8 px-3 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs rounded-lg shadow-none gap-1.5 cursor-pointer ml-auto"
               data-testid="btn-sync-now"
             >
               <RefreshCw className={`h-3 w-3 ${isOfflineSyncing ? "animate-spin" : ""}`} />
@@ -311,10 +316,10 @@ export default function BarberHome() {
       {/* 2. Botão Principal de Ação Rápida (Lançar Atendimento) */}
       <Button
         onClick={handleOpenLancar}
-        className="w-full h-12 bg-[#D4AF37] hover:bg-[#C59F2E] text-[#0B0D14] font-display font-extrabold text-sm tracking-wide rounded-[4px] shadow-none flex items-center justify-center gap-2.5 transition-colors cursor-pointer border border-[#D4AF37]/40"
+        className="w-full h-12 bg-[#D4AF37] hover:bg-[#C59F2E] text-[#0B0D14] font-display font-extrabold text-sm tracking-wide rounded-2xl shadow-sm flex items-center justify-center gap-2.5 transition-colors cursor-pointer border border-[#D4AF37]/40"
         data-testid="home-lancar"
       >
-        <div className="flex h-7 w-7 items-center justify-center rounded-[2px] bg-[#0B0D14]/15 text-[#0B0D14]">
+        <div className="flex h-7 w-7 items-center justify-center rounded-[4px] bg-[#0B0D14]/15 text-[#0B0D14]">
           <Scissors className="h-4 w-4 stroke-[2.5]" />
         </div>
         <span>+ LANÇAR ATENDIMENTO</span>
@@ -328,15 +333,15 @@ export default function BarberHome() {
       />
 
       {/* 3. Barra de Status Operacional e Agenda do Dia */}
-      <div className="rounded-[4px] bg-[#12141F] border border-white/10 p-4 sm:p-5 shadow-none space-y-4">
+      <div className="rounded-2xl bg-[#10131E] border border-white/[0.08] p-4 sm:p-5 shadow-sm space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-3 border-b border-white/10">
           <div>
             <div className="flex items-center gap-2">
               <h2 className="font-display text-sm sm:text-base font-bold text-white tracking-tight">
                 Fluxo de Atendimentos
               </h2>
-              <Badge className="bg-[#D4AF37]/15 text-[#D4AF37] border-[#D4AF37]/30 text-[10px] font-semibold py-0 rounded-[2px]">
-                {effectiveAtendimentos} hoje
+              <Badge className="bg-[#D4AF37]/10 text-[#D4AF37] border border-[#D4AF37]/60 text-[10px] sm:text-[11px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider shadow-[0_0_8px_rgba(212,175,55,0.12)]">
+                {effectiveAtendimentos} HOJE
               </Badge>
             </div>
             <p className="text-xs text-muted-foreground capitalize mt-0.5">

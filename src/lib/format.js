@@ -45,6 +45,7 @@ export const PERIOD_OPTIONS = [
   { value: "hoje", label: "Hoje" },
   { value: "ontem", label: "Ontem" },
   { value: "semana", label: "Esta semana" },
+  { value: "quinzena", label: "Esta quinzena" },
   { value: "mes", label: "Este mês" },
   { value: "mes_anterior", label: "Mês anterior" },
   { value: "personalizado", label: "Personalizado" },
@@ -56,6 +57,18 @@ export const periodRange = (key, custom) => {
   if (key === "hoje") return { start: iso(t), end: iso(t) };
   if (key === "ontem") { const y = new Date(t); y.setDate(t.getDate() - 1); return { start: iso(y), end: iso(y) }; }
   if (key === "semana") { const s = new Date(t); s.setDate(t.getDate() - t.getDay()); return { start: iso(s), end: iso(t) }; }
+  if (key === "quinzena") {
+    const day = t.getDate();
+    if (day <= 15) {
+      const s = new Date(t.getFullYear(), t.getMonth(), 1);
+      const e = new Date(t.getFullYear(), t.getMonth(), 15);
+      return { start: iso(s), end: iso(e) };
+    } else {
+      const s = new Date(t.getFullYear(), t.getMonth(), 16);
+      const e = new Date(t.getFullYear(), t.getMonth() + 1, 0);
+      return { start: iso(s), end: iso(e) };
+    }
+  }
   if (key === "mes_anterior") {
     const s = new Date(now.getFullYear(), now.getMonth() - 1, 1);
     const e = new Date(now.getFullYear(), now.getMonth(), 0);

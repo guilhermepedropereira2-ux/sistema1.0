@@ -68,11 +68,11 @@ export default function Planos() {
           <div className="flex items-center gap-3">
             <img 
               src="/logo.png" 
-              alt="KortePro" 
+              alt="KingPro" 
               className="h-11 w-11 rounded-full object-cover border border-[#D4AF37]/40 shadow-md shadow-[#D4AF37]/15 shrink-0" 
             />
             <div>
-              <h1 className="font-display text-xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-[#D4AF37] to-amber-500 tracking-tight">KortePro</h1>
+              <h1 className="font-display text-xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-[#D4AF37] to-amber-500 tracking-tight">KingPro</h1>
               <p className="text-xs text-slate-400">Automação financeira & gestão para barbearias</p>
             </div>
           </div>
@@ -243,7 +243,7 @@ export default function Planos() {
       </div>
 
       <footer className="text-center text-xs text-slate-500 py-4 border-t border-white/5">
-        KortePro © {new Date().getFullYear()} - Sistema para Barbearias e Cabeleireiros. Todos os direitos reservados.
+        KingPro © {new Date().getFullYear()} - Sistema para Barbearias e Cabeleireiros. Todos os direitos reservados.
       </footer>
 
       {/* Modal de Checkout Transparente do Mercado Pago */}
