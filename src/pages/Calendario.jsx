@@ -36,7 +36,7 @@ export default function Calendario() {
   for (let d = 1; d <= daysInMonth; d++) cells.push(d);
 
   return (
-    <div className="space-y-5" data-testid="calendario-page">
+    <div className="space-y-5 max-w-full 2xl:max-w-[1920px] mx-auto" data-testid="calendario-page">
       <div className="flex flex-wrap items-center gap-4 text-xs">
         {Object.entries(STATUS).map(([k, v]) => (
           <span key={k} className="flex items-center gap-1.5"><span className={`h-2.5 w-2.5 rounded-full ${v.cls}`} /> {v.label}</span>
@@ -47,8 +47,8 @@ export default function Calendario() {
       {!expensesList.length ? (
         <EmptyState title="Nenhuma conta neste mês" subtitle="As despesas cadastradas aparecerão no calendário." />
       ) : (
-        <Card className="p-3 sm:p-5">
-          <div className="grid grid-cols-7 gap-1 sm:gap-2">
+        <Card className="p-3 sm:p-5 overflow-x-auto">
+          <div className="min-w-[500px] grid grid-cols-7 gap-1 sm:gap-2">
             {WEEKDAYS.map((w) => <div key={w} className="py-2 text-center text-xs font-semibold text-muted-foreground">{w}</div>)}
             {cells.map((d, i) => (
               <div key={i} className={`min-h-[76px] rounded-md border p-1.5 ${d ? "border-border" : "border-transparent"}`} data-testid={d ? `cal-day-${d}` : undefined}>

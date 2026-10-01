@@ -44,15 +44,8 @@ export function AuthProvider({ children }) {
     setUser(null);
   };
 
-  const switchAccount = async (userIdOrUsername) => {
-    const res = await api.post("/auth/switch", { userId: userIdOrUsername });
-    storeToken(res.token, true);
-    setUser(res.user);
-    return res.user;
-  };
-
   return (
-    <AuthContext.Provider value={{ user, ready, login, register, logout, switchAccount }}>
+    <AuthContext.Provider value={{ user, ready, login, register, logout }}>
       {children}
     </AuthContext.Provider>
   );

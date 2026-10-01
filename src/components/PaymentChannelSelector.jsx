@@ -363,7 +363,7 @@ export default function PaymentChannelSelector({
                   onChange={(e) =>
                     setNewMachineForm((prev) => ({ ...prev, name: e.target.value }))
                   }
-                  placeholder="Ex: Stone Balcão, Ton, InfinitePay, Mercado Pago"
+                  placeholder="Ex: Terminal Balcão 1, Maquininha Principal, Totem"
                   className="mt-1 h-9 bg-[#0A0D14] border-white/15 text-white text-xs focus-visible:ring-[#D4AF37]"
                   autoFocus
                   required

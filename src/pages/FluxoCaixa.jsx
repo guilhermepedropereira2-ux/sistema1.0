@@ -78,13 +78,13 @@ export default function FluxoCaixa() {
       ["(=) Saldo Retido no Caixa", month, formatBrlNumber(retainedResult), pct(retainedResult)],
     ];
 
-    const filename = `KingPro_DRE_Financeiro_${month}.csv`;
+    const filename = `Kupola_DRE_Financeiro_${month}.csv`;
     downloadCsv({ filename, headers, rows });
     toast.success("DRE exportada para Excel com sucesso!");
   };
 
   return (
-    <div className="space-y-6" data-testid="fluxo-page">
+    <div className="space-y-6 max-w-full 2xl:max-w-[1920px] mx-auto" data-testid="fluxo-page">
       {/* Header & Tabs */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-[#1F293D]">
         <div>
@@ -123,7 +123,7 @@ export default function FluxoCaixa() {
       {tab === "dre" ? (
         <div className="space-y-6">
           {/* Top DRE Cards */}
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
             <Card className="p-5 bg-[#131826] border-[#1F293D]">
               <p className="text-xs uppercase font-bold text-muted-foreground">Receita Bruta Total</p>
               <p className="font-display text-2xl font-black text-white mt-1">{brl(gross)}</p>
@@ -260,7 +260,7 @@ export default function FluxoCaixa() {
         </div>
       ) : (
         <div className="space-y-6">
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
             <StatCard label="Saldo Inicial" value={data.initial_balance} icon={Landmark} tone="muted" testId="cf-initial" />
             <StatCard label="Entradas" value={data.inflow} icon={ArrowUpCircle} tone="success" testId="cf-inflow" />
             <StatCard label="Saídas" value={data.outflow} icon={ArrowDownCircle} tone="danger" testId="cf-outflow" />

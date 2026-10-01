@@ -11,11 +11,11 @@ export default function Privacidade() {
           <Link to="/" className="flex items-center gap-2.5">
             <img
               src="/logo.png"
-              alt="KingPro"
+              alt="Kupola"
               className="h-9 w-9 rounded-full object-cover border border-[#D4AF37]/40 shadow-sm"
             />
             <span className="font-display font-extrabold text-base tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-[#D4AF37] to-amber-500">
-              KingPro
+              Kupola
             </span>
           </Link>
           <span className="hidden sm:inline-block text-xs text-slate-500">|</span>
@@ -44,7 +44,7 @@ export default function Privacidade() {
             Conformidade LGPD (Lei 13.709/2018)
           </div>
           <h1 className="font-display text-2xl sm:text-4xl font-extrabold text-white tracking-tight">
-            Política de Privacidade do KingPro
+            Política de Privacidade do Kupola
           </h1>
           <p className="mt-2 text-xs sm:text-sm text-slate-400">
             Última atualização: Setembro de 2026 • Transparência no tratamento de dados para barbearias e clientes.
@@ -57,7 +57,7 @@ export default function Privacidade() {
               <ShieldCheck className="h-4 w-4 text-[#D4AF37]" /> 1. Compromisso com a Privacidade
             </h2>
             <p className="text-xs sm:text-sm">
-              No <strong>KingPro</strong>, a privacidade e a segurança dos dados dos proprietários de barbearias, dos profissionais barbeiros e dos consumidores finais são prioridades inegociáveis. Esta Política descreve de forma clara e objetiva como coletamos, tratamos, armazenamos e protegemos suas informações pessoais.
+              No <strong>Kupola</strong>, a privacidade e a segurança dos dados dos proprietários de barbearias, dos profissionais barbeiros e dos consumidores finais são prioridades inegociáveis. Esta Política descreve de forma clara e objetiva como coletamos, tratamos, armazenamos e protegemos suas informações pessoais.
             </p>
           </section>
 
@@ -66,7 +66,7 @@ export default function Privacidade() {
               <ShieldCheck className="h-4 w-4 text-[#D4AF37]" /> 2. Dados Coletados e Finalidade
             </h2>
             <p className="text-xs sm:text-sm mb-3">
-              O <strong>KingPro</strong> coleta apenas as informações estritamente necessárias para a prestação dos serviços contratados:
+              O <strong>Kupola</strong> coleta apenas as informações estritamente necessárias para a prestação dos serviços contratados:
             </p>
             <ul className="list-disc pl-5 space-y-1.5 text-xs sm:text-sm text-slate-300">
               <li><strong>Dados da Barbearia & Administrador:</strong> Nome da empresa, CNPJ/CPF, e-mail, telefone/WhatsApp de contato, endereço e dados de faturamento.</li>
@@ -80,7 +80,7 @@ export default function Privacidade() {
               <ShieldCheck className="h-4 w-4 text-[#D4AF37]" /> 3. Tratamento de Pagamentos e Gateway
             </h2>
             <p className="text-xs sm:text-sm">
-              As transações financeiras de assinatura do software <strong>KingPro</strong> são processadas de forma segura e tokenizada através da instituição de pagamento homologada <em>Mercado Pago</em>. O <strong>KingPro</strong> não armazena dados de cartão de crédito em seus servidores de aplicação, garantindo total conformidade com o padrão PCI-DSS.
+              As transações financeiras de assinatura do software <strong>Kupola</strong> são processadas de forma segura e tokenizada através de canais bancários homologados e criptografados. O <strong>Kupola</strong> não armazena dados de cartão de crédito em seus servidores de aplicação, garantindo total conformidade com o padrão internacional de segurança PCI-DSS.
             </p>
           </section>
 
@@ -89,7 +89,7 @@ export default function Privacidade() {
               <ShieldCheck className="h-4 w-4 text-[#D4AF37]" /> 4. Não Compartilhamento com Terceiros
             </h2>
             <p className="text-xs sm:text-sm">
-              O <strong>KingPro</strong> <strong>jamais vende, aluga ou compartilha</strong> os dados de clientes, histórico de faturamento ou contatos das barbearias com corretores de dados, parceiros publicitários ou terceiros sem autorização expressa.
+              O <strong>Kupola</strong> <strong>jamais vende, aluga ou compartilha</strong> os dados de clientes, histórico de faturamento ou contatos das barbearias com corretores de dados, parceiros publicitários ou terceiros sem autorização expressa.
             </p>
           </section>
 
@@ -98,7 +98,7 @@ export default function Privacidade() {
               <ShieldCheck className="h-4 w-4 text-[#D4AF37]" /> 5. Direitos dos Titulares de Dados (LGPD)
             </h2>
             <p className="text-xs sm:text-sm">
-              Nos termos da Lei Geral de Proteção de Dados (LGPD), qualquer titular pode solicitar ao <strong>KingPro</strong> ou ao administrador da barbearia a confirmação de tratamento, acesso, correção ou eliminação definitiva dos seus registros da base do sistema.
+              Nos termos da Lei Geral de Proteção de Dados (LGPD), qualquer titular pode solicitar ao <strong>Kupola</strong> ou ao administrador da barbearia a confirmação de tratamento, acesso, correção ou eliminação definitiva dos seus registros da base do sistema.
             </p>
           </section>
 
@@ -107,14 +107,14 @@ export default function Privacidade() {
               <ShieldCheck className="h-4 w-4 text-[#D4AF37]" /> 6. Canal de Contato com o DPO / Suporte
             </h2>
             <p className="text-xs sm:text-sm">
-              Em caso de dúvidas referentes à privacidade ou para exercer seus direitos sob a LGPD, o titular poderá entrar em contato através do canal oficial de privacidade do <strong>KingPro</strong> no painel de suporte ao cliente.
+              Em caso de dúvidas referentes à privacidade ou para exercer seus direitos sob a LGPD, o titular poderá entrar em contato através do canal oficial de privacidade do <strong>Kupola</strong> no painel de suporte ao cliente.
             </p>
           </section>
         </div>
 
         {/* Footer */}
         <div className="mt-12 pt-6 border-t border-white/[0.08] flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
-          <p>© 2026 KingPro — Todos os direitos reservados.</p>
+          <p>© 2026 Kupola — Todos os direitos reservados.</p>
           <div className="flex items-center gap-4">
             <Link to="/termos" className="hover:text-slate-300 transition-colors">
               Termos de Uso

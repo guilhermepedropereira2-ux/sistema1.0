@@ -212,51 +212,48 @@ export default function PainelBalcao({
   }, [waitingList, searchTerm]);
 
   return (
-    <div className="space-y-6 w-full max-w-full" data-testid="painel-balcao-seguro">
-      {/* 1. Banner Superior de Segurança Operacional */}
-      <div className="rounded-[4px] bg-[#12141F] border border-amber-500/30 p-4 sm:p-5 flex flex-wrap items-center justify-between gap-4 shadow-none">
-        <div className="flex items-center gap-3.5">
-          <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-[2px] bg-amber-500/20 border border-amber-500/30 text-amber-400 flex items-center justify-center shrink-0">
-            <Shield className="h-6 w-6" />
+    <div className="space-y-4 sm:space-y-5 w-full max-w-full" data-testid="painel-balcao-seguro">
+      {/* 1. Banner Superior Minimalista de Segurança Operacional */}
+      <div className="rounded-[4px] bg-[#12141F] border border-amber-500/20 px-3.5 py-2.5 sm:px-4 flex items-center justify-between gap-3 shadow-none">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="h-7 w-7 rounded-[2px] bg-amber-500/15 border border-amber-500/30 text-amber-400 flex items-center justify-center shrink-0">
+            <Shield className="h-3.5 w-3.5" />
           </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h2 className="font-display text-base sm:text-lg font-extrabold text-white tracking-tight">
-                Painel do Caixa & Balcão (Visão Segura)
-              </h2>
-              <Badge className="bg-amber-500/20 text-amber-300 border-amber-500/40 text-[10px] font-bold uppercase rounded-[2px]">
-                Tela Protegida
-              </Badge>
-            </div>
-            <p className="text-xs text-slate-300 mt-0.5">
-              Dados financeiros confidenciais (lucros, retiradas, margens e saldos) foram ocultados para segurança visual na recepção.
-            </p>
+          <div className="flex items-center gap-2 truncate">
+            <h2 className="font-display text-xs sm:text-sm font-bold text-white tracking-tight truncate">
+              Painel do Caixa & Balcão
+            </h2>
+            <Badge className="bg-amber-500/15 text-amber-300 border-amber-500/30 text-[9px] font-semibold uppercase rounded-[2px] px-1.5 py-0.5 shrink-0">
+              Visão Segura
+            </Badge>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={loadBalcaoData}
-            disabled={loading}
-            className="h-9 px-3 text-xs bg-[#0A0D14] border-white/10 text-slate-300 hover:text-white rounded-[4px] gap-1.5 shadow-none"
-            title="Atualizar fila e agendamentos"
-          >
-            <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin text-amber-400" : ""}`} />
-            <span className="hidden sm:inline">Atualizar</span>
-          </Button>
-
-          {toggleBalcaoMode && user?.role !== "caixa" && (
+        <div className="shrink-0">
+          {toggleBalcaoMode && user?.role !== "caixa" ? (
             <Button
               variant="outline"
               size="sm"
               onClick={toggleBalcaoMode}
-              className="h-9 px-3 text-xs bg-amber-500/15 border-amber-500/40 text-amber-300 hover:bg-amber-500/25 rounded-[4px] gap-1.5 font-semibold shadow-none"
-              title="Sair da visão segura e retornar ao dashboard completo com métricas financeiras"
+              className="h-8 px-3 text-xs bg-amber-500/10 hover:bg-amber-500/20 border-amber-500/30 text-amber-300 hover:text-amber-200 rounded-[4px] gap-1.5 font-semibold shadow-none transition-colors cursor-pointer"
+              title="Sair da visão segura e retornar ao dashboard completo"
+              data-testid="balcao-btn-toggle-modo"
             >
               <EyeOff className="h-3.5 w-3.5" />
               <span>Sair do Modo Caixa</span>
+            </Button>
+          ) : (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={loadBalcaoData}
+              disabled={loading}
+              className="h-8 px-3 text-xs bg-[#0A0D14] hover:bg-white/5 border-white/10 text-slate-300 hover:text-white rounded-[4px] gap-1.5 shadow-none transition-colors cursor-pointer"
+              title="Atualizar dados do balcão"
+              data-testid="balcao-btn-refresh"
+            >
+              <RefreshCw className={`h-3 w-3 ${loading ? "animate-spin text-amber-400" : ""}`} />
+              <span>Atualizar</span>
             </Button>
           )}
         </div>

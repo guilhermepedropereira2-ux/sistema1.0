@@ -39,12 +39,12 @@ export default function Retiradas() {
   const total = (list || []).reduce((a, w) => a + w.value, 0);
 
   return (
-    <div className="space-y-5" data-testid="retiradas-page">
+    <div className="space-y-5 max-w-full 2xl:max-w-[1920px] mx-auto" data-testid="retiradas-page">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <Card className="p-4"><p className="text-xs uppercase text-muted-foreground">Total retirado no mês</p><p className="font-display text-xl font-extrabold">{brl(total)}</p></Card>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild><Button className="gap-2" data-testid="add-withdrawal-button"><Plus className="h-4 w-4" /> Nova Retirada</Button></DialogTrigger>
-          <DialogContent className="max-w-md">
+          <DialogContent className="w-[95vw] sm:max-w-md max-h-[85vh] overflow-y-auto">
             <DialogHeader><DialogTitle className="font-display">Retirada do Proprietário</DialogTitle></DialogHeader>
             <div className="grid gap-4">
               <div><Label>Valor (R$)</Label><Input type="number" value={form.value} onChange={(e) => setForm((f) => ({ ...f, value: e.target.value }))} data-testid="withdrawal-value" /></div>

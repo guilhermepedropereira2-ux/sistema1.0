@@ -69,7 +69,7 @@ export default function Barbearia() {
   };
 
   return (
-    <div className="max-w-3xl space-y-6" data-testid="barbearia-page">
+    <div className="w-full max-w-5xl 2xl:max-w-[1920px] mx-auto space-y-6" data-testid="barbearia-page">
       {/* Card de Link Público Exclusivo */}
       <Card className="p-6 border border-white/10 bg-[#12141F] relative overflow-hidden rounded-[4px] shadow-none">
         <div className="flex items-center justify-between mb-3">

@@ -232,10 +232,10 @@ export default function MeusClientes() {
       {/* Modal de Detalhes do Cliente no Painel do Barbeiro */}
       <Dialog open={!!sel} onOpenChange={(o) => !o && setSel(null)}>
         <DialogContent
-          className="max-w-md max-h-[90vh] overflow-y-auto bg-[#12141F] border-white/10 text-white rounded-[6px]"
+          className="w-[95vw] sm:max-w-md max-h-[85vh] overflow-y-auto bg-[#12141F] border-white/10 text-white rounded-[6px] p-5 sm:p-6"
           data-testid="client-detail"
         >
-          <DialogHeader>
+          <DialogHeader className="shrink-0">
             <DialogTitle className="font-display text-base sm:text-lg text-white flex items-center gap-2">
               <User className="h-5 w-5 text-[#D4AF37]" />
               <span>{sel?.name}</span>

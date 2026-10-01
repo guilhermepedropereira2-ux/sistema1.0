@@ -176,7 +176,7 @@ export default function PlanosClientes() {
   if (loadingPlans || loadingClients) return <Loading />;
 
   return (
-    <div className="space-y-6 max-w-6xl mx-auto" data-testid="planos-clientes-page">
+    <div className="space-y-6 max-w-full 2xl:max-w-[1920px] mx-auto" data-testid="planos-clientes-page">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/10 pb-5">
         <div>
@@ -443,8 +443,8 @@ export default function PlanosClientes() {
 
       {/* Modal de Criação / Edição de Plano */}
       <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-        <DialogContent className="max-w-lg rounded-[6px] border-white/10 bg-[#12141F] text-white">
-          <DialogHeader>
+        <DialogContent className="w-[95vw] sm:max-w-lg max-h-[85vh] overflow-y-auto rounded-[6px] border-white/10 bg-[#12141F] text-white p-5 sm:p-6">
+          <DialogHeader className="shrink-0">
             <DialogTitle className="font-display flex items-center gap-2">
               <Crown className="h-5 w-5 text-[#D4AF37]" />
               {editingPlan ? "Editar Plano de Assinatura" : "Novo Plano de Assinatura"}

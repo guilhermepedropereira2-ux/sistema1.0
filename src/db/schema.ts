@@ -82,7 +82,7 @@ export const appointments = pgTable("appointments", {
   created_at: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
-// 6. Transações de Assinatura (Mercado Pago / Checkout)
+// 6. Transações de Assinatura (Pagamento / Checkout Oficial)
 export const subscriptionTransactions = pgTable("subscription_transactions", {
   id: varchar("id", { length: 100 }).primaryKey(),
   organization_id: varchar("organization_id", { length: 100 })

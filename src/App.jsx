@@ -38,12 +38,9 @@ import AgendamentoPublico from "@/pages/AgendamentoPublico";
 import Planos from "@/pages/Planos";
 import PlanosClientes from "@/pages/PlanosClientes";
 import Comissoes from "@/pages/Comissoes";
-import Checkout from "@/pages/Checkout";
-import CheckoutSuccess from "@/pages/CheckoutSuccess";
-import CheckoutFailure from "@/pages/CheckoutFailure";
-import CheckoutPending from "@/pages/CheckoutPending";
 import Termos from "@/pages/Termos";
 import Privacidade from "@/pages/Privacidade";
+import SuperAdmin from "@/pages/SuperAdmin";
 
 function App() {
   return (
@@ -60,10 +57,8 @@ function App() {
 
                 <Route path="/login" element={<Login />} />
                 <Route path="/planos" element={<Planos />} />
-                <Route path="/checkout" element={<Checkout />} />
-                <Route path="/checkout/success" element={<CheckoutSuccess />} />
-                <Route path="/checkout/failure" element={<CheckoutFailure />} />
-                <Route path="/checkout/pending" element={<CheckoutPending />} />
+                <Route path="/checkout/*" element={<Navigate to="/planos" replace />} />
+                <Route path="/checkout" element={<Navigate to="/planos" replace />} />
                 <Route path="/termos" element={<Termos />} />
                 <Route path="/privacidade" element={<Privacidade />} />
                 <Route path="/lancar-atendimento" element={<Navigate to="/barbeiro?lancar=true" replace />} />
@@ -101,6 +96,7 @@ function App() {
                   <Route path="comparacao" element={<Comparacao />} />
                   <Route path="historico" element={<Historico />} />
                   <Route path="configuracoes" element={<Configuracoes />} />
+                  <Route path="superadmin" element={<SuperAdmin />} />
                 </Route>
               </Routes>
             </BrowserRouter>

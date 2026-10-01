@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
 import { useUnit } from "@/context/UnitContext";
 import { PLANS } from "@/lib/plans";
-import { redirectToCheckoutPro } from "@/lib/checkoutPro";
+import { redirectToExternalCheckout } from "@/lib/externalCheckout";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -22,8 +22,8 @@ import {
   Zap,
   CreditCard,
   QrCode,
+  ExternalLink,
 } from "lucide-react";
-import MercadoPagoCheckoutModal from "@/components/MercadoPagoCheckoutModal";
 
 export default function Planos() {
   const navigate = useNavigate();
@@ -32,7 +32,6 @@ export default function Planos() {
   const { changePlan, plan: currentPlan, refreshUnits } = useUnit();
   const [selectedPlan, setSelectedPlan] = useState("pro");
   const [loading, setLoading] = useState(false);
-  const [checkoutPlan, setCheckoutPlan] = useState(null);
 
   const isFromRegister = location.state?.fromRegister || false;
 
@@ -68,11 +67,11 @@ export default function Planos() {
           <div className="flex items-center gap-3">
             <img 
               src="/logo.png" 
-              alt="KingPro" 
+              alt="Kupola" 
               className="h-11 w-11 rounded-full object-cover border border-[#D4AF37]/40 shadow-md shadow-[#D4AF37]/15 shrink-0" 
             />
             <div>
-              <h1 className="font-display text-xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-[#D4AF37] to-amber-500 tracking-tight">KingPro</h1>
+              <h1 className="font-display text-xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-[#D4AF37] to-amber-500 tracking-tight">Kupola</h1>
               <p className="text-xs text-slate-400">Automação financeira & gestão para barbearias</p>
             </div>
           </div>
@@ -168,7 +167,7 @@ export default function Planos() {
                   <Button
                     onClick={(e) => {
                       e.stopPropagation();
-                      redirectToCheckoutPro({
+                      redirectToExternalCheckout({
                         planId: p.key,
                         planName: p.name,
                         price: p.amount || 169.9,
@@ -179,8 +178,8 @@ export default function Planos() {
                     className="w-full h-11 font-black uppercase text-xs rounded-[4px] gap-2 cursor-pointer bg-[#D4AF37] hover:bg-[#C59F2E] text-[#0B0D14] shadow-md transition-all active:scale-[0.99]"
                     data-testid={`btn-assinar-checkout-pro-${p.key}`}
                   >
-                    <Zap className="h-4 w-4 fill-current" />
-                    <span>Assinar (Pix, Cartão ou Boleto)</span>
+                    <ExternalLink className="h-4 w-4" />
+                    <span>Assinar Plano (Checkout Seguro)</span>
                   </Button>
 
                   <Button
@@ -202,7 +201,7 @@ export default function Planos() {
                     )}
                   </Button>
                   <p className="text-[10px] text-center text-slate-400">
-                    Mercado Pago Checkout Pro • Ativação Imediata
+                    Ambiente Seguro • Ativação Automática Imediata
                   </p>
                 </div>
               </div>
@@ -243,20 +242,8 @@ export default function Planos() {
       </div>
 
       <footer className="text-center text-xs text-slate-500 py-4 border-t border-white/5">
-        KingPro © {new Date().getFullYear()} - Sistema para Barbearias e Cabeleireiros. Todos os direitos reservados.
+        Kupola © {new Date().getFullYear()} - Sistema para Barbearias e Cabeleireiros. Todos os direitos reservados.
       </footer>
-
-      {/* Modal de Checkout Transparente do Mercado Pago */}
-      <MercadoPagoCheckoutModal
-        open={Boolean(checkoutPlan)}
-        onClose={() => setCheckoutPlan(null)}
-        plan={checkoutPlan}
-        onPaymentSuccess={() => {
-          setCheckoutPlan(null);
-          refreshUnits?.();
-          navigate("/");
-        }}
-      />
     </div>
   );
 }

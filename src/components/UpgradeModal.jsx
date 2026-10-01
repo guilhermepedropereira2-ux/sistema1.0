@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { useUnit } from "@/context/UnitContext";
 import { useAuth } from "@/context/AuthContext";
 import { PLANS } from "@/lib/plans";
-import { redirectToCheckoutPro } from "@/lib/checkoutPro";
+import { redirectToExternalCheckout } from "@/lib/externalCheckout";
 import {
   Crown,
   CheckCircle2,
@@ -18,14 +18,13 @@ import {
   X,
   ShieldCheck,
   CreditCard,
+  ExternalLink,
 } from "lucide-react";
-import MercadoPagoCheckoutModal from "@/components/MercadoPagoCheckoutModal";
 
 export default function UpgradeModal() {
   const { upgradeModalOpen, closeUpgradeModal, upgradePayload, plan, changePlan, refreshUnits } = useUnit();
   const { user } = useAuth();
   const [upgradingTo, setUpgradingTo] = useState(null);
-  const [checkoutPlan, setCheckoutPlan] = useState(null);
 
   const targetPlanKey = upgradePayload?.targetPlan || (plan.id === "starter" ? "pro" : "premium");
 
@@ -95,7 +94,7 @@ export default function UpgradeModal() {
 
         {/* Grid de 3 Planos Oficiais da Landing Page */}
         <div className="p-4 sm:p-6 space-y-5 overflow-y-auto flex-1">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-stretch">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 items-stretch">
             {plansList.map((p) => {
               const isCurrent = plan.id === p.key || (p.key === "starter" && plan.id === "basic");
               const isRecommended = p.key === "pro";
@@ -168,7 +167,7 @@ export default function UpgradeModal() {
                       <>
                         <Button
                           onClick={() => {
-                            redirectToCheckoutPro({
+                            redirectToExternalCheckout({
                               planId: p.key,
                               planName: p.name,
                               price: p.amount || 169.9,
@@ -179,8 +178,8 @@ export default function UpgradeModal() {
                           className="w-full text-xs h-10 font-black rounded-[4px] shadow-md cursor-pointer transition-all gap-1.5 bg-[#D4AF37] hover:bg-[#C59F2E] text-[#0B0D14]"
                           data-testid={`btn-upgrade-checkout-pro-${p.key}`}
                         >
-                          <Zap className="h-4 w-4 fill-current" />
-                          <span>Assinar (Pix, Cartão ou Boleto)</span>
+                          <ExternalLink className="h-4 w-4" />
+                          <span>Assinar Plano (Checkout Seguro)</span>
                         </Button>
 
                         <Button
@@ -202,7 +201,7 @@ export default function UpgradeModal() {
                     )}
 
                     <p className="text-[10px] text-center text-slate-400">
-                      R$ {p.amount?.toFixed(2).replace(".", ",")}/mês • Mercado Pago Seguro
+                      R$ {p.amount?.toFixed(2).replace(".", ",")}/mês • Portal Oficial Kupola
                     </p>
                   </div>
                 </div>
@@ -213,8 +212,8 @@ export default function UpgradeModal() {
           {/* Rodapé com Selo de Segurança e Botão Fechar */}
           <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 border-t border-white/10 text-xs text-muted-foreground">
             <div className="flex items-center gap-2">
-              <Zap className="h-4 w-4 text-[#D4AF37] shrink-0" />
-              <span>Checkout Transparente com tokenização bancária oficial Mercado Pago</span>
+              <ShieldCheck className="h-4 w-4 text-[#D4AF37] shrink-0" />
+              <span>Ambiente de pagamento seguro com ativação instantânea no painel</span>
             </div>
 
             <Button
@@ -230,18 +229,6 @@ export default function UpgradeModal() {
           </div>
         </div>
       </DialogContent>
-
-      {/* Modal de Checkout Transparente do Mercado Pago */}
-      <MercadoPagoCheckoutModal
-        open={Boolean(checkoutPlan)}
-        onClose={() => setCheckoutPlan(null)}
-        plan={checkoutPlan}
-        onPaymentSuccess={() => {
-          setCheckoutPlan(null);
-          closeUpgradeModal();
-          refreshUnits?.();
-        }}
-      />
     </Dialog>
   );
 }

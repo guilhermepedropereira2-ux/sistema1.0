@@ -28,74 +28,8 @@ import {
   Sparkles, CreditCard, HandCoins, ArrowRightLeft, ExternalLink, ChevronDown,
   RefreshCw, Layers, Calendar as CalendarIcon, UserCheck, Shield,
 } from "lucide-react";
-
-const SparklineWave = memo(function SparklineWave({ color = "#10B981", id = "spark1", pathD = "M 0 30 Q 40 8, 80 24 T 160 14 T 220 26 T 280 10", activePoint = { x: 220, y: 26 } }) {
-  return (
-    <div className="w-full h-11 mt-2.5 overflow-hidden">
-      <svg viewBox="0 0 280 40" className="w-full h-full overflow-visible" preserveAspectRatio="none">
-        <defs>
-          <linearGradient id={id} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={color} stopOpacity={0.32} />
-            <stop offset="100%" stopColor={color} stopOpacity={0.0} />
-          </linearGradient>
-        </defs>
-        <path
-          d={`${pathD} L 280 40 L 0 40 Z`}
-          fill={`url(#${id})`}
-        />
-        <path
-          d={pathD}
-          fill="none"
-          stroke={color}
-          strokeWidth="2.4"
-          strokeLinecap="round"
-        />
-        {activePoint && (
-          <circle
-            cx={activePoint.x}
-            cy={activePoint.y}
-            r="3.5"
-            fill={color}
-            stroke="#121522"
-            strokeWidth="2"
-          />
-        )}
-      </svg>
-    </div>
-  );
-});
-
-// Item de transação recente memoizado para evitar re-renderizar todas as linhas
-const RecentTransactionRow = memo(function RecentTransactionRow({ tx }) {
-  return (
-    <div
-      className="flex items-center justify-between gap-3 rounded-[3px] bg-[#0A0D14] border border-white/10 p-3 hover:border-[#D4AF37]/50"
-    >
-      <div className="flex items-center gap-3 min-w-0">
-        <div className="h-9 w-9 rounded-[2px] bg-[#12141F] border border-white/10 text-[#D4AF37] flex items-center justify-center font-bold text-xs shrink-0">
-          {tx.client_name ? tx.client_name.substring(0, 2).toUpperCase() : "AT"}
-        </div>
-        <div className="min-w-0 flex-1">
-          <p className="text-xs font-bold text-white truncate">
-            {tx.client_name || "Cliente sem cadastro"}
-          </p>
-          <p className="text-[11px] text-slate-400 truncate">
-            {tx.service_name} • <span className="text-slate-300">{tx.barber_name || "Barbeiro"}</span>
-          </p>
-        </div>
-      </div>
-
-      <div className="text-right shrink-0">
-        <p className="text-xs font-bold text-[#10B981] font-display">
-          +{brl(tx.paid_amount || tx.gross_amount)}
-        </p>
-        <span className="inline-block text-[10px] text-slate-400 uppercase mt-0.5">
-          {tx.payment_type || "PIX"}
-        </span>
-      </div>
-    </div>
-  );
-});
+import SparklineWave from "@/components/dashboard/SparklineWave";
+import RecentTransactionRow from "@/components/dashboard/RecentTransactionRow";
 
 export default function Dashboard() {
   const { month } = useMonth();
@@ -266,7 +200,7 @@ export default function Dashboard() {
   // Modo Caixa (Balcão Seguro) para operação exposta aos clientes na recepção
   if (isBalcaoMode || userIsCaixa) {
     return (
-      <div className="space-y-6 w-full max-w-full overflow-x-hidden" data-testid="dashboard-caixa-seguro">
+      <div className="space-y-4 sm:space-y-5 w-full max-w-full overflow-x-hidden" data-testid="dashboard-caixa-seguro">
         <PainelBalcao
           onOpenNovoAtendimento={handleOpenNovoAtendimento}
           isBalcaoMode={isBalcaoMode}
@@ -744,7 +678,7 @@ export default function Dashboard() {
                 : `Acompanhe a saúde do negócio, DRE completa, lucro real e comparador de adquirentes em ${month}`}
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Button
               size="sm"
               onClick={() => navigate("/atendimentos")}
@@ -860,7 +794,7 @@ export default function Dashboard() {
         </div>
 
         {/* Linha Superior de Métricas: 4 Cards Resumo Executivo (Sem Duplicações do DRE) */}
-        <div className="grid grid-cols-4 gap-4 xl:gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-4 gap-4 xl:gap-5">
           {/* Card 1: Faturamento do Mês */}
           <div
             onClick={() => navigate("/receitas")}
@@ -993,9 +927,9 @@ export default function Dashboard() {
         </div>
 
         {/* Área Central Dividida: Coluna Esquerda (65%) e Coluna Direita (35%) */}
-        <div className="grid grid-cols-12 gap-6">
-          {/* Coluna Esquerda (65%): Gráfico de Linha com Gradiente Dourado + Ponto de Equilíbrio */}
-          <div className="col-span-12 lg:col-span-8 space-y-6">
+        <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
+          {/* Coluna Esquerda: Gráfico de Linha com Gradiente Dourado + Ponto de Equilíbrio */}
+          <div className="col-span-1 xl:col-span-8 space-y-6">
             {/* Gráfico de Receita & Fluxo Diário com Gradiente Dourado Suave */}
             <div
               className="rounded-[4px] bg-[#12141F] border border-white/10 p-6 shadow-none"
@@ -1207,7 +1141,7 @@ export default function Dashboard() {
           </div>
 
           {/* Coluna Direita (35%): Distribuição de Formas de Pagamento + Transações Recentes */}
-          <div className="col-span-12 lg:col-span-4 space-y-6">
+          <div className="col-span-1 xl:col-span-4 space-y-6">
             {/* Donut Chart & Barras: Formas de Pagamento & Maquininhas */}
             <div className="rounded-[4px] bg-[#12141F] border border-white/10 p-6 shadow-none space-y-4">
               <div className="flex items-center justify-between pb-3 border-b border-white/10">

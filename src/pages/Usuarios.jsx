@@ -31,7 +31,7 @@ function ResetPasswordButton({ user }) {
     <>
       <Button size="sm" variant="ghost" className="gap-1.5" onClick={run} data-testid={`reset-user-${user.id}`}><KeyRound className="h-3.5 w-3.5" /> Redefinir senha</Button>
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-sm" data-testid="reset-result">
+        <DialogContent className="w-[95vw] sm:max-w-sm max-h-[85vh] overflow-y-auto" data-testid="reset-result">
           <DialogHeader><DialogTitle className="font-display">Senha temporária</DialogTitle></DialogHeader>
           <p className="text-sm text-muted-foreground">Informe esta senha ao usuário <b>@{user.username}</b>. Guarde com segurança — ela não é exibida novamente.</p>
           <div className="rounded-md bg-secondary p-4 text-center font-mono text-2xl font-bold tracking-widest" data-testid="temp-password">{temp}</div>
@@ -108,7 +108,7 @@ function UserDialog({ existing, barbers, onDone }) {
         {existing ? <Button variant="ghost" size="icon" className="h-8 w-8" data-testid={`edit-user-${existing.id}`}><Pencil className="h-4 w-4" /></Button>
           : <Button className="gap-2" data-testid="add-user-button"><Plus className="h-4 w-4" /> Novo Usuário</Button>}
       </DialogTrigger>
-      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+      <DialogContent className="w-[95vw] sm:max-w-md max-h-[85vh] overflow-y-auto">
         <DialogHeader><DialogTitle className="font-display">{existing ? "Editar" : "Novo"} Usuário</DialogTitle></DialogHeader>
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="sm:col-span-2"><Label>Nome</Label><Input value={form.name} onChange={(e) => set("name", e.target.value)} data-testid="user-name" /></div>
@@ -185,7 +185,7 @@ function PermissionsDialog({ user, catalog, onDone }) {
       <DialogTrigger asChild>
         <Button size="sm" variant="secondary" className="gap-1.5" data-testid={`perms-user-${user.id}`}><ShieldCheck className="h-3.5 w-3.5" /> Permissões</Button>
       </DialogTrigger>
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+      <DialogContent className="w-[95vw] sm:max-w-lg max-h-[85vh] overflow-y-auto">
         <DialogHeader><DialogTitle className="font-display">Permissões · {user.name}</DialogTitle></DialogHeader>
         <div className="space-y-4">
           {Object.entries(groups).map(([group, items]) => (
@@ -223,8 +223,8 @@ export default function Usuarios() {
   if (loading || !barbers || !cat) return <Loading />;
 
   return (
-    <div className="space-y-5" data-testid="usuarios-page">
-      <div className="flex items-center justify-between gap-3">
+    <div className="space-y-5 max-w-full 2xl:max-w-[1920px] mx-auto" data-testid="usuarios-page">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-muted-foreground">Funções acumuláveis: Dono, Gerente e Barbeiro. Um Dono/Gerente também pode ser Barbeiro.</p>
         <UserDialog barbers={barbers} onDone={refresh} />
       </div>

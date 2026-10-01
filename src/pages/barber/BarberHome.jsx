@@ -450,8 +450,8 @@ export default function BarberHome() {
 
       {/* Modal de Detalhes do Atendimento */}
       <Dialog open={!!selectedAtendimento} onOpenChange={(o) => !o && setSelectedAtendimento(null)}>
-        <DialogContent className="max-w-md bg-[#12141F] border-white/10 text-white p-6 rounded-[4px] shadow-none" data-testid="atend-detail">
-          <DialogHeader>
+        <DialogContent className="w-[95vw] sm:max-w-md max-h-[85vh] overflow-y-auto bg-[#12141F] border-white/10 text-white p-5 sm:p-6 rounded-[4px] shadow-none" data-testid="atend-detail">
+          <DialogHeader className="shrink-0">
             <DialogTitle className="font-display text-base font-bold text-white flex items-center gap-2">
               <Scissors className="h-4 w-4 text-[#D4AF37]" />
               Detalhes do Atendimento

@@ -120,7 +120,7 @@ function BarberDialog({ existing, services, products, onDone, isAtLimit, openUpg
         {existing ? <Button variant="ghost" size="icon" className="h-8 w-8 rounded-[4px]" data-testid={`edit-barber-${existing.id}`}><Pencil className="h-4 w-4" /></Button>
           : <Button className="gap-2 rounded-[4px] shadow-none" data-testid="add-barber-button"><Plus className="h-4 w-4" /> Novo Barbeiro</Button>}
       </DialogTrigger>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto rounded-[4px] border-white/10 bg-[#12141F]">
+      <DialogContent className="w-[95vw] sm:max-w-2xl max-h-[85vh] overflow-y-auto rounded-[4px] border-white/10 bg-[#12141F]">
         <DialogHeader><DialogTitle className="font-display">{existing ? "Editar" : "Novo"} Barbeiro</DialogTitle></DialogHeader>
 
         <div className="grid gap-4 sm:grid-cols-2">
@@ -246,7 +246,7 @@ function Ranking({ isBalcaoMode }) {
   return (
     <Card className="overflow-hidden rounded-[4px] border border-white/10 bg-[#12141F] shadow-none" data-testid="ranking-table">
       <div className="overflow-x-auto">
-        <Table>
+        <Table className="min-w-[650px]">
           <TableHeader>
             <TableRow>
               <TableHead>#</TableHead>
@@ -297,7 +297,7 @@ export default function Equipe() {
   const usagePct = Math.min(100, Math.round((activeBarbers.length / maxBarbers) * 100));
 
   return (
-    <div className="space-y-5" data-testid="equipe-page">
+    <div className="space-y-5 max-w-full 2xl:max-w-[1920px] mx-auto" data-testid="equipe-page">
       {/* Banner de Capacidade & Plano da Equipe */}
       <Card className="p-4 bg-[#12141F] border border-white/10 rounded-[4px] shadow-none">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -388,7 +388,7 @@ export default function Equipe() {
 
         <TabsContent value="barbeiros" className="mt-5">
           {!barbers?.length ? <EmptyState title="Nenhum barbeiro cadastrado" /> : (
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
               {barbers.map((b) => (
                 <Card key={b.id} className="p-5 rounded-[4px] border border-white/10 bg-[#12141F] shadow-none" data-testid={`barber-card-${b.id}`}>
                   <div className="flex items-start justify-between">

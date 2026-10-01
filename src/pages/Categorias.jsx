@@ -33,7 +33,7 @@ function CategoryDialog({ existing, onDone }) {
         {existing ? <Button variant="ghost" size="icon" className="h-8 w-8" data-testid={`edit-cat-${existing.id}`}><Pencil className="h-4 w-4" /></Button>
           : <Button className="gap-2" data-testid="add-category-button"><Plus className="h-4 w-4" /> Nova Categoria</Button>}
       </DialogTrigger>
-      <DialogContent className="max-w-md">
+      <DialogContent className="w-[95vw] sm:max-w-md max-h-[85vh] overflow-y-auto">
         <DialogHeader><DialogTitle className="font-display">{existing ? "Editar" : "Nova"} Categoria</DialogTitle></DialogHeader>
         <div className="grid gap-4">
           <div><Label>Nome</Label><Input value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} data-testid="category-name" /></div>
@@ -58,9 +58,9 @@ export default function Categorias() {
   if (loading) return <Loading />;
   const grouped = GROUPS.map((g) => ({ group: g, items: (categories || []).filter((c) => c.group === g) })).filter((x) => x.items.length);
   return (
-    <div className="space-y-5" data-testid="categorias-page">
+    <div className="space-y-5 max-w-full 2xl:max-w-[1920px] mx-auto" data-testid="categorias-page">
       <div className="flex justify-end"><CategoryDialog onDone={refresh} /></div>
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
         {grouped.map((grp) => (
           <Card key={grp.group} className="p-5" data-testid={`cat-group-${grp.group}`}>
             <div className="mb-3 flex items-center gap-2"><Tags className="h-4 w-4 text-primary" /><h3 className="font-display font-bold">{grp.group}</h3></div>

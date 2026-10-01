@@ -48,8 +48,8 @@ export default function NovaRetiradaModal({ open, onOpenChange, onSuccess }) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md bg-[#12141F] border-white/10 text-foreground p-6 rounded-[4px] shadow-none">
-        <DialogHeader className="pb-3 border-b border-white/10">
+      <DialogContent className="w-[95vw] sm:max-w-md max-h-[85vh] overflow-y-auto bg-[#12141F] border-white/10 text-foreground p-5 sm:p-6 rounded-[4px] shadow-none">
+        <DialogHeader className="pb-3 border-b border-white/10 shrink-0">
           <DialogTitle className="flex items-center gap-2.5 text-lg font-bold text-white">
             <div className="h-8 w-8 rounded-[2px] bg-[#D4AF37]/15 text-[#D4AF37] flex items-center justify-center">
               <HandCoins className="h-4 w-4" />
@@ -104,7 +104,7 @@ export default function NovaRetiradaModal({ open, onOpenChange, onSuccess }) {
             * Retiradas do proprietário são contabilizadas separadamente dos custos operacionais para manter a clareza do fluxo de caixa.
           </p>
 
-          <DialogFooter className="pt-3 border-t border-[#262936] sm:justify-end gap-2">
+          <DialogFooter className="pt-3 pb-1 border-t border-[#262936] sm:justify-end gap-2 shrink-0">
             <Button
               type="button"
               variant="ghost"

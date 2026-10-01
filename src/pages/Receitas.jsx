@@ -132,7 +132,7 @@ function RevenueDialog({ methods, barbers, settings, services, products, clients
           <Plus className="h-4 w-4" /> Nova Receita
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="w-[95vw] sm:max-w-2xl max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="font-display">Registrar Receita</DialogTitle>
         </DialogHeader>
@@ -343,13 +343,13 @@ export default function Receitas() {
       ];
     });
 
-    const filename = `KingPro_Vendas_Financeiro_${month || "periodo"}.csv`;
+    const filename = `Kupola_Vendas_Financeiro_${month || "periodo"}.csv`;
     downloadCsv({ filename, headers, rows });
     toast.success("Planilha gerada com sucesso! Download iniciado.");
   };
 
   return (
-    <div className="space-y-5" data-testid="receitas-page">
+    <div className="space-y-5 max-w-full 2xl:max-w-[1920px] mx-auto" data-testid="receitas-page">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="text-sm text-muted-foreground">Total do mês</p>
@@ -384,7 +384,7 @@ export default function Receitas() {
       ) : (
         <Card className="overflow-hidden">
           <div className="overflow-x-auto">
-            <Table>
+            <Table className="min-w-[750px]">
               <TableHeader>
                 <TableRow>
                   <TableHead>Data</TableHead>

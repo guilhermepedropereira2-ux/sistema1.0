@@ -119,7 +119,7 @@ export default function MeusAtendimentos() {
       )}
 
       <Dialog open={!!sel} onOpenChange={(o) => !o && setSel(null)}>
-        <DialogContent className="max-w-md" data-testid="atend-detail">
+        <DialogContent className="w-[95vw] sm:max-w-md max-h-[85vh] overflow-y-auto" data-testid="atend-detail">
           <DialogHeader><DialogTitle className="font-display">Detalhes do Atendimento</DialogTitle></DialogHeader>
           {sel && (
             <div className="space-y-3 text-sm">

@@ -30,7 +30,7 @@ import { useUnit } from "@/context/UnitContext";
 import { useBalcao } from "@/context/BalcaoContext";
 import { useApi } from "@/hooks/useApi";
 import { monthLabel } from "@/lib/format";
-import { isAdmin, isBarber, isDono, isGerente, isCaixa, rolesLabel, canAccess } from "@/lib/roles";
+import { isAdmin, isBarber, isDono, isGerente, isCaixa, isSuperAdmin, rolesLabel, canAccess } from "@/lib/roles";
 import NovoAtendimentoModal from "@/components/NovoAtendimentoModal";
 import NovaDespesaModal from "@/components/NovaDespesaModal";
 import NovaRetiradaModal from "@/components/NovaRetiradaModal";
@@ -80,6 +80,12 @@ export const NAV_SECTIONS = [
       { to: "/maquininhas", label: "Maquininhas & Taxas", icon: CreditCard, testId: "nav-maquininhas", perm: ["alterar_taxas"], donoOnly: true },
       { to: "/historico", label: "Histórico / Logs", icon: History, testId: "nav-historico", perm: ["ver_relatorios", "alterar_configuracoes"] },
       { to: "/configuracoes", label: "Configurações Operacionais", icon: SettingsIcon, testId: "nav-configuracoes", perm: ["alterar_configuracoes"] },
+    ],
+  },
+  {
+    title: "SISTEMA & PLATAFORMA (MASTER)",
+    items: [
+      { to: "/superadmin", label: "Painel SuperAdmin", icon: ShieldCheck, badge: "Master", testId: "nav-superadmin", superadminOnly: true },
     ],
   },
 ];
@@ -326,85 +332,70 @@ function NotificationsBell() {
   );
 }
 
-const DEFAULT_SWITCHABLE_PROFILES = [
-  { id: "usr_dono", name: "Administrador / Dono", username: "dono", role: "dono", email: "dono@barbearia.com" },
-  { id: "usr_dono_quick", name: "Dono Teste (1)", username: "1", role: "dono", email: "dono@teste.com" },
-  { id: "usr_gerente", name: "Gerente Geral", username: "gerente", role: "gerente", email: "gerente@barbearia.com" },
-  { id: "usr_gerente_quick", name: "Gerente Teste (2)", username: "2", role: "gerente", email: "gerente@teste.com" },
-  { id: "usr_carlos", name: "Carlos Souza", username: "carlos", role: "barbeiro", email: "carlos@barbearia.com" },
-  { id: "usr_barbeiro_quick", name: "Barbeiro Teste (3)", username: "3", role: "barbeiro", email: "barbeiro@teste.com" },
-];
-
-function UserAvatarMenu({ variant = "header" }) {
-  const { user, logout, switchAccount } = useAuth();
+function UserAvatarMenu({ variant = "header", collapsed = false }) {
+  const { user, logout } = useAuth();
   const { isBalcaoMode, toggleBalcaoMode } = useBalcao();
-  const { data: serverUsers } = useApi((api) => api.get("/auth/switchable-users"));
   const navigate = useNavigate();
-
-  const accounts = useMemo(() => {
-    if (Array.isArray(serverUsers) && serverUsers.length > 0) {
-      return serverUsers;
-    }
-    return DEFAULT_SWITCHABLE_PROFILES;
-  }, [serverUsers]);
 
   const displayName = user?.name || "Guilherme Pereira";
   const userRole = user?.role === "dono" ? "Dono" : rolesLabel(user) || "Dono";
-
-  const handleSwitch = async (account) => {
-    if (user?.id === account.id || user?.username === account.username) {
-      toast.info("Você já está conectado nesta conta.");
-      return;
-    }
-    try {
-      const u = await switchAccount(account.id || account.username);
-      toast.success(`Alternado com sucesso para: ${u.name}`);
-      if (u.role === "barbeiro") {
-        navigate("/barbeiro");
-      } else {
-        navigate("/");
-      }
-    } catch {
-      toast.error("Erro ao alternar de conta.");
-    }
-  };
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         {variant === "sidebar" ? (
-          <button
-            type="button"
-            className="w-full flex items-center justify-between gap-2.5 rounded-[4px] bg-[#12141F] hover:bg-[#181B28] border border-white/10 hover:border-[#D4AF37]/50 p-2 text-left transition-all cursor-pointer group focus:outline-none focus:ring-1 focus:ring-[#D4AF37]/50"
-            data-testid="sidebar-user-card-btn"
-            aria-label="Perfil do usuário e alternância de contas"
-          >
-            <div className="flex items-center gap-2.5 min-w-0">
+          collapsed ? (
+            <button
+              type="button"
+              className="w-full flex items-center justify-center rounded-[4px] bg-[#12141F] hover:bg-[#181B28] border border-white/10 hover:border-[#D4AF37]/50 p-1.5 transition-all cursor-pointer group focus:outline-none focus:ring-1 focus:ring-[#D4AF37]/50"
+              data-testid="sidebar-user-card-btn"
+              aria-label="Perfil do usuário"
+              title={`${displayName} (${userRole})`}
+            >
               <div className="relative shrink-0">
-                <div className="h-9 w-9 rounded-full bg-gradient-to-br from-[#EAB308] to-[#D4AF37] flex items-center justify-center text-[#0B0F19] font-black text-xs border border-[#D4AF37]/50 shadow-sm">
+                <div className="h-8 w-8 rounded-full bg-gradient-to-br from-[#EAB308] to-[#D4AF37] flex items-center justify-center text-[#0B0F19] font-black text-xs border border-[#D4AF37]/50 shadow-sm">
                   {displayName.substring(0, 2).toUpperCase()}
                 </div>
                 <span
-                  className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-[#10B981] ring-2 ring-[#0F121C]"
+                  className="absolute -bottom-0.5 -right-0.5 h-2 w-2 rounded-full bg-[#10B981] ring-2 ring-[#0F121C]"
                   title="Online"
                 />
               </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-xs font-bold text-white group-hover:text-[#D4AF37] truncate transition-colors leading-tight">
-                  {displayName}
-                </p>
-                <div className="flex items-center gap-1.5 mt-0.5">
-                  <span className="inline-block rounded-[2px] px-1 py-0.2 text-[9px] font-bold uppercase bg-[#D4AF37]/15 text-[#D4AF37] border border-[#D4AF37]/30">
-                    {userRole}
-                  </span>
-                  <span className="text-[10px] text-slate-400 truncate max-w-[95px]">
-                    {user?.email || "dono@teste.com"}
-                  </span>
+            </button>
+          ) : (
+            <button
+              type="button"
+              className="w-full flex items-center justify-between gap-2.5 rounded-[4px] bg-[#12141F] hover:bg-[#181B28] border border-white/10 hover:border-[#D4AF37]/50 p-2 text-left transition-all cursor-pointer group focus:outline-none focus:ring-1 focus:ring-[#D4AF37]/50"
+              data-testid="sidebar-user-card-btn"
+              aria-label="Perfil do usuário"
+            >
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="relative shrink-0">
+                  <div className="h-9 w-9 rounded-full bg-gradient-to-br from-[#EAB308] to-[#D4AF37] flex items-center justify-center text-[#0B0F19] font-black text-xs border border-[#D4AF37]/50 shadow-sm">
+                    {displayName.substring(0, 2).toUpperCase()}
+                  </div>
+                  <span
+                    className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-[#10B981] ring-2 ring-[#0F121C]"
+                    title="Online"
+                  />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs font-bold text-white group-hover:text-[#D4AF37] truncate transition-colors leading-tight">
+                    {displayName}
+                  </p>
+                  <div className="flex items-center gap-1.5 mt-0.5">
+                    <span className="inline-block rounded-[2px] px-1 py-0.2 text-[9px] font-bold uppercase bg-[#D4AF37]/15 text-[#D4AF37] border border-[#D4AF37]/30">
+                      {userRole}
+                    </span>
+                    <span className="text-[10px] text-slate-400 truncate max-w-[95px]">
+                      {user?.email || "dono@teste.com"}
+                    </span>
+                  </div>
                 </div>
               </div>
-            </div>
-            <ChevronDown className="h-4 w-4 text-slate-400 group-hover:text-[#D4AF37] shrink-0 transition-transform duration-200" />
-          </button>
+              <ChevronDown className="h-4 w-4 text-slate-400 group-hover:text-[#D4AF37] shrink-0 transition-transform duration-200" />
+            </button>
+          )
         ) : (
           <button
             type="button"
@@ -453,64 +444,6 @@ function UserAvatarMenu({ variant = "header" }) {
 
         <DropdownMenuSeparator className="bg-white/10 my-1" />
 
-        {/* SEÇÃO: ALTERNÂNCIA RÁPIDA DE CONTA */}
-        <div className="px-2 py-1">
-          <div className="flex items-center justify-between pb-1">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-[#D4AF37] flex items-center gap-1">
-              <Users2 className="h-3 w-3" /> Alternar de Conta
-            </span>
-            <span className="text-[9px] text-slate-400">Troca rápida</span>
-          </div>
-          <div className="space-y-1 max-h-48 overflow-y-auto pr-0.5">
-            {accounts.map((acc) => {
-              const isCurrent = user?.id === acc.id || user?.username === acc.username;
-              const roleName = acc.role === "dono" ? "Dono" : acc.role === "gerente" ? "Gerente" : "Barbeiro";
-              const roleGrad = acc.role === "dono"
-                ? "from-[#EAB308] to-[#D4AF37]"
-                : acc.role === "gerente"
-                ? "from-blue-500 to-indigo-600"
-                : "from-emerald-500 to-teal-600";
-              const roleBadge = acc.role === "dono"
-                ? "bg-[#D4AF37]/15 text-[#D4AF37] border-[#D4AF37]/30"
-                : acc.role === "gerente"
-                ? "bg-blue-500/15 text-blue-400 border-blue-500/30"
-                : "bg-emerald-500/15 text-emerald-400 border-emerald-500/30";
-
-              return (
-                <button
-                  key={acc.id || acc.username}
-                  type="button"
-                  onClick={() => handleSwitch(acc)}
-                  className={`w-full flex items-center justify-between p-1.5 rounded-[4px] text-left transition-all cursor-pointer ${
-                    isCurrent
-                      ? "bg-[#D4AF37]/15 border border-[#D4AF37]/40 text-white"
-                      : "hover:bg-white/5 text-slate-300 hover:text-white border border-transparent"
-                  }`}
-                  data-testid={`switch-to-${acc.username}`}
-                >
-                  <div className="flex items-center gap-2 min-w-0">
-                    <div className={`h-6 w-6 rounded-full bg-gradient-to-br ${roleGrad} flex items-center justify-center text-[#0B0F19] font-black text-[9px] shrink-0`}>
-                      {(acc.name || "U").substring(0, 2).toUpperCase()}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-xs font-bold truncate leading-tight">{acc.name}</p>
-                      <p className="text-[10px] text-slate-400 truncate">@{acc.username} {acc.email ? `· ${acc.email}` : ""}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-1.5 shrink-0 ml-1">
-                    <span className={`text-[9px] font-bold px-1.5 py-0.2 rounded uppercase border ${roleBadge}`}>
-                      {roleName}
-                    </span>
-                    {isCurrent && <Check className="h-3.5 w-3.5 text-[#D4AF37] stroke-[3]" />}
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        <DropdownMenuSeparator className="bg-white/10 my-1" />
-
         {/* Toggle Modo Caixa / Balcão Seguro */}
         <DropdownMenuItem
           onClick={toggleBalcaoMode}
@@ -535,6 +468,16 @@ function UserAvatarMenu({ variant = "header" }) {
             data-testid="switch-to-barber"
           >
             <Scissors className="mr-2 h-3.5 w-3.5 text-[#D4AF37]" /> Painel do Barbeiro
+          </DropdownMenuItem>
+        )}
+
+        {isSuperAdmin(user) && (
+          <DropdownMenuItem
+            onClick={() => navigate("/superadmin")}
+            className="text-xs focus:bg-[#D4AF37]/20 focus:text-white cursor-pointer py-1.5 rounded-[2px] font-bold text-[#D4AF37] border border-[#D4AF37]/30 bg-[#D4AF37]/10"
+            data-testid="switch-to-superadmin"
+          >
+            <ShieldCheck className="mr-2 h-3.5 w-3.5 text-[#D4AF37]" /> Painel SuperAdmin (Master)
           </DropdownMenuItem>
         )}
 
@@ -565,6 +508,24 @@ export default function Layout() {
   const [modalNovaRetirada, setModalNovaRetirada] = useState(false);
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
   const [copiedShopLink, setCopiedShopLink] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
+    try {
+      return localStorage.getItem("kupola_sidebar_collapsed") === "true";
+    } catch {
+      return false;
+    }
+  });
+
+  const toggleSidebar = () => {
+    setIsSidebarCollapsed((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem("kupola_sidebar_collapsed", String(next));
+      } catch {}
+      return next;
+    });
+  };
+
   const location = useLocation();
   const navigate = useNavigate();
   const { user, ready } = useAuth();
@@ -620,10 +581,60 @@ export default function Layout() {
   const displayName = user?.name || "Guilherme Pereira";
   const userRole = user?.role === "dono" ? "Dono" : rolesLabel(user) || "Dono";
 
-  const renderNavSection = (section, isDrawer = false) => {
+  const renderNavSection = (section, isDrawer = false, isCollapsed = false) => {
     // Filter items by permission
     const accessibleItems = section.items.filter((item) => canAccess(user, item));
     if (!accessibleItems.length) return null;
+
+    if (isCollapsed) {
+      return (
+        <div key={section.title} className="space-y-1">
+          <div className="h-px bg-white/[0.06] my-1 mx-1" />
+          <div className="space-y-1">
+            {accessibleItems.map((item) => {
+              const Icon = item.icon;
+              if (item.action === "novo_atendimento") {
+                return (
+                  <button
+                    key="action-novo-atendimento"
+                    onClick={() => {
+                      setModalNovoAtendimento(true);
+                    }}
+                    className="w-full flex items-center justify-center rounded-[3px] p-2 text-xs text-muted-foreground hover:bg-white/5 hover:text-white transition-colors cursor-pointer"
+                    title={item.label}
+                    data-testid="sidebar-collapsed-novo-atendimento"
+                  >
+                    <Icon className="h-4 w-4 shrink-0 text-[#D4AF37]" />
+                  </button>
+                );
+              }
+
+              const isActive = item.end ? location.pathname === "/" : location.pathname.startsWith(item.to);
+              return (
+                <NavLink
+                  key={item.to}
+                  to={item.to}
+                  end={item.end}
+                  className={`w-full flex items-center justify-center rounded-[3px] p-2 text-xs transition-colors ${
+                    isActive
+                      ? "bg-[#D4AF37]/15 text-[#D4AF37] font-bold border-l-2 border-[#D4AF37]"
+                      : "text-slate-400 hover:bg-white/5 hover:text-white"
+                  }`}
+                  title={item.label}
+                  data-testid={item.testId}
+                >
+                  <Icon
+                    className={`h-4 w-4 shrink-0 transition-colors ${
+                      isActive ? "text-[#D4AF37]" : "text-slate-400 group-hover:text-white"
+                    }`}
+                  />
+                </NavLink>
+              );
+            })}
+          </div>
+        </div>
+      );
+    }
 
     return (
       <div key={section.title} className="pt-3 first:pt-0">
@@ -641,7 +652,7 @@ export default function Layout() {
                     if (isDrawer) setMobileDrawerOpen(false);
                     setModalNovoAtendimento(true);
                   }}
-                  className="w-full group flex items-center justify-between rounded-[3px] px-3 py-2 text-xs font-semibold text-muted-foreground hover:bg-white/5 hover:text-white transition-colors text-left"
+                  className="w-full group flex items-center justify-between rounded-[3px] px-3 py-2 text-xs font-semibold text-muted-foreground hover:bg-white/5 hover:text-white transition-colors text-left cursor-pointer"
                 >
                   <div className="flex items-center gap-2.5">
                     <Icon className="h-4 w-4 shrink-0 text-[#D4AF37]" />
@@ -691,51 +702,106 @@ export default function Layout() {
       {/* ======================================================== */}
       {/* 1. DESKTOP SIDEBAR (>= 1024px) FIXA                       */}
       {/* ======================================================== */}
-      <aside className="hidden lg:flex w-64 shrink-0 flex-col border-r border-white/[0.08] bg-[#0F121C] fixed inset-y-0 left-0 z-30">
-        {/* Topo da Sidebar: Logo e nome */}
-        <div className="flex items-center gap-3 px-5 h-16 border-b border-white/[0.08] shrink-0">
-          <img 
-            src="/logo.png" 
-            alt="KingPro" 
-            className="h-10 w-10 rounded-full object-cover border border-[#D4AF37]/30 shadow-md shadow-[#D4AF37]/10 shrink-0" 
-          />
-          <div className="min-w-0 flex-1">
-            <span className="font-display font-extrabold text-base tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-[#D4AF37] to-amber-500 block truncate leading-tight">
-              KingPro
-            </span>
-            <p className="text-[10px] text-slate-400 font-medium tracking-wider truncate mt-0.5">
-              {barbershop?.name || "Painel de Gestão"}
-            </p>
+      <aside
+        className={`hidden lg:flex shrink-0 flex-col border-r border-white/[0.08] bg-[#0F121C] fixed inset-y-0 left-0 z-30 transition-all duration-300 ease-in-out ${
+          isSidebarCollapsed ? "w-[70px]" : "w-64"
+        }`}
+        data-testid="desktop-sidebar"
+        data-collapsed={isSidebarCollapsed}
+      >
+        {/* Topo da Sidebar: Logo, nome e botão de alternância */}
+        {isSidebarCollapsed ? (
+          <div className="flex flex-col items-center justify-center h-16 border-b border-white/[0.08] shrink-0 px-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={toggleSidebar}
+              className="h-10 w-10 text-slate-300 hover:text-[#D4AF37] hover:bg-white/10 rounded-[4px] cursor-pointer flex items-center justify-center transition-colors group relative"
+              title="Expandir barra lateral"
+              aria-label="Expandir barra lateral"
+              data-testid="sidebar-toggle-btn"
+            >
+              <img 
+                src="/logo.png" 
+                alt="Kupola" 
+                className="h-7 w-7 rounded-full object-cover border border-[#D4AF37]/30 shadow-sm group-hover:scale-95 transition-transform" 
+              />
+              <span className="absolute -bottom-0.5 -right-0.5 h-4 w-4 rounded-full bg-[#12141F] border border-white/20 flex items-center justify-center text-[10px] text-[#D4AF37] shadow">
+                <ChevronRight className="h-2.5 w-2.5" />
+              </span>
+            </Button>
           </div>
-        </div>
+        ) : (
+          <div className="flex items-center justify-between px-4 h-16 border-b border-white/[0.08] shrink-0">
+            <div className="flex items-center gap-3 min-w-0 overflow-hidden">
+              <img 
+                src="/logo.png" 
+                alt="Kupola" 
+                className="h-9 w-9 rounded-full object-cover border border-[#D4AF37]/30 shadow-md shadow-[#D4AF37]/10 shrink-0" 
+              />
+              <div className="min-w-0 flex-1">
+                <span className="font-display font-extrabold text-base tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-[#D4AF37] to-amber-500 block truncate leading-tight">
+                  Kupola
+                </span>
+                <p className="text-[10px] text-slate-400 font-medium tracking-wider truncate mt-0.5">
+                  {barbershop?.name || "Painel de Gestão"}
+                </p>
+              </div>
+            </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={toggleSidebar}
+              className="h-8 w-8 text-slate-400 hover:text-[#D4AF37] hover:bg-white/10 rounded-[4px] shrink-0 cursor-pointer transition-colors"
+              title="Recolher barra lateral"
+              aria-label="Recolher barra lateral"
+              data-testid="sidebar-toggle-btn"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+          </div>
+        )}
 
         {/* Seletor de Unidade & Badge do Plano na Sidebar */}
-        <div className="px-3 py-2.5 border-b border-white/[0.08] space-y-2 bg-[#0C0E16]">
-          <div className="w-full">
-            <UnitSelector variant="sidebar" />
-          </div>
-          <div className="flex items-center justify-between px-2.5 py-1.5 rounded-[4px] bg-[#12141F] border border-white/5">
-            <div className="flex items-center gap-1.5">
-              <Crown className={`h-3.5 w-3.5 ${plan.id === 'premium' ? 'text-[#D4AF37]' : plan.id === 'pro' ? 'text-blue-400' : 'text-slate-400'}`} />
-              <span className="text-[11px] font-bold text-white uppercase tracking-wider">{plan.name}</span>
-            </div>
+        {isSidebarCollapsed ? (
+          <div className="py-2.5 flex flex-col items-center justify-center border-b border-white/[0.08] bg-[#0C0E16]">
             <button
+              type="button"
               onClick={() => openUpgradeModal({ title: "Planos & Assinatura" })}
-              className="text-[10px] font-semibold text-[#D4AF37] hover:underline cursor-pointer"
+              className="h-8 w-8 rounded-[4px] bg-[#12141F] border border-white/10 flex items-center justify-center text-[#D4AF37] hover:bg-[#D4AF37]/15 transition-colors cursor-pointer"
+              title={`Plano ${plan.name} (Clique para detalhes)`}
             >
-              {plan.id === 'premium' ? 'Gerenciar' : 'Upgrade'}
+              <Crown className="h-4 w-4" />
             </button>
           </div>
-        </div>
+        ) : (
+          <div className="px-3 py-2.5 border-b border-white/[0.08] space-y-2 bg-[#0C0E16]">
+            <div className="w-full">
+              <UnitSelector variant="sidebar" />
+            </div>
+            <div className="flex items-center justify-between px-2.5 py-1.5 rounded-[4px] bg-[#12141F] border border-white/5">
+              <div className="flex items-center gap-1.5">
+                <Crown className={`h-3.5 w-3.5 ${plan.id === 'premium' ? 'text-[#D4AF37]' : plan.id === 'pro' ? 'text-blue-400' : 'text-slate-400'}`} />
+                <span className="text-[11px] font-bold text-white uppercase tracking-wider">{plan.name}</span>
+              </div>
+              <button
+                onClick={() => openUpgradeModal({ title: "Planos & Assinatura" })}
+                className="text-[10px] font-semibold text-[#D4AF37] hover:underline cursor-pointer"
+              >
+                {plan.id === 'premium' ? 'Gerenciar' : 'Upgrade'}
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Links de Navegação Organizados por Módulos */}
-        <div className="flex-1 overflow-y-auto px-3 py-3 space-y-2">
-          {NAV_SECTIONS.map((section) => renderNavSection(section, false))}
+        <div className={`flex-1 overflow-y-auto ${isSidebarCollapsed ? "px-2 py-2 space-y-1.5" : "px-3 py-3 space-y-2"}`}>
+          {NAV_SECTIONS.map((section) => renderNavSection(section, false, isSidebarCollapsed))}
         </div>
 
         {/* Rodapé da Sidebar: Perfil do Usuário */}
-        <div className="p-3 border-t border-white/[0.08] bg-[#0C0E16] shrink-0 relative z-30">
-          <UserAvatarMenu variant="sidebar" />
+        <div className={`${isSidebarCollapsed ? "p-1.5" : "p-3"} border-t border-white/[0.08] bg-[#0C0E16] shrink-0 relative z-30`}>
+          <UserAvatarMenu variant="sidebar" collapsed={isSidebarCollapsed} />
         </div>
       </aside>
 
@@ -751,12 +817,12 @@ export default function Layout() {
             <div className="flex items-center gap-3 text-left">
               <img 
                 src="/logo.png" 
-                alt="KingPro" 
+                alt="Kupola" 
                 className="h-10 w-10 rounded-full object-cover border border-[#D4AF37]/30 shadow-md shrink-0" 
               />
               <div>
                 <SheetTitle className="text-base font-bold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-[#D4AF37] to-amber-500">
-                  KingPro
+                  Kupola
                 </SheetTitle>
                 <p className="text-[10px] text-slate-400 font-medium tracking-wider truncate max-w-[170px]">
                   {barbershop?.name || "Menu Principal"}
@@ -800,7 +866,9 @@ export default function Layout() {
       {/* ======================================================== */}
       {/* 3. CONTEÚDO PRINCIPAL (Área Central)                      */}
       {/* ======================================================== */}
-      <div className="flex-1 flex flex-col min-w-0 lg:pl-64 w-full">
+      <div className={`flex-1 flex flex-col min-w-0 w-full transition-all duration-300 ease-in-out ${
+        isSidebarCollapsed ? "lg:pl-[70px]" : "lg:pl-64"
+      }`}>
         {/* CABEÇALHO MOBILE (< 1024px) */}
         <header className="lg:hidden sticky top-0 z-40 bg-[#0F121C] border-b border-white/[0.08]">
           {/* Linha 1: Hambúrguer, Logo, Sino com badge e Avatar com status online */}
@@ -820,12 +888,12 @@ export default function Layout() {
               <div className="flex items-center gap-2">
                 <img 
                   src="/logo.png" 
-                  alt="KingPro" 
+                  alt="Kupola" 
                   className="h-8 w-8 rounded-full object-cover border border-[#D4AF37]/30 shadow-sm shrink-0" 
                 />
                 <div className="flex flex-col">
                   <span className="font-display font-extrabold text-sm tracking-tight leading-none text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-[#D4AF37] to-amber-400">
-                    KingPro
+                    Kupola
                   </span>
                   <span className="text-[9px] text-slate-400 font-medium truncate max-w-[130px] mt-0.5">
                     {barbershop?.name || "Gestão"}
@@ -881,9 +949,20 @@ export default function Layout() {
         </header>
 
         {/* CABEÇALHO DESKTOP (>= 1024px) */}
-        <header className="hidden lg:flex items-center justify-between h-16 px-8 border-b border-white/[0.08] bg-[#0B0D14] sticky top-0 z-20">
-          {/* Breadcrumb */}
-          <div className="flex items-center gap-3 text-sm">
+        <header className="hidden lg:flex items-center justify-between h-16 px-6 lg:px-8 border-b border-white/[0.08] bg-[#0B0D14] sticky top-0 z-20">
+          {/* Breadcrumb e Toggle do Menu */}
+          <div className="flex items-center gap-2.5 text-sm">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={toggleSidebar}
+              className="h-8 w-8 text-slate-400 hover:text-[#D4AF37] hover:bg-white/10 rounded-[4px] cursor-pointer transition-colors"
+              title={isSidebarCollapsed ? "Expandir barra lateral" : "Recolher barra lateral"}
+              aria-label="Alternar barra lateral"
+              data-testid="header-sidebar-toggle-btn"
+            >
+              {isSidebarCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+            </Button>
             <div className="flex items-center gap-2">
               <span className="text-muted-foreground font-medium">Painel ADM</span>
               <span className="text-white/20">/</span>
@@ -1023,23 +1102,25 @@ export default function Layout() {
         </header>
 
         {/* ÁREA DE CONTEÚDO PRINCIPAL (com padding lateral seguro px-4 e overflow-x-hidden) */}
-        <main className="flex-1 w-full max-w-full overflow-x-hidden px-4 py-5 sm:px-6 lg:px-8 lg:py-7 pb-24 lg:pb-8">
-          <ErrorBoundary title="Ops! Erro ao carregar esta tela">
-            <Outlet
-              context={{
-                openNovoAtendimento: () => setModalNovoAtendimento(true),
-                openNovaDespesa: () => setModalNovaDespesa(true),
-                openNovaRetirada: () => setModalNovaRetirada(true),
-              }}
-            />
-          </ErrorBoundary>
+        <main className="flex-1 w-full max-w-full overflow-x-hidden px-4 py-5 sm:px-6 lg:px-8 lg:py-7 pb-28 lg:pb-10">
+          <div className="w-full max-w-full 2xl:max-w-[1920px] mx-auto">
+            <ErrorBoundary title="Ops! Erro ao carregar esta tela">
+              <Outlet
+                context={{
+                  openNovoAtendimento: () => setModalNovoAtendimento(true),
+                  openNovaDespesa: () => setModalNovaDespesa(true),
+                  openNovaRetirada: () => setModalNovaRetirada(true),
+                }}
+              />
+            </ErrorBoundary>
+          </div>
         </main>
       </div>
 
       {/* ======================================================== */}
       {/* 4. BARRA DE NAVEGAÇÃO INFERIOR FIXA (MOBILE < 1024px)     */}
       {/* ======================================================== */}
-      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-40 h-16 bg-[#0F121C] border-t border-white/[0.08] flex items-center justify-around px-2 shadow-xl">
+      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-40 h-16 bg-[#0F121C] border-t border-white/[0.08] flex items-center justify-around px-2 shadow-xl pb-[max(env(safe-area-inset-bottom),0px)]">
         {MOBILE_BOTTOM_NAV.map((item) => {
           const Icon = item.icon;
           const isActive = item.end ? location.pathname === "/" : location.pathname.startsWith(item.to);

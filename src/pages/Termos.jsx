@@ -11,11 +11,11 @@ export default function Termos() {
           <Link to="/" className="flex items-center gap-2.5">
             <img
               src="/logo.png"
-              alt="KingPro"
+              alt="Kupola"
               className="h-9 w-9 rounded-full object-cover border border-[#D4AF37]/40 shadow-sm"
             />
             <span className="font-display font-extrabold text-base tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-[#D4AF37] to-amber-500">
-              KingPro
+              Kupola
             </span>
           </Link>
           <span className="hidden sm:inline-block text-xs text-slate-500">|</span>
@@ -44,7 +44,7 @@ export default function Termos() {
             Contrato de Licenciamento de Software (SaaS)
           </div>
           <h1 className="font-display text-2xl sm:text-4xl font-extrabold text-white tracking-tight">
-            Termos de Uso do KingPro
+            Termos de Uso do Kupola
           </h1>
           <p className="mt-2 text-xs sm:text-sm text-slate-400">
             Última atualização: Setembro de 2026 • Válido para todas as barbearias, profissionais e usuários da plataforma.
@@ -57,7 +57,7 @@ export default function Termos() {
               <CheckCircle2 className="h-4 w-4 text-[#D4AF37]" /> 1. Aceitação dos Termos
             </h2>
             <p className="text-xs sm:text-sm">
-              Ao acessar, registrar uma conta ou utilizar qualquer funcionalidade do <strong>KingPro</strong> (disponível via plataforma web e aplicativos correlatos), você expressamente concorda com estes Termos de Uso e com nossa Política de Privacidade. Caso não concorde com qualquer disposição aqui estabelecida, solicitamos que interrompa imediatamente o uso do sistema.
+              Ao acessar, registrar uma conta ou utilizar qualquer funcionalidade do <strong>Kupola</strong> (disponível via plataforma web e aplicativos correlatos), você expressamente concorda com estes Termos de Uso e com nossa Política de Privacidade. Caso não concorde com qualquer disposição aqui estabelecida, solicitamos que interrompa imediatamente o uso do sistema.
             </p>
           </section>
 
@@ -66,7 +66,7 @@ export default function Termos() {
               <CheckCircle2 className="h-4 w-4 text-[#D4AF37]" /> 2. Descrição e Escopo do Serviço
             </h2>
             <p className="text-xs sm:text-sm mb-3">
-              O <strong>KingPro</strong> é uma plataforma SaaS (Software como Serviço) voltada à gestão operacional, financeira e de agendamentos para barbearias, estúdios masculinos e profissionais de beleza. O escopo abrange:
+              O <strong>Kupola</strong> é uma plataforma SaaS (Software como Serviço) voltada à gestão operacional, financeira e de agendamentos para barbearias, estúdios masculinos e profissionais de beleza. O escopo abrange:
             </p>
             <ul className="list-disc pl-5 space-y-1.5 text-xs sm:text-sm text-slate-300">
               <li>Módulo de Atendimentos Rápidos e Comanda Operacional em tempo real.</li>
@@ -82,7 +82,7 @@ export default function Termos() {
               <CheckCircle2 className="h-4 w-4 text-[#D4AF37]" /> 3. Período de Testes (Trial de 7 Dias) e Assinaturas
             </h2>
             <p className="text-xs sm:text-sm">
-              Novas contas cadastradas no <strong>KingPro</strong> desfrutam de um período de degustação gratuita de 7 (sete) dias corridos com acesso aos recursos do plano selecionado. Após o encerramento do trial, a continuidade irrestrita das rotinas operacionais e relatórios gerenciais fica condicionada à subscrição ativa de um dos planos mensais ou anuais oficiais do <strong>KingPro</strong>, processados com total segurança através do gateway homologado (Mercado Pago).
+              Novas contas cadastradas no <strong>Kupola</strong> desfrutam de um período de degustação gratuita de 7 (sete) dias corridos com acesso aos recursos do plano selecionado. Após o encerramento do trial, a continuidade irrestrita das rotinas operacionais e relatórios gerenciais fica condicionada à subscrição ativa de um dos planos mensais ou anuais oficiais do <strong>Kupola</strong>, processados com total segurança através do nosso portal oficial e homologado de pagamentos.
             </p>
           </section>
 
@@ -100,7 +100,7 @@ export default function Termos() {
               <CheckCircle2 className="h-4 w-4 text-[#D4AF37]" /> 5. Disponibilidade, Segurança e Backup
             </h2>
             <p className="text-xs sm:text-sm">
-              O <strong>KingPro</strong> adota as melhores práticas de infraestrutura em nuvem, garantindo alta disponibilidade (SLA de 99.8%), rotinas automáticas de backup de caixa e criptografia em trânsito (SSL/TLS). Em hipótese de manutenção programada, envidaremos esforços razoáveis para realizá-la fora dos horários de pico comercial das barbearias.
+              O <strong>Kupola</strong> adota as melhores práticas de infraestrutura em nuvem, garantindo alta disponibilidade (SLA de 99.8%), rotinas automáticas de backup de caixa e criptografia em trânsito (SSL/TLS). Em hipótese de manutenção programada, envidaremos esforços razoáveis para realizá-la fora dos horários de pico comercial das barbearias.
             </p>
           </section>
 
@@ -109,14 +109,14 @@ export default function Termos() {
               <CheckCircle2 className="h-4 w-4 text-[#D4AF37]" /> 6. Cancelamento e Encerramento de Conta
             </h2>
             <p className="text-xs sm:text-sm">
-              O contratante pode cancelar sua assinatura do <strong>KingPro</strong> a qualquer momento diretamente no painel gerencial ou via suporte oficial, sem multas rescisórias ocultas. Os dados operacionais serão preservados com confidencialidade conforme os parâmetros da LGPD (Lei Geral de Proteção de Dados).
+              O contratante pode cancelar sua assinatura do <strong>Kupola</strong> a qualquer momento diretamente no painel gerencial ou via suporte oficial, sem multas rescisórias ocultas. Os dados operacionais serão preservados com confidencialidade conforme os parâmetros da LGPD (Lei Geral de Proteção de Dados).
             </p>
           </section>
         </div>
 
         {/* Footer */}
         <div className="mt-12 pt-6 border-t border-white/[0.08] flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
-          <p>© 2026 KingPro — Todos os direitos reservados.</p>
+          <p>© 2026 Kupola — Todos os direitos reservados.</p>
           <div className="flex items-center gap-4">
             <Link to="/privacidade" className="hover:text-slate-300 transition-colors">
               Política de Privacidade

@@ -95,7 +95,7 @@ export default function Configuracoes() {
   ];
 
   return (
-    <div className="max-w-3xl space-y-6" data-testid="config-page">
+    <div className="w-full max-w-6xl 2xl:max-w-[1920px] mx-auto space-y-6" data-testid="config-page">
       <div>
         <h2 className="font-display text-2xl font-bold tracking-tight">Configurações</h2>
         <p className="text-sm text-muted-foreground">Personalize o link público de agendamentos, dinâmica de atendimento e acompanhe sua assinatura.</p>
@@ -123,8 +123,8 @@ export default function Configuracoes() {
             <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">
               Identificador da Barbearia (Slug / URL Amigável)
             </Label>
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-              <div className="relative flex-1">
+            <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-2">
+              <div className="relative flex-1 min-w-[200px]">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground font-mono select-none hidden sm:inline">
                   /agendar/
                 </span>
@@ -155,7 +155,7 @@ export default function Configuracoes() {
               </Button>
 
               <a
-                href={`https://api.whatsapp.com/send?text=${encodeURIComponent(`Olá! Agende seu horário de corte na barbearia pelo KingPro: ${shopPublicUrl}`)}`}
+                href={`https://api.whatsapp.com/send?text=${encodeURIComponent(`Olá! Agende seu horário de corte na barbearia pelo Kupola: ${shopPublicUrl}`)}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="h-10 px-3.5 rounded-[4px] bg-[#25D366]/15 hover:bg-[#25D366]/25 border border-[#25D366]/30 text-xs text-[#25D366] font-semibold flex items-center justify-center gap-1.5 transition-colors shrink-0"
@@ -216,7 +216,7 @@ export default function Configuracoes() {
                         </Button>
 
                         <a
-                          href={`https://api.whatsapp.com/send?text=${encodeURIComponent(`Olá! Agende seu horário com ${barber.name} no KingPro: ${window.location.origin}/agendar/${currentSlug}?barber=${barber.id}`)}`}
+                          href={`https://api.whatsapp.com/send?text=${encodeURIComponent(`Olá! Agende seu horário com ${barber.name} no Kupola: ${window.location.origin}/agendar/${currentSlug}?barber=${barber.id}`)}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="h-7 px-2 text-[10px] font-bold rounded-[4px] gap-1 cursor-pointer inline-flex items-center text-[#25D366] hover:bg-[#25D366]/10 border border-[#25D366]/30"
@@ -251,7 +251,7 @@ export default function Configuracoes() {
           </div>
         </div>
 
-        <div className="grid gap-3 sm:grid-cols-3 mb-5">
+        <div className="grid gap-3 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 mb-5">
           {operationalModes.map((mode) => {
             const isSelected = form.operational_mode === mode.id;
             const Icon = mode.icon;

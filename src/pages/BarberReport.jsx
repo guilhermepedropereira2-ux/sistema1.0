@@ -102,7 +102,7 @@ export default function BarberReport() {
     });
 
     const safeName = (r?.barber?.name || "barbeiro").replace(/\s+/g, "_");
-    const filename = `KingPro_Relatorio_${safeName}_${start}_${end}.csv`;
+    const filename = `Kupola_Relatorio_${safeName}_${start}_${end}.csv`;
     downloadCsv({ filename, headers, rows });
     toast.success("Relatório exportado com sucesso!");
   };

@@ -55,7 +55,7 @@ function ExpenseDialog({ type, categories, onDone }) {
       <DialogTrigger asChild>
         <Button className="gap-2" data-testid={`add-expense-${type}`}><Plus className="h-4 w-4" /> Nova Despesa</Button>
       </DialogTrigger>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="w-[95vw] sm:max-w-lg max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="font-display">{type === "fixa" ? "Despesa Fixa" : "Despesa Variável"}</DialogTitle>
         </DialogHeader>
@@ -156,13 +156,13 @@ export default function Despesas() {
       e.recurrence || "-",
     ]);
 
-    const filename = `KingPro_Despesas_${tab}_${month}.csv`;
+    const filename = `Kupola_Despesas_${tab}_${month}.csv`;
     downloadCsv({ filename, headers, rows });
     toast.success("Despesas exportadas com sucesso!");
   };
 
   return (
-    <div className="space-y-5" data-testid="despesas-page">
+    <div className="space-y-5 max-w-full 2xl:max-w-[1920px] mx-auto" data-testid="despesas-page">
       <Tabs value={tab} onValueChange={setTab}>
         <div className="flex flex-wrap items-center justify-between gap-3">
           <TabsList>
@@ -185,7 +185,7 @@ export default function Despesas() {
         </div>
       </Tabs>
 
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-3">
         <Card className="p-4">
           <div className="flex items-center justify-between">
             <p className="text-xs uppercase text-muted-foreground">Total</p>
@@ -208,7 +208,7 @@ export default function Despesas() {
       ) : (
         <Card className="overflow-hidden">
           <div className="overflow-x-auto">
-            <Table>
+            <Table className="min-w-[650px]">
               <TableHeader>
                 <TableRow>
                   <TableHead>Vencimento</TableHead>

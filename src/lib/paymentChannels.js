@@ -239,7 +239,7 @@ export function getChannelNameById(channelId, paymentMethods = []) {
   const legacyMap = {
     infinitepay: "InfinitePay",
     stone: "Stone",
-    mercadopago: "Mercado Pago",
+    mercadopago: "Terminal POS",
     pagbank_outra: "PagBank / Outra Maquininha",
     ton: "Ton",
     pm_stone: "Stone",

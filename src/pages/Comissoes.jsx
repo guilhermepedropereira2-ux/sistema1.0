@@ -182,7 +182,7 @@ export default function Comissoes() {
       a.commission_paid ? "Paga / Liquidada" : "Pendente de Quitação",
     ]);
 
-    const filename = `KingPro_Comissoes_${start}_${end}.csv`;
+    const filename = `Kupola_Comissoes_${start}_${end}.csv`;
     downloadCsv({ filename, headers, rows });
     toast.success("Extrato de comissões exportado com sucesso!");
   };
@@ -190,7 +190,7 @@ export default function Comissoes() {
   if (loading && !responseData) return <Loading />;
 
   return (
-    <div className="space-y-6" data-testid="comissoes-page">
+    <div className="space-y-6 max-w-full 2xl:max-w-[1920px] mx-auto" data-testid="comissoes-page">
       {/* Topo / Cabeçalho da Página */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -452,18 +452,18 @@ export default function Comissoes() {
               />
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <Table>
+            <div className="overflow-x-auto -mx-1 sm:mx-0">
+              <Table className="min-w-[850px]">
                 <TableHeader className="bg-[#0C0E16]">
                   <TableRow className="border-white/10 hover:bg-transparent">
-                    <TableHead className="text-white text-xs font-bold">Barbeiro / Profissional</TableHead>
-                    <TableHead className="text-center text-white text-xs font-bold">% Comissão</TableHead>
-                    <TableHead className="text-center text-white text-xs font-bold">Atendimentos</TableHead>
-                    <TableHead className="text-right text-white text-xs font-bold">Faturamento Bruto</TableHead>
-                    <TableHead className="text-right text-white text-xs font-bold">Comissão Gerada</TableHead>
-                    <TableHead className="text-right text-white text-xs font-bold">Total Já Pago</TableHead>
-                    <TableHead className="text-right text-white text-xs font-bold">Saldo a Quitar</TableHead>
-                    <TableHead className="text-right text-white text-xs font-bold">Ação de Liquidação</TableHead>
+                    <TableHead className="text-white text-xs font-bold whitespace-nowrap">Barbeiro / Profissional</TableHead>
+                    <TableHead className="text-center text-white text-xs font-bold whitespace-nowrap">% Comissão</TableHead>
+                    <TableHead className="text-center text-white text-xs font-bold whitespace-nowrap">Atendimentos</TableHead>
+                    <TableHead className="text-right text-white text-xs font-bold whitespace-nowrap">Faturamento Bruto</TableHead>
+                    <TableHead className="text-right text-white text-xs font-bold whitespace-nowrap">Comissão Gerada</TableHead>
+                    <TableHead className="text-right text-white text-xs font-bold whitespace-nowrap">Total Já Pago</TableHead>
+                    <TableHead className="text-right text-white text-xs font-bold whitespace-nowrap">Saldo a Quitar</TableHead>
+                    <TableHead className="text-right text-white text-xs font-bold whitespace-nowrap">Ação de Liquidação</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -540,7 +540,7 @@ export default function Comissoes() {
                         </TableCell>
 
                         {/* Botão de Quitar */}
-                        <TableCell className="text-right">
+                        <TableCell className="text-right whitespace-nowrap">
                           <Button
                             size="sm"
                             onClick={() => openPayModal(b)}
@@ -588,19 +588,19 @@ export default function Comissoes() {
               <EmptyState title="Nenhum atendimento encontrado neste período." />
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <Table>
+            <div className="overflow-x-auto -mx-1 sm:mx-0">
+              <Table className="min-w-[850px]">
                 <TableHeader className="bg-[#0C0E16]">
                   <TableRow className="border-white/10 hover:bg-transparent">
-                    <TableHead className="text-white text-xs font-bold">Data & Hora</TableHead>
-                    <TableHead className="text-white text-xs font-bold">Profissional</TableHead>
-                    <TableHead className="text-white text-xs font-bold">Cliente</TableHead>
-                    <TableHead className="text-white text-xs font-bold">Serviço / Produto</TableHead>
-                    <TableHead className="text-white text-xs font-bold">Forma de Pagto</TableHead>
-                    <TableHead className="text-right text-white text-xs font-bold">Valor Bruto</TableHead>
-                    <TableHead className="text-center text-white text-xs font-bold">%</TableHead>
-                    <TableHead className="text-right text-white text-xs font-bold">Comissão</TableHead>
-                    <TableHead className="text-center text-white text-xs font-bold">Status</TableHead>
+                    <TableHead className="text-white text-xs font-bold whitespace-nowrap">Data & Hora</TableHead>
+                    <TableHead className="text-white text-xs font-bold whitespace-nowrap">Profissional</TableHead>
+                    <TableHead className="text-white text-xs font-bold whitespace-nowrap">Cliente</TableHead>
+                    <TableHead className="text-white text-xs font-bold whitespace-nowrap">Serviço / Produto</TableHead>
+                    <TableHead className="text-white text-xs font-bold whitespace-nowrap">Forma de Pagto</TableHead>
+                    <TableHead className="text-right text-white text-xs font-bold whitespace-nowrap">Valor Bruto</TableHead>
+                    <TableHead className="text-center text-white text-xs font-bold whitespace-nowrap">%</TableHead>
+                    <TableHead className="text-right text-white text-xs font-bold whitespace-nowrap">Comissão</TableHead>
+                    <TableHead className="text-center text-white text-xs font-bold whitespace-nowrap">Status</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -675,16 +675,16 @@ export default function Comissoes() {
               />
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <Table>
+            <div className="overflow-x-auto -mx-1 sm:mx-0">
+              <Table className="min-w-[800px]">
                 <TableHeader className="bg-[#0C0E16]">
                   <TableRow className="border-white/10 hover:bg-transparent">
-                    <TableHead className="text-white text-xs font-bold">Data do Pagto</TableHead>
-                    <TableHead className="text-white text-xs font-bold">Barbeiro / Profissional</TableHead>
-                    <TableHead className="text-white text-xs font-bold">Forma de Pagamento</TableHead>
-                    <TableHead className="text-white text-xs font-bold">Observações / Descrição</TableHead>
-                    <TableHead className="text-right text-white text-xs font-bold">Valor Quitado</TableHead>
-                    <TableHead className="text-center text-white text-xs font-bold">Lançamento</TableHead>
+                    <TableHead className="text-white text-xs font-bold whitespace-nowrap">Data do Pagto</TableHead>
+                    <TableHead className="text-white text-xs font-bold whitespace-nowrap">Barbeiro / Profissional</TableHead>
+                    <TableHead className="text-white text-xs font-bold whitespace-nowrap">Forma de Pagamento</TableHead>
+                    <TableHead className="text-white text-xs font-bold whitespace-nowrap">Observações / Descrição</TableHead>
+                    <TableHead className="text-right text-white text-xs font-bold whitespace-nowrap">Valor Quitado</TableHead>
+                    <TableHead className="text-center text-white text-xs font-bold whitespace-nowrap">Lançamento</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -734,8 +734,8 @@ export default function Comissoes() {
 
       {/* MODAL DE CONFIRMAÇÃO: PAGAR / QUITAR COMISSÃO */}
       <Dialog open={payModalOpen} onOpenChange={setPayModalOpen}>
-        <DialogContent className="max-w-md bg-[#131622] border-white/10 text-white rounded-[4px] p-6 shadow-2xl">
-          <DialogHeader>
+        <DialogContent className="w-[95vw] sm:max-w-md max-h-[85vh] overflow-y-auto bg-[#131622] border-white/10 text-white rounded-[4px] p-5 sm:p-6 shadow-2xl">
+          <DialogHeader className="shrink-0">
             <DialogTitle className="flex items-center gap-2 text-lg font-bold text-white">
               <HandCoins className="h-5 w-5 text-[#D4AF37]" />
               <span>Liquidação de Comissão</span>

@@ -350,7 +350,7 @@ export default function Clientes() {
   if (loading) return <Loading />;
 
   return (
-    <div className="space-y-5 max-w-7xl mx-auto" data-testid="clientes-page">
+    <div className="space-y-5 max-w-full 2xl:max-w-[1920px] mx-auto" data-testid="clientes-page">
       {/* Banner de Recuperação de Inativos (>30 dias) */}
       <div className="rounded-[4px] bg-[#12141F] border border-white/10 p-4 sm:p-5 flex flex-wrap items-center justify-between gap-4 shadow-none">
         <div className="flex items-center gap-3.5">
@@ -442,7 +442,7 @@ export default function Clientes() {
           }
         />
       ) : (
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
           {filtered.map((c) => {
             const isInactive = isClientInactive(c, 30);
             const hasPlan = Boolean(c.has_plan && c.plan);
@@ -609,9 +609,9 @@ export default function Clientes() {
       <Dialog open={formOpen} onOpenChange={setFormOpen}>
         <DialogContent
           data-testid="client-form-dialog"
-          className="rounded-[6px] border-white/10 bg-[#12141F] text-white max-w-md"
+          className="w-[95vw] sm:max-w-md max-h-[85vh] overflow-y-auto rounded-[6px] border-white/10 bg-[#12141F] text-white p-5 sm:p-6"
         >
-          <DialogHeader>
+          <DialogHeader className="shrink-0">
             <DialogTitle className="font-display">
               {editing ? "Editar cliente" : "Novo cliente"}
             </DialogTitle>
@@ -717,10 +717,10 @@ export default function Clientes() {
       {/* Detail Dialog */}
       <Dialog open={!!detail} onOpenChange={(o) => !o && setDetail(null)}>
         <DialogContent
-          className="max-w-lg max-h-[90vh] overflow-y-auto rounded-[6px] border-white/10 bg-[#12141F] text-white"
+          className="w-[95vw] sm:max-w-lg max-h-[85vh] overflow-y-auto rounded-[6px] border-white/10 bg-[#12141F] text-white p-5 sm:p-6"
           data-testid="client-detail-dialog"
         >
-          <DialogHeader>
+          <DialogHeader className="shrink-0">
             <DialogTitle className="font-display text-lg text-white">
               {detail?.name}
             </DialogTitle>
@@ -971,9 +971,9 @@ export default function Clientes() {
       <Dialog open={planOpen} onOpenChange={setPlanOpen}>
         <DialogContent
           data-testid="plan-dialog"
-          className="rounded-[6px] border-white/10 bg-[#12141F] text-white max-w-md"
+          className="w-[95vw] sm:max-w-md max-h-[85vh] overflow-y-auto rounded-[6px] border-white/10 bg-[#12141F] text-white p-5 sm:p-6"
         >
-          <DialogHeader>
+          <DialogHeader className="shrink-0">
             <DialogTitle className="font-display flex items-center gap-2">
               <Crown className="h-5 w-5 text-[#D4AF37]" />
               Vincular Plano de Assinatura

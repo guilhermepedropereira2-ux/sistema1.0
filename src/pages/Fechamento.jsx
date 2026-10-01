@@ -47,7 +47,7 @@ export default function Fechamento() {
   };
 
   return (
-    <div className="space-y-6" data-testid="fechamento-page">
+    <div className="space-y-6 max-w-full 2xl:max-w-[1920px] mx-auto" data-testid="fechamento-page">
       <Card className="p-6">
         <div className="flex items-center gap-2"><ArrowRightLeft className="h-5 w-5 text-primary" /><h3 className="font-display text-base font-bold">Conferência de Caixa</h3></div>
         <div className="mt-4 max-w-xs">
@@ -61,7 +61,7 @@ export default function Fechamento() {
               <p className="text-sm text-muted-foreground">Nenhuma venda registrada nesta data.</p>
             ) : (
               <div className="overflow-x-auto">
-                <Table>
+                <Table className="min-w-[500px]">
                   <TableHeader>
                     <TableRow>
                       <TableHead>Origem</TableHead>
@@ -92,7 +92,7 @@ export default function Fechamento() {
 
             {Object.keys(expected).length > 0 && (
               <>
-                <div className="grid gap-3 sm:grid-cols-3 pt-2">
+                <div className="grid gap-3 grid-cols-1 sm:grid-cols-3 pt-2">
                   <Card className="p-4"><p className="text-xs uppercase text-muted-foreground">Esperado</p><p className="font-display text-lg font-extrabold">{brl(totalExpected)}</p></Card>
                   <Card className="p-4"><p className="text-xs uppercase text-muted-foreground">Contado</p><p className="font-display text-lg font-extrabold">{brl(totalCounted)}</p></Card>
                   <Card className="p-4"><p className="text-xs uppercase text-muted-foreground">Diferença</p><p className={`font-display text-lg font-extrabold ${diff === 0 ? "" : diff > 0 ? "text-success" : "text-destructive"}`}>{brl(diff)}</p></Card>

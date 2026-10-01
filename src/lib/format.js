@@ -4,6 +4,8 @@ export const brl = (v) =>
     currency: "BRL",
   });
 
+export const formatCurrency = brl;
+
 export const num = (v) =>
   (Number(v) || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 

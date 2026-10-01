@@ -73,7 +73,7 @@ export default function MeuPerfil() {
           </Button>
 
           <a
-            href={`https://api.whatsapp.com/send?text=${encodeURIComponent(`Olá! Agende seu horário de corte comigo na barbearia através do KingPro: ${myBookingUrl}`)}`}
+            href={`https://api.whatsapp.com/send?text=${encodeURIComponent(`Olá! Agende seu horário de corte comigo na barbearia através do Kupola: ${myBookingUrl}`)}`}
             target="_blank"
             rel="noopener noreferrer"
             className="h-8 px-3 text-xs bg-[#25D366]/15 hover:bg-[#25D366]/25 border border-[#25D366]/30 text-[#25D366] font-semibold rounded-[4px] inline-flex items-center gap-1.5 transition-all"

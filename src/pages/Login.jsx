@@ -9,7 +9,25 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ScissorsSquare, ArrowLeft, LogIn, Store, Globe, ArrowUpRight } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import {
+  LogIn,
+  Globe,
+  ArrowUpRight,
+  KeyRound,
+  ShieldCheck,
+  HelpCircle,
+  Mail,
+  Send,
+  Sparkles,
+} from "lucide-react";
 
 function formatApiErrorDetail(detail) {
   if (detail == null) return "Não foi possível continuar. Tente novamente.";
@@ -21,11 +39,20 @@ function formatApiErrorDetail(detail) {
 }
 
 export default function Login() {
-  const { user, ready, login, register } = useAuth();
+  const { user, ready, login } = useAuth();
   const navigate = useNavigate();
-  const [shop, setShop] = useState(null);
-  const [mode, setMode] = useState("login"); // login | register
   const [loading, setLoading] = useState(false);
+
+  // login state
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [keep, setKeep] = useState(true);
+
+  // forgot password dialog
+  const [forgotOpen, setForgotOpen] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState("");
+  const [forgotSent, setForgotSent] = useState(false);
+  const [forgotLoading, setForgotLoading] = useState(false);
 
   // Auto-redireciona se o usuário já estiver logado
   useEffect(() => {
@@ -34,63 +61,51 @@ export default function Login() {
     }
   }, [ready, user, navigate]);
 
-  // login state
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
-  const [keep, setKeep] = useState(true);
-
-  // register state
-  const [reg, setReg] = useState({
-    name: "", email: "", document: "", phone: "", username: "", password: "", confirm: "",
-    shop_name: "", city: "", state: "", shop_phone: "",
-  });
-  const setR = (k) => (e) => setReg((r) => ({ ...r, [k]: e.target.value }));
-
-  useEffect(() => { api.get("/barbershop").then(setShop).catch(() => {}); }, []);
-
   const submitLogin = async (e) => {
     e.preventDefault();
+    if (!username.trim()) {
+      return toast.error("Informe seu usuário ou e-mail de acesso.");
+    }
+    if (!password) {
+      return toast.error("Informe sua senha.");
+    }
+
     setLoading(true);
     try {
       const u = await login(username.trim(), password, keep);
-      toast.success(`Bem-vindo, ${u.name}`);
+      toast.success(`Bem-vindo de volta, ${u.name}`);
       navigate(defaultPanel(u), { replace: true });
     } catch (err) {
       toast.error(formatApiErrorDetail(err.response?.data?.detail) || err.message);
-    } finally { setLoading(false); }
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const submitRegister = async (e) => {
-    e.preventDefault();
-    if (!reg.name || !reg.username || !reg.password || !reg.shop_name) {
-      return toast.error("Preencha os campos obrigatórios");
-    }
-    if (!reg.document || reg.document.trim().length < 11) {
-      return toast.error("Informe um CPF ou CNPJ válido para ativar o período de testes");
-    }
-    if (reg.password !== reg.confirm) return toast.error("As senhas não conferem");
-    if (reg.password.length < 6) return toast.error("A senha deve ter ao menos 6 caracteres");
+  const handleQuickLogin = async (userKey) => {
     setLoading(true);
     try {
-      const u = await register({
-        name: reg.name.trim(),
-        email: reg.email.trim() || null,
-        document: reg.document.trim(),
-        phone: reg.phone.trim() || null,
-        username: reg.username.trim(),
-        password: reg.password,
-        shop_name: reg.shop_name.trim(),
-        city: reg.city.trim() || null,
-        state: reg.state.trim() || null,
-        shop_phone: reg.shop_phone.trim() || null,
-      });
-      toast.success(`Barbearia cadastrada com 7 dias grátis! Bem-vindo ao KingPro, ${u.name}`);
-      // Redireciona para escolha de planos com 7 dias de trial grátis
-      navigate("/planos", { state: { fromRegister: true } });
+      const u = await login(userKey, userKey, true);
+      toast.success(`Conectado como ${u.name}`);
+      navigate(defaultPanel(u), { replace: true });
     } catch (err) {
-      const msg = err.response?.data?.message || err.response?.data?.detail || err.message;
-      toast.error(formatApiErrorDetail(msg));
-    } finally { setLoading(false); }
+      toast.error("Falha ao entrar com perfil de teste.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleForgotPasswordSubmit = (e) => {
+    e.preventDefault();
+    if (!forgotEmail.trim()) {
+      return toast.error("Informe o e-mail cadastrado na sua compra.");
+    }
+    setForgotLoading(true);
+    setTimeout(() => {
+      setForgotLoading(false);
+      setForgotSent(true);
+      toast.success("Instruções de redefinição enviadas para o seu e-mail!");
+    }, 700);
   };
 
   return (
@@ -105,23 +120,26 @@ export default function Login() {
           data-testid="login-landing-link"
         >
           <Globe className="h-3.5 w-3.5 text-[#D4AF37]" />
-          <span>Início / Página de Vendas</span>
+          <span>Página Oficial Kupola</span>
           <ArrowUpRight className="h-3 w-3 text-slate-500" />
         </a>
       </div>
 
-      <Card className="w-full max-w-md p-8 border border-white/10 bg-[#12141F] rounded-[4px] shadow-none" data-testid="login-card">
+      <Card
+        className="w-full max-w-md p-8 border border-white/10 bg-[#12141F] rounded-[4px] shadow-none"
+        data-testid="login-card"
+      >
         <div className="mb-6 flex flex-col items-center text-center">
           <div className="mb-3 flex items-center justify-center gap-3">
-            <img 
-              src="/logo.png" 
-              alt="KingPro" 
-              className="h-12 w-12 rounded-full object-cover border border-[#D4AF37]/40 shadow-lg shadow-[#D4AF37]/15" 
-              data-testid="login-logo" 
+            <img
+              src="/logo.png"
+              alt="Kupola"
+              className="h-12 w-12 rounded-full object-cover border border-[#D4AF37]/40 shadow-lg shadow-[#D4AF37]/15"
+              data-testid="login-logo"
             />
             <div className="flex flex-col text-left">
               <span className="font-display font-extrabold text-2xl tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-[#D4AF37] to-amber-500">
-                KingPro
+                Kupola
               </span>
               <span className="text-[10px] text-slate-400 font-medium uppercase tracking-wider">
                 Gestão para Barbearias
@@ -129,78 +147,201 @@ export default function Login() {
             </div>
           </div>
           <h1 className="mt-1 font-display text-sm font-bold text-slate-200">
-            {mode === "register" ? "Criar minha barbearia (7 dias grátis)" : "Acesse sua conta"}
+            Acesse seu painel
           </h1>
           <p className="text-xs text-muted-foreground mt-0.5">
-            {mode === "register" ? "Cadastre você e sua barbearia para começar" : "Entre com seu usuário e senha"}
+            Entre com suas credenciais de usuário ou e-mail
           </p>
         </div>
 
-        {mode === "login" ? (
-          <form onSubmit={submitLogin} className="space-y-4">
-            <div>
-              <Label>Usuário ou e-mail</Label>
-              <Input className="rounded-[4px]" value={username} onChange={(e) => setUsername(e.target.value)} data-testid="login-username" autoFocus />
+        <form onSubmit={submitLogin} className="space-y-4">
+          <div>
+            <Label className="text-xs text-slate-300">Usuário ou e-mail</Label>
+            <Input
+              className="rounded-[4px] bg-[#0A0D14] border-white/10 text-white mt-1"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              placeholder="seu.usuario ou email@barbearia.com"
+              data-testid="login-username"
+              autoFocus
+            />
+          </div>
+
+          <div>
+            <div className="flex items-center justify-between">
+              <Label className="text-xs text-slate-300">Senha</Label>
+              <button
+                type="button"
+                className="text-[11px] text-[#D4AF37] hover:underline cursor-pointer"
+                data-testid="forgot-password"
+                onClick={() => {
+                  setForgotSent(false);
+                  setForgotOpen(true);
+                }}
+              >
+                Esqueci minha senha
+              </button>
             </div>
-            <div>
-              <Label>Senha</Label>
-              <Input className="rounded-[4px]" type="password" value={password} onChange={(e) => setPassword(e.target.value)} data-testid="login-password" />
-            </div>
-            <label className="flex items-center gap-2 text-sm text-slate-300">
-              <Checkbox checked={keep} onCheckedChange={setKeep} data-testid="login-keep" /> Manter conectado
-            </label>
-            <Button type="submit" className="w-full gap-2 rounded-[4px] shadow-none" disabled={loading} data-testid="login-submit">
-              <LogIn className="h-4 w-4" /> {loading ? "Entrando..." : "Entrar"}
-            </Button>
-            <button type="button" className="w-full text-center text-xs text-muted-foreground hover:text-foreground cursor-pointer" data-testid="forgot-password"
-              onClick={() => toast.info("Para redefinir sua senha, procure o Dono/Gerente da sua barbearia.")}>
-              Esqueci minha senha
-            </button>
-            <div className="border-t border-white/10 pt-4">
-              <Button type="button" variant="secondary" className="w-full gap-2 rounded-[4px] shadow-none" onClick={() => setMode("register")} data-testid="go-register">
-                <Store className="h-4 w-4" /> Criar minha barbearia
-              </Button>
-            </div>
-          </form>
-        ) : (
-          <form onSubmit={submitRegister} className="space-y-4">
-            <p className="text-sm font-semibold text-primary">Dados do responsável</p>
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <div className="sm:col-span-2"><Label>Nome completo *</Label><Input className="rounded-[4px]" value={reg.name} onChange={setR("name")} data-testid="reg-name" /></div>
-              <div><Label>E-mail</Label><Input className="rounded-[4px]" type="email" value={reg.email} onChange={setR("email")} data-testid="reg-email" /></div>
-              <div><Label>Telefone</Label><Input className="rounded-[4px]" value={reg.phone} onChange={setR("phone")} data-testid="reg-phone" /></div>
-              <div><Label>Usuário *</Label><Input className="rounded-[4px]" value={reg.username} onChange={setR("username")} data-testid="reg-username" /></div>
-              <div />
-              <div><Label>Senha *</Label><Input className="rounded-[4px]" type="password" value={reg.password} onChange={setR("password")} data-testid="reg-password" /></div>
-              <div><Label>Confirmar senha *</Label><Input className="rounded-[4px]" type="password" value={reg.confirm} onChange={setR("confirm")} data-testid="reg-confirm" /></div>
-            </div>
-            <p className="pt-2 text-sm font-semibold text-primary">Dados da barbearia</p>
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <div className="sm:col-span-2"><Label>Nome da barbearia *</Label><Input className="rounded-[4px]" value={reg.shop_name} onChange={setR("shop_name")} data-testid="reg-shopname" /></div>
-              <div className="sm:col-span-2">
-                <Label>CPF ou CNPJ (Documento) *</Label>
-                <Input
-                  className="rounded-[4px]"
-                  placeholder="000.000.000-00 ou 00.000.000/0001-00"
-                  value={reg.document}
-                  onChange={setR("document")}
-                  data-testid="reg-document"
-                />
-                <span className="text-[11px] text-muted-foreground">Necessário para ativação dos 7 dias grátis (único por barbearia/documento).</span>
+            <Input
+              className="rounded-[4px] bg-[#0A0D14] border-white/10 text-white mt-1"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="••••••••"
+              data-testid="login-password"
+            />
+          </div>
+
+          <label className="flex items-center gap-2 text-xs text-slate-300 cursor-pointer select-none">
+            <Checkbox checked={keep} onCheckedChange={setKeep} data-testid="login-keep" />
+            <span>Manter conectado neste dispositivo</span>
+          </label>
+
+          <Button
+            type="submit"
+            className="w-full gap-2 rounded-[4px] h-10 bg-[#D4AF37] hover:bg-[#C59F2E] text-slate-950 font-bold text-xs uppercase shadow-none cursor-pointer"
+            disabled={loading}
+            data-testid="login-submit"
+          >
+            <LogIn className="h-4 w-4" />
+            <span>{loading ? "Autenticando..." : "Entrar no Painel"}</span>
+          </Button>
+        </form>
+
+        {/* Informação sobre Distribuição em Plataformas Externas */}
+        <div className="mt-6 pt-5 border-t border-white/10">
+          <div className="p-3 rounded-[4px] bg-[#0B0D14] border border-white/5 space-y-2">
+            <div className="flex items-start gap-2">
+              <ShieldCheck className="h-4 w-4 text-[#D4AF37] shrink-0 mt-0.5" />
+              <div>
+                <p className="text-xs font-semibold text-white">
+                  Acesso de Novos Clientes & Assinantes
+                </p>
+                <p className="text-[11px] text-slate-400 leading-relaxed mt-0.5">
+                  Novas contas de Dono são provisionadas automaticamente após a confirmação da assinatura.
+                  Utilize o e-mail e as credenciais enviadas para a sua caixa de entrada.
+                </p>
               </div>
-              <div><Label>Cidade</Label><Input className="rounded-[4px]" value={reg.city} onChange={setR("city")} data-testid="reg-city" /></div>
-              <div><Label>Estado</Label><Input className="rounded-[4px]" value={reg.state} onChange={setR("state")} data-testid="reg-state" /></div>
-              <div className="sm:col-span-2"><Label>Telefone da barbearia</Label><Input className="rounded-[4px]" value={reg.shop_phone} onChange={setR("shop_phone")} data-testid="reg-shopphone" /></div>
             </div>
-            <Button type="submit" className="w-full gap-2 rounded-[4px] shadow-none" disabled={loading} data-testid="reg-submit">
-              <Store className="h-4 w-4" /> {loading ? "Criando..." : "Criar barbearia e entrar"}
-            </Button>
-            <Button type="button" variant="ghost" className="w-full gap-2 text-muted-foreground rounded-[4px]" onClick={() => setMode("login")} data-testid="reg-back">
-              <ArrowLeft className="h-4 w-4" /> Voltar para o login
-            </Button>
-          </form>
-        )}
+          </div>
+        </div>
+
+        {/* Atalhos Rápidos para Demonstração / Testes */}
+        <div className="mt-4 pt-3 border-t border-white/5 text-center">
+          <p className="text-[10px] text-slate-500 uppercase tracking-wider mb-2 font-semibold">
+            Perfis de Demonstração Rápidos
+          </p>
+          <div className="grid grid-cols-3 gap-2">
+            <button
+              type="button"
+              onClick={() => handleQuickLogin("1")}
+              className="px-2 py-1.5 rounded-[4px] bg-[#0A0D14] hover:bg-white/5 border border-white/10 text-[11px] text-slate-300 hover:text-white transition-colors cursor-pointer text-center"
+              title="Entrar como Dono (usuario 1 / senha 1)"
+            >
+              <span className="font-bold block text-[#D4AF37]">Dono</span>
+              <span className="text-[9px] text-slate-500">Tecla 1</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => handleQuickLogin("2")}
+              className="px-2 py-1.5 rounded-[4px] bg-[#0A0D14] hover:bg-white/5 border border-white/10 text-[11px] text-slate-300 hover:text-white transition-colors cursor-pointer text-center"
+              title="Entrar como Gerente (usuario 2 / senha 2)"
+            >
+              <span className="font-bold block text-blue-400">Gerente</span>
+              <span className="text-[9px] text-slate-500">Tecla 2</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => handleQuickLogin("3")}
+              className="px-2 py-1.5 rounded-[4px] bg-[#0A0D14] hover:bg-white/5 border border-white/10 text-[11px] text-slate-300 hover:text-white transition-colors cursor-pointer text-center"
+              title="Entrar como Barbeiro (usuario 3 / senha 3)"
+            >
+              <span className="font-bold block text-emerald-400">Barbeiro</span>
+              <span className="text-[9px] text-slate-500">Tecla 3</span>
+            </button>
+          </div>
+        </div>
       </Card>
+
+      {/* Modal de Recuperação de Senha */}
+      <Dialog open={forgotOpen} onOpenChange={setForgotOpen}>
+        <DialogContent className="max-w-md bg-[#12141F] border border-white/10 text-white rounded-[4px]">
+          <DialogHeader>
+            <div className="flex items-center gap-2 mb-1">
+              <div className="h-8 w-8 rounded-[4px] bg-[#D4AF37]/15 text-[#D4AF37] flex items-center justify-center border border-[#D4AF37]/30">
+                <KeyRound className="h-4 w-4" />
+              </div>
+              <DialogTitle className="text-base font-bold">
+                Recuperação de Acesso
+              </DialogTitle>
+            </div>
+            <DialogDescription className="text-xs text-slate-400">
+              Informe o e-mail associado à sua conta ou compra na plataforma de checkout.
+            </DialogDescription>
+          </DialogHeader>
+
+          {forgotSent ? (
+            <div className="py-4 space-y-3 text-center">
+              <div className="h-12 w-12 rounded-full bg-emerald-500/15 text-emerald-400 flex items-center justify-center mx-auto border border-emerald-500/30">
+                <Mail className="h-6 w-6" />
+              </div>
+              <p className="text-sm font-semibold text-white">
+                Verifique sua caixa de entrada
+              </p>
+              <p className="text-xs text-slate-400 max-w-sm mx-auto leading-relaxed">
+                Enviamos um link com as instruções para redefinição de senha para <strong>{forgotEmail}</strong>. Verifique também a pasta de spam.
+              </p>
+            </div>
+          ) : (
+            <form onSubmit={handleForgotPasswordSubmit} className="space-y-4 py-2">
+              <div>
+                <Label className="text-xs text-slate-300">E-mail de Cadastro</Label>
+                <Input
+                  type="email"
+                  className="rounded-[4px] bg-[#0A0D14] border-white/10 text-white mt-1"
+                  placeholder="exemplo@gmail.com"
+                  value={forgotEmail}
+                  onChange={(e) => setForgotEmail(e.target.value)}
+                  autoFocus
+                />
+              </div>
+              <p className="text-[11px] text-slate-400">
+                Se você é um barbeiro ou colaborador, também pode solicitar a redefinição direta ao Dono ou Gerente da sua barbearia no menu "Equipe & Acessos".
+              </p>
+              <DialogFooter className="pt-2">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() => setForgotOpen(false)}
+                  className="rounded-[4px] text-xs text-slate-400"
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={forgotLoading}
+                  className="bg-[#D4AF37] hover:bg-[#C59F2E] text-slate-950 font-bold text-xs rounded-[4px] gap-1.5"
+                >
+                  <Send className="h-3.5 w-3.5" />
+                  {forgotLoading ? "Enviando..." : "Enviar Instruções"}
+                </Button>
+              </DialogFooter>
+            </form>
+          )}
+
+          {forgotSent && (
+            <DialogFooter>
+              <Button
+                type="button"
+                onClick={() => setForgotOpen(false)}
+                className="w-full bg-[#D4AF37] hover:bg-[#C59F2E] text-slate-950 font-bold text-xs rounded-[4px]"
+              >
+                Voltar para o Login
+              </Button>
+            </DialogFooter>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

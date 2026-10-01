@@ -33,7 +33,7 @@ function ServiceDialog({ existing, onDone }) {
         {existing ? <Button variant="ghost" size="icon" className="h-8 w-8" data-testid={`edit-service-${existing.id}`}><Pencil className="h-4 w-4" /></Button>
           : <Button className="gap-2" data-testid="add-service-button"><Plus className="h-4 w-4" /> Novo Serviço</Button>}
       </DialogTrigger>
-      <DialogContent className="max-w-md">
+      <DialogContent className="w-[95vw] sm:max-w-md max-h-[85vh] overflow-y-auto">
         <DialogHeader><DialogTitle className="font-display">{existing ? "Editar" : "Novo"} Serviço</DialogTitle></DialogHeader>
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="sm:col-span-2"><Label>Nome</Label><Input value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} data-testid="service-name" /></div>
@@ -52,26 +52,28 @@ export default function Servicos() {
   const remove = async (id) => { try { await api.del(`/services/${id}`); toast.success("Removido"); refresh(); } catch { toast.error("Erro"); } };
   if (loading) return <Loading />;
   return (
-    <div className="space-y-5" data-testid="servicos-page">
+    <div className="space-y-5 max-w-full 2xl:max-w-[1920px] mx-auto" data-testid="servicos-page">
       <div className="flex justify-end"><ServiceDialog onDone={refresh} /></div>
       {!data?.length ? <EmptyState title="Nenhum serviço cadastrado" subtitle="Cadastre os serviços oferecidos pela barbearia." /> : (
         <Card className="overflow-hidden">
-          <Table>
-            <TableHeader><TableRow><TableHead>Serviço</TableHead><TableHead className="text-right">Preço</TableHead><TableHead className="text-right">Duração</TableHead><TableHead></TableHead></TableRow></TableHeader>
-            <TableBody>
-              {data.map((s) => (
-                <TableRow key={s.id} data-testid={`service-row-${s.id}`}>
-                  <TableCell className="font-medium">{s.name}</TableCell>
-                  <TableCell className="text-right tabular-nums">{brl(s.price)}</TableCell>
-                  <TableCell className="text-right text-muted-foreground">{s.duration_min} min</TableCell>
-                  <TableCell className="text-right">
-                    <ServiceDialog existing={s} onDone={refresh} />
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => remove(s.id)} data-testid={`delete-service-${s.id}`}><Trash2 className="h-4 w-4" /></Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+          <div className="overflow-x-auto">
+            <Table className="min-w-[500px]">
+              <TableHeader><TableRow><TableHead>Serviço</TableHead><TableHead className="text-right">Preço</TableHead><TableHead className="text-right">Duração</TableHead><TableHead className="text-right"></TableHead></TableRow></TableHeader>
+              <TableBody>
+                {data.map((s) => (
+                  <TableRow key={s.id} data-testid={`service-row-${s.id}`}>
+                    <TableCell className="font-medium">{s.name}</TableCell>
+                    <TableCell className="text-right tabular-nums">{brl(s.price)}</TableCell>
+                    <TableCell className="text-right text-muted-foreground">{s.duration_min} min</TableCell>
+                    <TableCell className="text-right whitespace-nowrap">
+                      <ServiceDialog existing={s} onDone={refresh} />
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => remove(s.id)} data-testid={`delete-service-${s.id}`}><Trash2 className="h-4 w-4" /></Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         </Card>
       )}
     </div>

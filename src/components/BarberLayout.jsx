@@ -16,13 +16,13 @@ import {
 import {
   Home, Users, TrendingUp, User, Plus, LogOut,
   Scissors, ShieldCheck, Share2, Globe, Link2,
-  WifiOff, RefreshCw, Users2, Check,
+  WifiOff, RefreshCw,
 } from "lucide-react";
 import LancarAtendimentoModal from "@/components/LancarAtendimentoModal";
 import { useOfflineSync } from "@/hooks/useOfflineSync";
 
 export default function BarberLayout() {
-  const { user, ready, logout, switchAccount } = useAuth();
+  const { user, ready, logout } = useAuth();
   const { subscription, isSubscriptionExpired: unitSubscriptionExpired } = useUnit();
   const navigate = useNavigate();
   const location = useLocation();
@@ -30,12 +30,7 @@ export default function BarberLayout() {
   const [barberData, setBarberData] = useState(null);
   const [photoError, setPhotoError] = useState(false);
   const [lancarModalOpen, setLancarModalOpen] = useState(false);
-  const [switchableUsers, setSwitchableUsers] = useState([]);
   const { isOnline, pendingCount, isSyncing, syncNow } = useOfflineSync();
-
-  useEffect(() => {
-    api.get("/auth/switchable-users").then(setSwitchableUsers).catch(() => {});
-  }, []);
 
   useEffect(() => {
     const handleOpen = () => setLancarModalOpen(true);
@@ -121,12 +116,12 @@ export default function BarberLayout() {
         <div className="flex items-center gap-2.5">
           <img 
             src="/logo.png" 
-            alt="KingPro" 
+            alt="Kupola" 
             className="h-9 w-9 rounded-full object-cover border border-[#D4AF37]/30 shadow-md shrink-0" 
           />
           <div className="leading-tight hidden min-[400px]:block">
             <span className="font-display font-extrabold text-sm tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-[#D4AF37] to-amber-500 block">
-              KingPro
+              Kupola
             </span>
             <p className="text-[10px] text-slate-400 font-medium">
               Hub do Barbeiro
@@ -211,77 +206,6 @@ export default function BarberLayout() {
               </DropdownMenuLabel>
               <DropdownMenuSeparator className="bg-white/10 my-1" />
 
-              {/* Troca Rápida de Conta */}
-              <div className="px-2 py-1">
-                <div className="flex items-center justify-between pb-1">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-[#D4AF37] flex items-center gap-1">
-                    <Users2 className="h-3 w-3" /> Alternar de Conta
-                  </span>
-                  <span className="text-[9px] text-slate-400">Troca rápida</span>
-                </div>
-                <div className="space-y-1 max-h-40 overflow-y-auto pr-0.5">
-                  {(switchableUsers.length ? switchableUsers : [
-                    { id: "usr_dono", name: "Administrador / Dono", username: "dono", role: "dono" },
-                    { id: "usr_dono_quick", name: "Dono Teste (1)", username: "1", role: "dono" },
-                    { id: "usr_gerente", name: "Gerente Geral", username: "gerente", role: "gerente" },
-                    { id: "usr_carlos", name: "Carlos Souza", username: "carlos", role: "barbeiro" },
-                    { id: "usr_barbeiro_quick", name: "Barbeiro Teste (3)", username: "3", role: "barbeiro" },
-                  ]).map((acc) => {
-                    const isCurrent = user?.id === acc.id || user?.username === acc.username;
-                    const roleName = acc.role === "dono" ? "Dono" : acc.role === "gerente" ? "Gerente" : "Barbeiro";
-                    const roleGrad = acc.role === "dono"
-                      ? "from-[#EAB308] to-[#D4AF37]"
-                      : acc.role === "gerente"
-                      ? "from-blue-500 to-indigo-600"
-                      : "from-emerald-500 to-teal-600";
-
-                    return (
-                      <button
-                        key={acc.id || acc.username}
-                        type="button"
-                        onClick={async () => {
-                          if (isCurrent) return;
-                          try {
-                            const u = await switchAccount(acc.id || acc.username);
-                            toast.success(`Alternado para: ${u.name}`);
-                            if (u.role === "barbeiro") {
-                              navigate("/barbeiro");
-                            } else {
-                              navigate("/");
-                            }
-                          } catch {
-                            toast.error("Erro ao alternar de conta.");
-                          }
-                        }}
-                        className={`w-full flex items-center justify-between p-1.5 rounded-[4px] text-left transition-all cursor-pointer ${
-                          isCurrent
-                            ? "bg-[#D4AF37]/15 border border-[#D4AF37]/40 text-white"
-                            : "hover:bg-white/5 text-slate-300 hover:text-white border border-transparent"
-                        }`}
-                        data-testid={`barber-switch-to-${acc.username}`}
-                      >
-                        <div className="flex items-center gap-2 min-w-0">
-                          <div className={`h-6 w-6 rounded-full bg-gradient-to-br ${roleGrad} flex items-center justify-center text-[#0B0F19] font-black text-[9px] shrink-0`}>
-                            {(acc.name || "U").substring(0, 2).toUpperCase()}
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <p className="text-xs font-bold truncate leading-tight">{acc.name}</p>
-                            <p className="text-[10px] text-slate-400 truncate">@{acc.username}</p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-1.5 shrink-0 ml-1">
-                          <span className="text-[9px] font-bold px-1.5 py-0.2 rounded uppercase border border-white/20 bg-white/5">
-                            {roleName}
-                          </span>
-                          {isCurrent && <Check className="h-3.5 w-3.5 text-[#D4AF37] stroke-[3]" />}
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              <DropdownMenuSeparator className="bg-white/10 my-1" />
               <DropdownMenuItem onClick={copyBookingLink} className="cursor-pointer text-xs focus:bg-white/10 focus:text-white rounded-[2px]" data-testid="menu-copiar-link">
                 <Link2 className="mr-2 h-4 w-4 text-[#D4AF37]" /> Copiar Link de Agendamento
               </DropdownMenuItem>
@@ -302,7 +226,7 @@ export default function BarberLayout() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-4xl px-4 py-5">
+      <main className="mx-auto max-w-5xl 2xl:max-w-[1800px] px-4 py-5 pb-28 sm:pb-12">
         <ErrorBoundary title="Ops! Erro ao exibir esta página do Barbeiro">
           <Outlet context={{ openLancarModal: () => setLancarModalOpen(true), closeLancarModal: () => setLancarModalOpen(false), lancarModalOpen }} />
         </ErrorBoundary>
@@ -313,7 +237,7 @@ export default function BarberLayout() {
           onClick={() => setLancarModalOpen(true)}
           data-testid="fab-lancar"
           title="Lançar novo atendimento"
-          className="fixed bottom-20 right-5 z-40 flex h-12 w-12 items-center justify-center rounded-[4px] bg-[#D4AF37] text-[#0B0D14] shadow-none hover:bg-[#C59F2E] transition-colors border border-[#D4AF37]/50 active:translate-y-[1px] cursor-pointer"
+          className="fixed bottom-20 sm:bottom-24 right-4 sm:right-6 z-40 flex h-12 w-12 items-center justify-center rounded-[4px] bg-[#D4AF37] text-[#0B0D14] shadow-none hover:bg-[#C59F2E] transition-colors border border-[#D4AF37]/50 active:translate-y-[1px] cursor-pointer"
         >
           <Plus className="h-6 w-6 stroke-[2.5]" />
         </button>
@@ -329,7 +253,7 @@ export default function BarberLayout() {
       />
 
       {/* Barra de Navegação Inferior Otimizada e Minimalista (4 Itens Fixos) */}
-      <nav className="fixed bottom-0 left-0 right-0 z-30 border-t border-white/[0.08] bg-[#0F121C] px-2 py-2 shadow-2xl safe-area-pb">
+      <nav className="fixed bottom-0 left-0 right-0 z-30 border-t border-white/[0.08] bg-[#0F121C] px-2 py-2 shadow-2xl pb-[max(env(safe-area-inset-bottom),0.5rem)]">
         <div className="mx-auto max-w-lg grid grid-cols-4 w-full items-center gap-1">
           {navItems.map((it) => {
             const Icon = it.icon;

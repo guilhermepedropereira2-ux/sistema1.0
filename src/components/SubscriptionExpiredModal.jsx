@@ -11,7 +11,6 @@ import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/context/AuthContext";
 import { useUnit } from "@/context/UnitContext";
 import { PLANS } from "@/lib/plans";
-import { redirectToCheckoutPro } from "@/lib/checkoutPro";
 import { toast } from "sonner";
 import {
   Crown,
@@ -28,14 +27,13 @@ import {
   Users,
   Lock,
 } from "lucide-react";
-import MercadoPagoCheckoutModal from "@/components/MercadoPagoCheckoutModal";
+import { redirectToExternalCheckout } from "@/lib/externalCheckout";
 
 export default function SubscriptionExpiredModal({ open = true }) {
   const { user, logout } = useAuth();
   const { changePlan, refreshUnits } = useUnit();
   const [selectedPlanKey, setSelectedPlanKey] = useState("pro");
   const [loadingPlan, setLoadingPlan] = useState(null);
-  const [checkoutModalPlan, setCheckoutModalPlan] = useState(null);
 
   if (!open) return null;
 
@@ -48,27 +46,17 @@ export default function SubscriptionExpiredModal({ open = true }) {
   const selectedPlanObj = plansList.find((p) => p.key === selectedPlanKey) || plansList[1];
 
   /**
-   * Dispara o fluxo direto do Mercado Pago Checkout Pro (Pix, Cartão, Boleto)
+   * Dispara o fluxo direto do Checkout Seguro Oficial
    */
-  const handleCheckout = async (planItem) => {
+  const handleCheckout = (planItem) => {
     const targetPlan = planItem || selectedPlanObj;
-    setLoadingPlan(targetPlan.key);
-
-    try {
-      await redirectToCheckoutPro({
-        planId: targetPlan.key,
-        planName: targetPlan.name,
-        price: targetPlan.amount || (targetPlan.key === "starter" ? 79.9 : targetPlan.key === "premium" ? 249.9 : 169.9),
-        email: user?.email,
-        organizationId: user?.barbershop_id || "org_vintage",
-      });
-    } catch (err) {
-      console.error("Erro ao redirecionar para Mercado Pago:", err);
-      // Fallback para abrir modal transparente interno
-      setCheckoutModalPlan(targetPlan);
-    } finally {
-      setLoadingPlan(null);
-    }
+    redirectToExternalCheckout({
+      planId: targetPlan.key,
+      planName: targetPlan.name,
+      price: targetPlan.amount || (targetPlan.key === "starter" ? 79.9 : targetPlan.key === "premium" ? 249.9 : 169.9),
+      email: user?.email,
+      organizationId: user?.barbershop_id || "org_vintage",
+    });
   };
 
   return (
@@ -89,7 +77,7 @@ export default function SubscriptionExpiredModal({ open = true }) {
                     7 Dias de Teste Concluídos
                   </Badge>
                   <span className="text-xs text-slate-400 font-sans">
-                    {user?.name ? `Barbearia de ${user.name}` : "KingPro"}
+                    {user?.name ? `Barbearia de ${user.name}` : "Kupola"}
                   </span>
                 </div>
                 <DialogTitle className="text-lg sm:text-2xl font-display font-bold text-white mt-1.5 tracking-tight leading-snug">
@@ -111,7 +99,7 @@ export default function SubscriptionExpiredModal({ open = true }) {
           </div>
 
           <DialogDescription className="text-slate-300 text-xs sm:text-sm mt-3 leading-relaxed max-w-3xl">
-            O seu período de teste gratuito chegou ao fim. Para continuar usando o KingPro, gerenciando seus atendimentos e acompanhando seu faturamento sem interrupções, escolha o plano ideal para a sua barbearia.
+            O seu período de teste gratuito chegou ao fim. Para continuar usando o Kupola, gerenciando seus atendimentos e acompanhando seu faturamento sem interrupções, escolha o plano ideal para a sua barbearia.
           </DialogDescription>
 
           {/* Destaque Sutil com Benefícios Conquistados e Segurança dos Dados */}
@@ -134,14 +122,14 @@ export default function SubscriptionExpiredModal({ open = true }) {
           </div>
         </div>
 
-        {/* Seleção de Planos com Fluxo Direto Mercado Pago */}
+        {/* Seleção de Planos com Pagamento Seguro */}
         <div className="p-4 sm:p-6 overflow-y-auto space-y-5 flex-1">
           <div className="flex items-center justify-between">
             <p className="text-xs uppercase font-bold text-slate-300 tracking-wider flex items-center gap-1.5">
               <span>Selecione seu plano para desbloquear o sistema:</span>
             </p>
             <span className="text-[11px] text-slate-400 hidden sm:inline">
-              Pagamento 100% seguro via Mercado Pago
+              Ambiente 100% seguro e criptografado
             </span>
           </div>
 
@@ -237,7 +225,7 @@ export default function SubscriptionExpiredModal({ open = true }) {
                       {isLoading ? (
                         <>
                           <Zap className="h-4 w-4 animate-spin" />
-                          <span>Abrindo Mercado Pago...</span>
+                          <span>Conectando ao checkout seguro...</span>
                         </>
                       ) : (
                         <>
@@ -272,7 +260,7 @@ export default function SubscriptionExpiredModal({ open = true }) {
                 </span>
               </div>
               <p className="text-xs text-slate-400 mt-0.5">
-                Clique no botão ao lado para abrir o pagamento seguro oficial do Mercado Pago com aprovação instantânea.
+                Clique no botão ao lado para abrir o pagamento seguro oficial com ativação automática instantânea.
               </p>
             </div>
 
@@ -280,20 +268,11 @@ export default function SubscriptionExpiredModal({ open = true }) {
               onClick={() => handleCheckout(selectedPlanObj)}
               disabled={loadingPlan !== null}
               size="lg"
-              className="w-full sm:w-auto h-12 px-6 rounded-[4px] bg-gradient-to-r from-[#E6CA65] to-[#D4AF37] hover:from-[#DFBE58] hover:to-[#C59F2E] text-[#0A0D14] font-black uppercase tracking-wider text-xs sm:text-sm shadow-[0_0_20px_rgba(212,175,55,0.3)] gap-2 shrink-0 active:scale-[0.99]"
+              className="w-full sm:w-auto h-12 px-6 rounded-[4px] bg-gradient-to-r from-[#E6CA65] to-[#D4AF37] hover:from-[#DFBE58] hover:to-[#C59F2E] text-[#0A0D14] font-black uppercase tracking-wider text-xs sm:text-sm shadow-[0_0_20px_rgba(212,175,55,0.3)] gap-2 shrink-0 active:scale-[0.99] cursor-pointer"
               data-testid="btn-main-choose-plan-continue"
             >
-              {loadingPlan !== null ? (
-                <>
-                  <Zap className="h-4 w-4 animate-spin" />
-                  <span>Conectando ao Checkout Pro...</span>
-                </>
-              ) : (
-                <>
-                  <span>Escolher Plano e Continuar</span>
-                  <ArrowRight className="h-4 w-4" />
-                </>
-              )}
+              <span>Escolher Plano e Assinar</span>
+              <ArrowRight className="h-4 w-4" />
             </Button>
           </div>
 
@@ -315,17 +294,6 @@ export default function SubscriptionExpiredModal({ open = true }) {
           </div>
         </div>
       </DialogContent>
-
-      {/* Modal de Checkout Transparente do Mercado Pago (Fallback de contingência) */}
-      <MercadoPagoCheckoutModal
-        open={Boolean(checkoutModalPlan)}
-        onClose={() => setCheckoutModalPlan(null)}
-        plan={checkoutModalPlan}
-        onPaymentSuccess={() => {
-          setCheckoutModalPlan(null);
-          refreshUnits?.();
-        }}
-      />
     </Dialog>
   );
 }

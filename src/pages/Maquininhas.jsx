@@ -58,7 +58,7 @@ function MachineDialog({ existing, onDone }) {
           <Button className="gap-2" data-testid="add-machine-button"><Plus className="h-4 w-4" /> Nova Forma de Pagamento</Button>
         )}
       </DialogTrigger>
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+      <DialogContent className="w-[95vw] sm:max-w-lg max-h-[85vh] overflow-y-auto">
         <DialogHeader><DialogTitle className="font-display">{existing ? "Editar" : "Nova"} Forma de Pagamento</DialogTitle></DialogHeader>
         <div className="grid gap-4">
           <div className="grid gap-4 sm:grid-cols-2">
@@ -130,12 +130,12 @@ export default function Maquininhas() {
   if (loading) return <Loading />;
 
   return (
-    <div className="space-y-5" data-testid="maquininhas-page">
+    <div className="space-y-5 max-w-full 2xl:max-w-[1920px] mx-auto" data-testid="maquininhas-page">
       <div className="flex justify-end"><MachineDialog onDone={refresh} /></div>
       {!methods?.length ? (
         <EmptyState title="Nenhuma forma de pagamento" subtitle="Cadastre maquininhas, PIX e dinheiro com suas taxas." />
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
           {methods.map((m) => {
             const Icon = KIND_ICON[m.kind] || CreditCard;
             return (
