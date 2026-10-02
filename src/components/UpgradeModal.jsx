@@ -4,13 +4,11 @@ import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/compone
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useUnit } from "@/context/UnitContext";
-import { useAuth } from "@/context/AuthContext";
 import { PLANS } from "@/lib/plans";
-import { redirectToExternalCheckout } from "@/lib/externalCheckout";
-import AsaasPixModal from "@/components/AsaasPixModal";
 import {
   Crown,
   CheckCircle2,
+  Sparkles,
   Zap,
   Lock,
   ArrowRight,
@@ -18,27 +16,13 @@ import {
   X,
   ShieldCheck,
   CreditCard,
-  ExternalLink,
-  QrCode,
 } from "lucide-react";
 
 export default function UpgradeModal() {
   const { upgradeModalOpen, closeUpgradeModal, upgradePayload, plan, changePlan, refreshUnits } = useUnit();
-  const { user } = useAuth();
   const [upgradingTo, setUpgradingTo] = useState(null);
-  const [directModalOpen, setDirectModalOpen] = useState(false);
-  const [directPlan, setDirectPlan] = useState({ planId: "pro", planName: "Pro", price: 169.9 });
 
   const targetPlanKey = upgradePayload?.targetPlan || (plan.id === "starter" ? "pro" : "premium");
-
-  const handleOpenDirectCheckout = (p) => {
-    setDirectPlan({
-      planId: p.key,
-      planName: p.name,
-      price: p.amount || 169.9,
-    });
-    setDirectModalOpen(true);
-  };
 
   const handleUpgrade = async (planKey) => {
     setUpgradingTo(planKey);
@@ -178,12 +162,11 @@ export default function UpgradeModal() {
                     ) : (
                       <>
                         <Button
-                          onClick={() => handleOpenDirectCheckout(p)}
-                          className="w-full text-xs h-10 font-black rounded-[4px] shadow-md cursor-pointer transition-all gap-1.5 bg-[#D4AF37] hover:bg-[#C59F2E] text-[#0B0D14]"
-                          data-testid={`btn-upgrade-checkout-pro-${p.key}`}
+                          disabled
+                          className="w-full text-xs h-10 font-black rounded-[4px] shadow-md cursor-not-allowed bg-slate-800 text-slate-400 border border-white/10 opacity-60"
+                          title="Assinatura direta em breve"
                         >
-                          <CreditCard className="h-4 w-4" />
-                          <span>Assinar no Asaas (Pix, Cartão ou Boleto)</span>
+                          Assinar Plano (Em Breve)
                         </Button>
 
                         <Button
@@ -205,27 +188,13 @@ export default function UpgradeModal() {
                     )}
 
                     <p className="text-[10px] text-center text-slate-400">
-                      R$ {p.amount?.toFixed(2).replace(".", ",")}/mês • Fatura Asaas (Pix, Cartão, Boleto)
+                      R$ {p.amount?.toFixed(2).replace(".", ",")}/mês • Portal Oficial Kupola
                     </p>
                   </div>
                 </div>
               );
             })}
           </div>
-
-          {/* Modal de Assinatura Pix Asaas Nativo */}
-          <AsaasPixModal
-            open={directModalOpen}
-            onOpenChange={setDirectModalOpen}
-            planId={directPlan.planId}
-            planName={directPlan.planName}
-            price={directPlan.price}
-            email={user?.email}
-            organizationId={user?.barbershop_id}
-            onSuccess={() => {
-              closeUpgradeModal();
-            }}
-          />
 
           {/* Rodapé com Selo de Segurança e Botão Fechar */}
           <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 border-t border-white/10 text-xs text-muted-foreground">

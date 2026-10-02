@@ -1,4 +1,4 @@
-import { Store, TrendingUp, Users, Wallet, ArrowRight, Building2, CheckCircle2 } from "lucide-react";
+import { Store, TrendingUp, Users, Wallet, ArrowRight, Sparkles, Building2, CheckCircle2 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -71,7 +71,7 @@ export default function NetworkView({ summary, unitsData = [] }) {
                 : "bg-[#12141F] border-white/10 text-slate-300 hover:text-white"
             }`}
           >
-            <Building2 className="h-3.5 w-3.5" />
+            <Sparkles className="h-3.5 w-3.5" />
             <span>Ver Toda a Rede</span>
           </Button>
         </div>

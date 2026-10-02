@@ -1,4 +1,4 @@
-import { Lock, Crown, ArrowRight } from "lucide-react";
+import { Lock, Sparkles, Crown, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useUnit } from "@/context/UnitContext";
@@ -29,7 +29,7 @@ export default function LockedFeatureCard({
       <div className="relative mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-[2px] bg-[#181610] border border-[#D4AF37]/40 shadow-none">
         <Lock className="h-6 w-6 text-[#D4AF37]" />
         <span className="absolute -bottom-1 -right-1 flex h-4 w-4 items-center justify-center rounded-[2px] bg-[#D4AF37] text-[#0B0F19]">
-          <Crown className="h-2.5 w-2.5 stroke-[2.5]" />
+          <Sparkles className="h-2.5 w-2.5 stroke-[3]" />
         </span>
       </div>
 

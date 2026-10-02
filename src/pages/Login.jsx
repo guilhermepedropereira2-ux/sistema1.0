@@ -26,6 +26,7 @@ import {
   HelpCircle,
   Mail,
   Send,
+  Sparkles,
 } from "lucide-react";
 
 function formatApiErrorDetail(detail) {

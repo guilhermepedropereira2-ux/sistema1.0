@@ -18,6 +18,7 @@ import {
   LogOut,
   ArrowRight,
   ExternalLink,
+  Sparkles,
   ShieldCheck,
   CreditCard,
   QrCode,
@@ -26,15 +27,12 @@ import {
   Users,
   Lock,
 } from "lucide-react";
-import { redirectToExternalCheckout } from "@/lib/externalCheckout";
-import AsaasPixModal from "@/components/AsaasPixModal";
 
 export default function SubscriptionExpiredModal({ open = true }) {
   const { user, logout } = useAuth();
   const { changePlan, refreshUnits } = useUnit();
   const [selectedPlanKey, setSelectedPlanKey] = useState("pro");
   const [loadingPlan, setLoadingPlan] = useState(null);
-  const [directModalOpen, setDirectModalOpen] = useState(false);
 
   if (!open) return null;
 
@@ -46,15 +44,6 @@ export default function SubscriptionExpiredModal({ open = true }) {
 
   const selectedPlanObj = plansList.find((p) => p.key === selectedPlanKey) || plansList[1];
 
-  /**
-   * Dispara o fluxo de Pagamento Automatizado via Pix (Asaas)
-   */
-  const handleCheckout = (planItem) => {
-    const targetPlan = planItem || selectedPlanObj;
-    setSelectedPlanKey(targetPlan.key);
-    setDirectModalOpen(true);
-  };
-
   return (
     <Dialog open={Boolean(open)} onOpenChange={() => {}}>
       <DialogContent 
@@ -65,7 +54,7 @@ export default function SubscriptionExpiredModal({ open = true }) {
           <div className="flex items-start justify-between gap-4">
             <div className="flex items-start gap-3.5">
               <div className="h-12 w-12 rounded-[6px] bg-[#D4AF37]/15 border border-[#D4AF37]/40 flex items-center justify-center text-[#D4AF37] shrink-0 shadow-sm mt-0.5">
-                <Crown className="h-6 w-6" />
+                <Sparkles className="h-6 w-6" />
               </div>
               <div>
                 <div className="flex flex-wrap items-center gap-2">
@@ -113,7 +102,7 @@ export default function SubscriptionExpiredModal({ open = true }) {
             </div>
             <div className="flex items-center gap-2 shrink-0 text-[11px] font-medium text-[#E6CA65] bg-black/40 px-2.5 py-1 rounded-[4px] border border-[#D4AF37]/20">
               <Zap className="h-3.5 w-3.5 fill-current" />
-              <span>Ativação Automática via Asaas</span>
+              <span>Liberação imediata via Pix</span>
             </div>
           </div>
         </div>
@@ -208,27 +197,12 @@ export default function SubscriptionExpiredModal({ open = true }) {
                       onClick={(e) => {
                         e.stopPropagation();
                         setSelectedPlanKey(p.key);
-                        handleCheckout(p);
                       }}
-                      disabled={loadingPlan !== null}
-                      className={`w-full text-xs font-bold uppercase rounded-[4px] h-10 gap-1.5 shadow-md transition-all active:scale-[0.99] ${
-                        isSelected || isPro
-                          ? "bg-[#D4AF37] hover:bg-[#C59F2E] text-[#0A0D14]"
-                          : "bg-white/10 hover:bg-white/20 text-white"
-                      }`}
-                      data-testid={`btn-select-plan-${p.key}`}
+                      disabled
+                      className={`w-full text-xs font-bold uppercase rounded-[4px] h-10 gap-1.5 shadow-md bg-slate-800 text-slate-400 border border-white/10 cursor-not-allowed opacity-60`}
+                      title="Assinatura direta em breve"
                     >
-                      {isLoading ? (
-                        <>
-                          <Zap className="h-4 w-4 animate-spin" />
-                          <span>Conectando ao checkout seguro...</span>
-                        </>
-                      ) : (
-                        <>
-                          <Zap className="h-4 w-4 fill-current" />
-                          <span>Escolher Plano e Continuar</span>
-                        </>
-                      )}
+                      <span>Assinar Plano (Em Breve)</span>
                     </Button>
 
                     <div className="flex items-center justify-center gap-2 text-[10px] text-slate-400">
@@ -256,41 +230,34 @@ export default function SubscriptionExpiredModal({ open = true }) {
                 </span>
               </div>
               <p className="text-xs text-slate-400 mt-0.5">
-                Pague via Pix, Cartão ou Boleto e tenha a licença de 30 dias renovada automaticamente pelo Asaas.
+                A assinatura direta estará disponível em breve. Enquanto isso, você pode testar novamente com acesso de 7 dias gratuito.
               </p>
             </div>
 
             <Button
-              onClick={() => handleCheckout(selectedPlanObj)}
+              onClick={async () => {
+                try {
+                  await changePlan(selectedPlanObj.key);
+                  toast.success("Teste gratuito de 7 dias ativado com sucesso!");
+                  refreshUnits();
+                } catch {
+                  toast.error("Erro ao ativar o teste. Tente novamente.");
+                }
+              }}
               disabled={loadingPlan !== null}
               size="lg"
               className="w-full sm:w-auto h-12 px-6 rounded-[4px] bg-gradient-to-r from-[#E6CA65] to-[#D4AF37] hover:from-[#DFBE58] hover:to-[#C59F2E] text-[#0A0D14] font-black uppercase tracking-wider text-xs sm:text-sm shadow-[0_0_20px_rgba(212,175,55,0.3)] gap-2 shrink-0 active:scale-[0.99] cursor-pointer"
               data-testid="btn-main-choose-plan-continue"
             >
-              <CreditCard className="h-5 w-5" />
-              <span>Pagar com Asaas (Pix, Cartão ou Boleto)</span>
+              <span>Testar Grátis por 7 Dias</span>
               <ArrowRight className="h-4 w-4" />
             </Button>
           </div>
 
-          {/* Modal de Assinatura Pix Asaas Nativo */}
-          <AsaasPixModal
-            open={directModalOpen}
-            onOpenChange={setDirectModalOpen}
-            planId={selectedPlanObj.key}
-            planName={selectedPlanObj.name}
-            price={selectedPlanObj.amount || 169.9}
-            email={user?.email}
-            organizationId={user?.barbershop_id}
-            onSuccess={() => {
-              if (refreshUnits) refreshUnits();
-            }}
-          />
-
           {/* Rodapé Informativo */}
           <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2 text-xs text-slate-400">
             <div className="flex items-center gap-2">
-              <ShieldCheck className="h-4 w-4 text-[#D4AF37]" />
+              <Sparkles className="h-4 w-4 text-[#D4AF37]" />
               <span>Sem fidelidade obrigatória. Você pode cancelar ou alterar seu plano quando desejar.</span>
             </div>
             <a

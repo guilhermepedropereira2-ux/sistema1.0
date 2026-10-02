@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import {
   Scissors, Plus, RefreshCw, Calendar, Clock, ChevronRight,
-  CalendarDays, CheckCircle2, User, Filter,
+  CalendarDays, CheckCircle2, User, Sparkles, Filter,
   WifiOff, CloudOff, Package,
 } from "lucide-react";
 import LancarAtendimentoModal from "@/components/LancarAtendimentoModal";

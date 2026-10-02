@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useMemo } from "react";
-import { User, Phone, Check, Search } from "lucide-react";
+import { User, Phone, Check, Search, Sparkles } from "lucide-react";
 
 /**
  * ClientAutocomplete
@@ -133,7 +133,7 @@ export default function ClientAutocomplete({
         >
           <div className="p-1.5 bg-[#080A10] border-b border-white/10 flex items-center justify-between text-[10px] text-slate-400 font-semibold px-2.5">
             <span className="flex items-center gap-1 text-[#D4AF37]">
-              <User className="h-3 w-3" /> Clientes Encontrados
+              <Sparkles className="h-3 w-3" /> Clientes Encontrados
             </span>
             <span>{suggestions.length} sugestõ{suggestions.length > 1 ? "es" : "e"}</span>
           </div>

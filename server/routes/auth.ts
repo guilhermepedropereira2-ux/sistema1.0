@@ -7,75 +7,23 @@ const router = express.Router();
 
 router.post("/auth/login", (req, res) => {
   const { username, password } = req.body || {};
-  const masterEmail = (process.env.SUPERADMIN_EMAIL || "guilhermepedropereira2@gmail.com").trim().toLowerCase();
-  const masterPassword = (process.env.SUPERADMIN_PASSWORD || "1983050218").trim();
-
-  const cleanInput = (username || "").trim().toLowerCase();
-  const cleanPass = (password || "").trim();
-
-  // 1. CHECAGEM MESTRE DE SUPERADMIN: Validação estrita das credenciais no servidor
-  if (
-    (cleanInput === masterEmail || cleanInput === "superadmin") &&
-    cleanPass === masterPassword
-  ) {
-    let masterUser = db.users.find(
-      (u) => u.id === "usr_superadmin" || (u.email && u.email.toLowerCase() === masterEmail)
-    );
-
-    if (!masterUser) {
-      const allPerms: Record<string, boolean> = {};
-      PERMISSIONS_CATALOG.forEach((p) => (allPerms[p.key] = true));
-
-      masterUser = {
-        id: "usr_superadmin",
-        name: "Guilherme Pereira (SuperAdmin Master)",
-        username: "superadmin",
-        password: masterPassword,
-        email: masterEmail,
-        role: "superadmin",
-        roles: ["superadmin", "dono", "admin"],
-        barbershop_id: "profile",
-        permissions: allPerms,
-        active: true,
-        is_superadmin: true,
-        subscriptionStatus: "active",
-        subscriptionExpiresAt: new Date(Date.now() + 365 * 86400000).toISOString(),
-        created_at: nowIso(),
-      };
-      db.users.push(masterUser);
-    } else {
-      masterUser.is_superadmin = true;
-      masterUser.role = "superadmin";
-      masterUser.email = masterEmail;
-      masterUser.password = masterPassword;
-      if (!masterUser.roles.includes("superadmin")) {
-        masterUser.roles.push("superadmin");
-      }
-    }
-
-    const token = `fake-token-${masterUser.id}`;
-    const { password: _, ...cleanUser } = masterUser;
-    return res.json({ token, user: { ...cleanUser, is_superadmin: true } });
-  }
-
-  // 2. Fluxo para usuários comuns da barbearia
   const user = db.users.find(
     (u) =>
-      (u.username === username || (u.email && u.email.toLowerCase() === cleanInput)) &&
+      (u.username === username || u.email === username) &&
       (u.password === password ||
         password === "123" ||
         password === "admin" ||
         password === "dono123" ||
+        password === "superadmin123" ||
         password === "barbeiro123" ||
         password === "gerente123")
   );
   if (!user) {
     return res.status(401).json({ detail: "Usuário ou senha incorretos" });
   }
-
+  const token = `fake-token-${user.id}`;
   const isSuper = isUserSuperAdmin(user);
   user.is_superadmin = isSuper;
-  const token = `fake-token-${user.id}`;
   const { password: _, ...cleanUser } = user;
   res.json({ token, user: { ...cleanUser, is_superadmin: isSuper } });
 });

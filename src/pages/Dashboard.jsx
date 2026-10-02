@@ -25,7 +25,7 @@ import {
 import {
   Wallet, TrendingUp, Clock, PiggyBank, Percent, Users, Receipt,
   Target, CheckCircle2, Plus, Scissors, ArrowUpRight, ChevronRight,
-  CreditCard, HandCoins, ArrowRightLeft, ExternalLink, ChevronDown,
+  Sparkles, CreditCard, HandCoins, ArrowRightLeft, ExternalLink, ChevronDown,
   RefreshCw, Layers, Calendar as CalendarIcon, UserCheck, Shield,
 } from "lucide-react";
 import SparklineWave from "@/components/dashboard/SparklineWave";
@@ -397,7 +397,7 @@ export default function Dashboard() {
             <div className="flex items-center justify-between text-slate-400">
               <span className="text-[11px] font-semibold uppercase tracking-wider">Ticket Médio</span>
               <div className="h-7 w-7 rounded-[3px] bg-[#D4AF37]/10 text-[#D4AF37] flex items-center justify-center">
-                <Receipt className="h-3.5 w-3.5" />
+                <Sparkles className="h-3.5 w-3.5" />
               </div>
             </div>
             <p className="mt-2 text-lg sm:text-xl font-bold font-display text-white">
@@ -623,7 +623,7 @@ export default function Dashboard() {
               <button
                 className="h-11 rounded-[4px] bg-[#12141F] hover:bg-[#181B28] text-white border border-white/10 font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 transition-colors"
               >
-                <Plus className="h-3.5 w-3.5 text-[#D4AF37]" />
+                <Sparkles className="h-3.5 w-3.5 text-[#D4AF37]" />
                 <span>+ Lançar</span>
                 <ChevronDown className="h-3 w-3 text-slate-400" />
               </button>
@@ -875,7 +875,7 @@ export default function Dashboard() {
                   <ChevronRight className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />
                 </p>
                 <div className="h-9 w-9 rounded-[3px] bg-[#D4AF37]/10 border border-[#D4AF37]/20 text-[#D4AF37] flex items-center justify-center">
-                  <Receipt className="h-4 w-4" />
+                  <Sparkles className="h-4 w-4" />
                 </div>
               </div>
               <p className="mt-2 text-2xl xl:text-3xl font-bold font-display text-white tracking-tight">
@@ -1267,14 +1267,14 @@ export default function Dashboard() {
                 )}
               </div>
 
-              {/* Botão para lançar atendimento */}
+              {/* Botão rápido para lançar atendimento */}
               <div className="pt-4 mt-4 border-t border-white/10">
                 <Button
                   onClick={handleOpenNovoAtendimento}
                   className="w-full bg-[#D4AF37] hover:bg-[#C59F2E] text-[#0B0D14] font-bold text-xs uppercase tracking-wider h-10 rounded-[4px] shadow-none transition-colors gap-2 cursor-pointer"
                 >
                   <Plus className="h-4 w-4 stroke-[3]" />
-                  <span>Novo Atendimento</span>
+                  <span>Novo Atendimento Rápido</span>
                 </Button>
               </div>
             </div>

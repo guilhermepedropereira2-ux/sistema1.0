@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { brl, fmtDate, periodRange, paymentTypeLabel } from "@/lib/format";
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
 import {
-  PiggyBank, ListChecks, HandCoins, Percent, TrendingUp, TrendingDown, Target, Trophy,
+  PiggyBank, ListChecks, HandCoins, Percent, TrendingUp, TrendingDown, Target, Trophy, Star,
   Scissors, Plus, Wallet, CheckCircle2, Clock, CalendarDays,
 } from "lucide-react";
 
@@ -246,7 +246,7 @@ export default function MeuDesempenho() {
                     {(servicesList || []).map((s, i) => (
                       <TableRow key={`${s?.name || 'serv'}_${i}`} className="border-white/5">
                         <TableCell className="text-white">
-                          {i === 0 ? <Trophy className="mr-1 inline h-3.5 w-3.5 text-[#D4AF37]" /> : `${i + 1}. `}
+                          {i === 0 ? <Star className="mr-1 inline h-3.5 w-3.5 text-[#D4AF37]" /> : `${i + 1}. `}
                           {s?.name || "Serviço"}
                         </TableCell>
                         <TableCell className="text-right text-slate-300">{Number(s?.quantity || 0)}</TableCell>

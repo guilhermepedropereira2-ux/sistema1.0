@@ -10,7 +10,6 @@ import { storage } from "./server/storage.js";
 // Modular Route Handlers
 import systemRoutes from "./server/routes/system.js";
 import authRoutes from "./server/routes/auth.js";
-import webhooksRoutes from "./server/routes/webhooks.js";
 import publicShopRoutes from "./server/routes/publicShop.js";
 import barbersRoutes from "./server/routes/barbers.js";
 import catalogRoutes from "./server/routes/catalog.js";
@@ -19,7 +18,6 @@ import financialsRoutes from "./server/routes/financials.js";
 import barberPortalRoutes from "./server/routes/barberPortal.js";
 import analyticsRoutes from "./server/routes/analytics.js";
 import superadminRoutes from "./server/routes/superadmin.js";
-import webhooksAsaasRoutes from "./server/routes/webhooksAsaas.js";
 
 dotenv.config();
 
@@ -111,7 +109,6 @@ apiRouter.use(async (req: Request, res: Response, next: NextFunction) => {
 // Registrar submódulos de rotas
 apiRouter.use(systemRoutes);
 apiRouter.use(authRoutes);
-apiRouter.use(webhooksRoutes);
 apiRouter.use(publicShopRoutes);
 apiRouter.use(barbersRoutes);
 apiRouter.use(catalogRoutes);
@@ -120,7 +117,6 @@ apiRouter.use(financialsRoutes);
 apiRouter.use(barberPortalRoutes);
 apiRouter.use(analyticsRoutes);
 apiRouter.use(superadminRoutes);
-apiRouter.use(webhooksAsaasRoutes);
 
 app.use("/api", apiRouter);
 

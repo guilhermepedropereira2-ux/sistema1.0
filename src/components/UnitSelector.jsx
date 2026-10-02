@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Store, ChevronDown, Check, Building2, Layers } from "lucide-react";
+import { Store, ChevronDown, Check, Building2, Layers, Sparkles, Plus, Crown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -9,6 +9,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Badge } from "@/components/ui/badge";
 import { useUnit } from "@/context/UnitContext";
 
 export default function UnitSelector({ variant = "header" }) {
@@ -17,26 +18,38 @@ export default function UnitSelector({ variant = "header" }) {
     activeUnitId,
     activeUnit,
     switchUnit,
+    plan,
     isPremium,
+    openUpgradeModal,
   } = useUnit();
-
-  const isSidebar = variant === "sidebar";
 
   // Se estiver no plano Básico ou Pro (apenas 1 unidade permitida)
   if (!isPremium) {
     if (variant === "compact") return null;
 
     return (
-      <div className={`flex items-center ${isSidebar ? "w-full" : ""}`}>
-        <div
-          className={`flex items-center gap-2 px-3 py-2 rounded-[4px] bg-[#12141F] border border-white/10 text-xs text-slate-300 ${
-            isSidebar ? "w-full" : "max-w-[200px]"
-          }`}
-        >
-          <Store className="h-3.5 w-3.5 text-[#D4AF37] shrink-0" />
-          <span className="font-semibold text-white truncate">
+      <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 px-3 py-1.5 rounded-[4px] bg-[#12141F] border border-white/10 text-xs text-slate-300">
+          <Store className="h-3.5 w-3.5 text-[#D4AF37]" />
+          <span className="font-semibold text-white truncate max-w-[150px]">
             {units[0]?.name || "Unidade Matriz"}
           </span>
+          <button
+            onClick={() =>
+              openUpgradeModal({
+                title: "Desbloqueie Gestão Multi-Unidades",
+                message:
+                  "Para gerenciar mais de uma barbearia com seletor de lojas e visão consolidada de faturamento, faça o upgrade para o Plano Premium.",
+                targetPlan: "premium",
+                feature: "multi_unit",
+              })
+            }
+            className="flex items-center gap-1 ml-1 px-1.5 py-0.5 rounded-md bg-[#D4AF37]/15 hover:bg-[#D4AF37]/25 text-[#D4AF37] text-[10px] font-bold transition-all border border-[#D4AF37]/30 cursor-pointer"
+            title="Adicionar mais unidades (Rede) - Exclusivo Plano Premium"
+          >
+            <Crown className="h-3 w-3" />
+            <span className="hidden sm:inline">+ Rede</span>
+          </button>
         </div>
       </div>
     );
@@ -50,32 +63,37 @@ export default function UnitSelector({ variant = "header" }) {
         <Button
           variant="outline"
           size="sm"
-          className={`bg-[#12141F] border border-white/10 hover:border-[#D4AF37]/50 text-white hover:bg-[#181D2E] text-xs font-semibold h-9 px-3 rounded-[4px] gap-2 transition-colors shadow-none cursor-pointer ${
-            isSidebar ? "w-full justify-between" : "max-w-[220px]"
-          }`}
+          className="bg-[#12141F] border border-[#D4AF37]/40 text-white hover:bg-[#181D2E] hover:border-[#D4AF37] text-xs font-semibold h-9 px-3 rounded-[4px] gap-2 transition-colors shadow-none max-w-[240px] cursor-pointer"
           data-testid="unit-selector-trigger"
         >
-          <div className="flex items-center gap-2 truncate">
-            {isConsolidated ? (
-              <Layers className="h-3.5 w-3.5 text-[#D4AF37] shrink-0" />
-            ) : (
-              <Store className="h-3.5 w-3.5 text-[#D4AF37] shrink-0" />
-            )}
+          {isConsolidated ? (
+            <Layers className="h-4 w-4 text-[#D4AF37] shrink-0" />
+          ) : (
+            <Store className="h-4 w-4 text-[#D4AF37] shrink-0" />
+          )}
+
+          <div className="flex flex-col items-start text-left truncate leading-tight">
+            <span className="text-[10px] uppercase font-bold text-[#D4AF37] tracking-wider">
+              {isConsolidated ? "Rede Completa" : "Unidade Ativa"}
+            </span>
             <span className="font-bold text-white truncate text-xs">
-              {isConsolidated ? "Todas as Unidades" : activeUnit?.name || "Selecionar Unidade"}
+              {isConsolidated ? "Todas as Unidades (Visão Geral)" : activeUnit?.name || "Selecionar Unidade"}
             </span>
           </div>
 
-          <ChevronDown className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+          <ChevronDown className="h-3.5 w-3.5 text-muted-foreground ml-auto shrink-0" />
         </Button>
       </DropdownMenuTrigger>
 
       <DropdownMenuContent
-        align={isSidebar ? "center" : "start"}
-        className="w-72 bg-[#12141F] border border-white/10 text-white p-2 rounded-[4px] shadow-xl z-50"
+        align="start"
+        className="w-72 bg-[#12141F] border border-white/10 text-white p-2 rounded-[4px] shadow-none z-50"
       >
-        <DropdownMenuLabel className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider px-2 py-1">
+        <DropdownMenuLabel className="flex items-center justify-between text-[10px] uppercase font-bold text-muted-foreground tracking-wider px-2 py-1">
           <span>Unidades da Barbearia</span>
+          <Badge className="bg-[#D4AF37]/15 text-[#D4AF37] border-[#D4AF37]/30 text-[9px] font-bold rounded-[2px]">
+            Rede Ativa
+          </Badge>
         </DropdownMenuLabel>
 
         <div className="space-y-1 mt-1">
@@ -136,6 +154,7 @@ export default function UnitSelector({ variant = "header" }) {
             <div className="flex flex-col min-w-0">
               <span className="font-bold flex items-center gap-1">
                 Todas as Unidades (Visão Geral)
+                <Sparkles className="h-3 w-3 text-[#D4AF37]" />
               </span>
               <span className="text-[10px] text-muted-foreground truncate">
                 Faturamento e métricas somadas de toda a rede

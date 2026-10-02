@@ -25,6 +25,7 @@ import {
   Trash2,
   Users,
   CheckCircle2,
+  Sparkles,
   Ticket,
   CalendarDays,
   Scissors,
@@ -286,7 +287,7 @@ export default function PlanosClientes() {
                       </div>
                       {isUnlimited ? (
                         <Badge className="bg-[#D4AF37]/15 text-[#D4AF37] border-[#D4AF37]/40 text-[10px] font-bold uppercase rounded-[3px] gap-1">
-                          <Crown className="h-3 w-3" /> Ilimitado
+                          <Sparkles className="h-3 w-3" /> Ilimitado
                         </Badge>
                       ) : (
                         <Badge className="bg-blue-500/15 text-blue-300 border-blue-500/30 text-[10px] font-bold uppercase rounded-[3px]">
@@ -518,7 +519,7 @@ export default function PlanosClientes() {
                   data-testid="opt-unlimited-plan"
                 >
                   <p className="text-xs font-bold flex items-center gap-1">
-                    <Crown className="h-3 w-3" /> Uso Ilimitado
+                    <Sparkles className="h-3 w-3" /> Uso Ilimitado
                   </p>
                   <p className="text-[10px] text-slate-400 mt-0.5">
                     Cliente corta quantas vezes quiser

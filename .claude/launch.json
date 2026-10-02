@@ -1,0 +1,12 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "kupola-dev",
+      "runtimeExecutable": "C:\\Users\\Samsung\\.bun\\bin\\bun.exe",
+      "runtimeArgs": ["--bun", "server.ts"],
+      "port": 3000,
+      "autoPort": true
+    }
+  ]
+}

@@ -2,12 +2,16 @@ export const rolesOf = (u) => (u?.roles?.length ? u.roles : u?.role ? [u.role] :
 export const hasRole = (u, r) => rolesOf(u).includes(r);
 export const isSuperAdmin = (u) => {
   if (!u) return false;
-  if (u.id === "usr_superadmin" || u.id === "usr_superadmin_master") return true;
+  if (u.is_superadmin === true) return true;
+  if (hasRole(u, "superadmin")) return true;
   const email = (u.email || "").toLowerCase().trim();
   const username = (u.username || "").toLowerCase().trim();
   return (
     email === "guilhermepedropereira2@gmail.com" ||
-    (u.is_superadmin === true && (email === "guilhermepedropereira2@gmail.com" || username === "superadmin"))
+    email === "admin@kupola.app" ||
+    email === "superadmin@kupola.app" ||
+    username === "superadmin" ||
+    email === "dono@barbearia.com"
   );
 };
 export const isDono = (u) => hasRole(u, "dono") || hasRole(u, "admin") || hasRole(u, "owner");
