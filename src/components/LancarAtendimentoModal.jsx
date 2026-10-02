@@ -36,7 +36,6 @@ import {
   X,
   CreditCard,
   User,
-  Sparkles,
   Loader2,
   WifiOff,
 } from "lucide-react";
@@ -418,9 +417,6 @@ export default function LancarAtendimentoModal({ open, onClose, onSuccess }) {
                       Modo Offline
                     </Badge>
                   )}
-                  <span className="text-[11px] text-slate-400">
-                    Lançamento Rápido
-                  </span>
                 </div>
                 <DialogTitle className="text-base sm:text-lg font-display font-extrabold text-white mt-0.5">
                   Lançar Atendimento

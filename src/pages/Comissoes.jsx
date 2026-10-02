@@ -48,7 +48,6 @@ import {
   Scissors,
   ArrowRightLeft,
   Receipt,
-  Sparkles,
 } from "lucide-react";
 
 export default function Comissoes() {

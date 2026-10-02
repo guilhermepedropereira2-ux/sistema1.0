@@ -41,6 +41,7 @@ import Comissoes from "@/pages/Comissoes";
 import Termos from "@/pages/Termos";
 import Privacidade from "@/pages/Privacidade";
 import SuperAdmin from "@/pages/SuperAdmin";
+import Assinatura from "@/pages/Assinatura";
 
 function App() {
   return (
@@ -96,7 +97,9 @@ function App() {
                   <Route path="comparacao" element={<Comparacao />} />
                   <Route path="historico" element={<Historico />} />
                   <Route path="configuracoes" element={<Configuracoes />} />
+                  <Route path="assinatura" element={<Assinatura />} />
                   <Route path="superadmin" element={<SuperAdmin />} />
+                  <Route path="superadministrador" element={<SuperAdmin />} />
                 </Route>
               </Routes>
             </BrowserRouter>

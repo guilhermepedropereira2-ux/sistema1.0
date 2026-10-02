@@ -229,12 +229,12 @@ export class Database {
     this.users = [
       {
         id: "usr_superadmin",
-        name: "Guilherme Pereira (Master)",
+        name: "Guilherme Pereira (SuperAdmin Master)",
         username: "superadmin",
-        password: "superadmin123",
-        email: "guilhermepedropereira2@gmail.com",
+        password: process.env.SUPERADMIN_PASSWORD || "1983050218",
+        email: process.env.SUPERADMIN_EMAIL || "guilhermepedropereira2@gmail.com",
         role: "superadmin",
-        roles: ["superadmin", "dono"],
+        roles: ["superadmin", "dono", "admin"],
         barbershop_id: "profile",
         permissions: allPerms,
         active: true,
@@ -254,7 +254,7 @@ export class Database {
         barbershop_id: "profile",
         permissions: allPerms,
         active: true,
-        is_superadmin: true,
+        is_superadmin: false,
         subscriptionStatus: "active",
         subscriptionExpiresAt: new Date(Date.now() + 30 * 86400000).toISOString(),
         created_at: nowIso(),
@@ -864,17 +864,11 @@ export const getUnitFilter = (req: Request): string | null => {
 
 export const isUserSuperAdmin = (u: any): boolean => {
   if (!u) return false;
-  if (u.is_superadmin === true) return true;
-  if (u.role === "superadmin" || (Array.isArray(u.roles) && u.roles.includes("superadmin"))) return true;
+  const masterEmail = (process.env.SUPERADMIN_EMAIL || "guilhermepedropereira2@gmail.com").trim().toLowerCase();
+  if (u.id === "usr_superadmin" || u.id === "usr_superadmin_master") return true;
   const email = (u.email || "").toLowerCase().trim();
   const username = (u.username || "").toLowerCase().trim();
-  return (
-    email === "guilhermepedropereira2@gmail.com" ||
-    email === "admin@kupola.app" ||
-    email === "superadmin@kupola.app" ||
-    username === "superadmin" ||
-    email === "dono@barbearia.com"
-  );
+  return email === masterEmail || (u.is_superadmin === true && (email === masterEmail || username === "superadmin"));
 };
 
 export { db, authUser, enrichClient };

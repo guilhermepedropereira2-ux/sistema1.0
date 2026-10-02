@@ -5,7 +5,7 @@ import { useAuth } from "@/context/AuthContext";
 import { api } from "@/lib/api";
 import {
   ShieldCheck, Users, Clock, AlertTriangle, CheckCircle2,
-  TrendingUp, RefreshCw, Search, Filter, Calendar, Sparkles,
+  TrendingUp, RefreshCw, Search, Filter, Calendar,
   SlidersHorizontal, ChevronRight, Ban, PlayCircle, MoreHorizontal,
   PlusCircle, Shield, ArrowUpRight, DollarSign, Download, Building2,
   Mail, Phone, ExternalLink, HelpCircle, Layers, Crown, Zap
@@ -85,8 +85,11 @@ export default function SuperAdmin() {
 
   useEffect(() => {
     if (ready) {
-      if (!user || !user.is_superadmin) {
-        toast.error("Área restrita: Apenas o SuperAdmin Master pode acessar.");
+      const isMasterEmail = (user?.email || "").toLowerCase().trim() === "guilhermepedropereira2@gmail.com";
+      const isMasterUser = user?.is_superadmin === true || isMasterEmail || user?.id === "usr_superadmin";
+
+      if (!user || !isMasterUser) {
+        toast.error("Área restrita: Apenas o SuperAdmin Master pode acessar o Painel.");
         navigate("/");
         return;
       }
@@ -106,8 +109,14 @@ export default function SuperAdmin() {
     );
   }
 
-  // Se o usuário não for superadmin, bloqueia imediatamente
-  if (!user || !user.is_superadmin) {
+  // Se o usuário não for superadmin master, bloqueia imediatamente e redireciona ao dashboard normal
+  const isMasterAuthorized =
+    user &&
+    ((user.email || "").toLowerCase().trim() === "guilhermepedropereira2@gmail.com" ||
+      user.is_superadmin === true ||
+      user.id === "usr_superadmin");
+
+  if (!isMasterAuthorized) {
     return <Navigate to="/" replace />;
   }
 

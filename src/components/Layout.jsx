@@ -1,5 +1,5 @@
-import { useState, useMemo } from "react";
-import { Outlet, NavLink, useLocation, useNavigate, Navigate } from "react-router-dom";
+import { useState, useMemo, useEffect } from "react";
+import { Outlet, NavLink, Link, useLocation, useNavigate, Navigate } from "react-router-dom";
 import { toast } from "sonner";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import {
@@ -7,7 +7,7 @@ import {
   ArrowRightLeft, CalendarDays, Wallet, BarChart3, History,
   Settings as SettingsIcon, ChevronLeft, ChevronRight,
   Store, Scissors, Package, ShieldCheck, LogIn, LogOut,
-  UserCircle2, Contact, Bell, Plus, Sparkles, ChevronDown, CheckCircle2,
+  UserCircle2, Contact, Bell, Plus, ChevronDown, CheckCircle2,
   AlertTriangle, AlertCircle, Info, Menu, HandCoins, X,
   Link2, Copy, Check, ExternalLink, Crown, EyeOff, Shield,
   Globe, ArrowUpRight, Coins,
@@ -37,13 +37,14 @@ import NovaRetiradaModal from "@/components/NovaRetiradaModal";
 import UnitSelector from "@/components/UnitSelector";
 import UpgradeModal from "@/components/UpgradeModal";
 import SubscriptionExpiredModal from "@/components/SubscriptionExpiredModal";
+import AsaasPixModal from "@/components/AsaasPixModal";
 
 // Estrutura de Navegação Completa Organizada por Módulos
 export const NAV_SECTIONS = [
   {
     title: "OPERACIONAL (DO DIA)",
     items: [
-      { to: "/atendimentos", label: "Fila & Agenda do Dia", icon: Users, badge: "Ao Vivo", testId: "nav-atendimentos", perm: ["ver_receitas", "gerenciar_fila", "gerenciar_agenda"] },
+      { to: "/atendimentos", label: "Fila & Agenda do Dia", icon: Users, testId: "nav-atendimentos", perm: ["ver_receitas", "gerenciar_fila", "gerenciar_agenda"] },
       { to: "/", label: "Dashboard Geral", icon: LayoutDashboard, end: true, testId: "nav-dashboard", perm: ["ver_dashboard", "ver_financeiro"] },
       { to: "/fluxo-de-caixa", label: "Fluxo de Caixa & DRE", icon: Wallet, testId: "nav-fluxo-de-caixa", perm: ["ver_financeiro", "ver_relatorios"], donoOnly: true },
       { to: "/calendario", label: "Calendário Operacional", icon: CalendarDays, testId: "nav-calendario", perm: ["ver_financeiro", "registrar_despesas"] },
@@ -52,7 +53,7 @@ export const NAV_SECTIONS = [
   {
     title: "LANÇAMENTOS & CAIXA",
     items: [
-      { action: "novo_atendimento", label: "Novo Atendimento", icon: Scissors, badge: "Rápido", perm: ["registrar_atendimentos"] },
+      { action: "novo_atendimento", label: "Novo Atendimento", icon: Scissors, perm: ["registrar_atendimentos"] },
       { to: "/receitas", label: "Receitas & Histórico", icon: TrendingUp, testId: "nav-receitas", perm: ["ver_receitas"] },
       { to: "/despesas", label: "Despesas Operacionais", icon: Receipt, testId: "nav-despesas", perm: ["registrar_despesas"] },
       { to: "/comissoes", label: "Comissões dos Barbeiros", icon: Coins, testId: "nav-comissoes", perm: ["ver_financeiro"] },
@@ -80,6 +81,7 @@ export const NAV_SECTIONS = [
       { to: "/maquininhas", label: "Maquininhas & Taxas", icon: CreditCard, testId: "nav-maquininhas", perm: ["alterar_taxas"], donoOnly: true },
       { to: "/historico", label: "Histórico / Logs", icon: History, testId: "nav-historico", perm: ["ver_relatorios", "alterar_configuracoes"] },
       { to: "/configuracoes", label: "Configurações Operacionais", icon: SettingsIcon, testId: "nav-configuracoes", perm: ["alterar_configuracoes"] },
+      { to: "/assinatura", label: "Assinatura & Planos", icon: Crown, testId: "nav-assinatura", donoOnly: true },
     ],
   },
   {
@@ -488,6 +490,14 @@ function UserAvatarMenu({ variant = "header", collapsed = false }) {
           <SettingsIcon className="mr-2 h-3.5 w-3.5 text-muted-foreground" /> Configurações Operacionais
         </DropdownMenuItem>
 
+        <DropdownMenuItem
+          onClick={() => navigate("/assinatura")}
+          className="text-xs focus:bg-white/10 focus:text-white cursor-pointer py-1.5 rounded-[2px]"
+          data-testid="switch-to-assinatura"
+        >
+          <Crown className="mr-2 h-3.5 w-3.5 text-[#D4AF37]" /> Assinatura & Planos
+        </DropdownMenuItem>
+
         <DropdownMenuSeparator className="bg-white/10 my-1" />
 
         <DropdownMenuItem
@@ -508,6 +518,14 @@ export default function Layout() {
   const [modalNovaRetirada, setModalNovaRetirada] = useState(false);
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
   const [copiedShopLink, setCopiedShopLink] = useState(false);
+  const [globalDirectModal, setGlobalDirectModal] = useState({
+    open: false,
+    planId: "pro",
+    planName: "Pro",
+    price: 169.9,
+    email: "",
+  });
+
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
     try {
       return localStorage.getItem("kupola_sidebar_collapsed") === "true";
@@ -558,6 +576,22 @@ export default function Layout() {
     toast.success("Link público de agendamento copiado!");
     setTimeout(() => setCopiedShopLink(false), 2500);
   };
+
+  // Listener Global para Assinatura Pix Automatizada via Asaas
+  useEffect(() => {
+    const handleOpenCheckout = (e) => {
+      const detail = e.detail || {};
+      setGlobalDirectModal({
+        open: true,
+        planId: detail.planId || "pro",
+        planName: detail.planName || "Pro",
+        price: detail.price || 169.9,
+        email: detail.email || user?.email || "",
+      });
+    };
+    window.addEventListener("open_direct_checkout", handleOpenCheckout);
+    return () => window.removeEventListener("open_direct_checkout", handleOpenCheckout);
+  }, [user]);
 
   if (!ready) {
     return (
@@ -658,11 +692,6 @@ export default function Layout() {
                     <Icon className="h-4 w-4 shrink-0 text-[#D4AF37]" />
                     <span>{item.label}</span>
                   </div>
-                  {item.badge && (
-                    <span className="rounded-[2px] bg-[#D4AF37]/15 border border-[#D4AF37]/30 px-1.5 py-0.2 text-[9px] font-bold text-[#D4AF37]">
-                      {item.badge}
-                    </span>
-                  )}
                 </button>
               );
             }
@@ -762,35 +791,47 @@ export default function Layout() {
           </div>
         )}
 
-        {/* Seletor de Unidade & Badge do Plano na Sidebar */}
+        {/* Seletor de Unidade & Indicador Minimalista do Plano Atual na Sidebar */}
         {isSidebarCollapsed ? (
           <div className="py-2.5 flex flex-col items-center justify-center border-b border-white/[0.08] bg-[#0C0E16]">
-            <button
-              type="button"
-              onClick={() => openUpgradeModal({ title: "Planos & Assinatura" })}
-              className="h-8 w-8 rounded-[4px] bg-[#12141F] border border-white/10 flex items-center justify-center text-[#D4AF37] hover:bg-[#D4AF37]/15 transition-colors cursor-pointer"
-              title={`Plano ${plan.name} (Clique para detalhes)`}
+            <Link
+              to="/assinatura"
+              className="h-8 w-8 rounded-[4px] bg-[#12141F] border border-white/10 flex items-center justify-center text-[#D4AF37] hover:bg-[#D4AF37]/15 hover:border-[#D4AF37]/40 transition-colors group relative cursor-pointer"
+              title={`Plano ${plan.name} • Assinatura Ativa (Clique para gerenciar)`}
+              data-testid="sidebar-plan-indicator-collapsed"
             >
-              <Crown className="h-4 w-4" />
-            </button>
+              <Crown className="h-4 w-4 group-hover:scale-110 transition-transform" />
+              <span className="absolute top-1 right-1 h-1.5 w-1.5 rounded-full bg-emerald-400" />
+            </Link>
           </div>
         ) : (
-          <div className="px-3 py-2.5 border-b border-white/[0.08] space-y-2 bg-[#0C0E16]">
+          <div className="px-3 py-2 border-b border-white/[0.08] space-y-1.5 bg-[#0C0E16]">
             <div className="w-full">
               <UnitSelector variant="sidebar" />
             </div>
-            <div className="flex items-center justify-between px-2.5 py-1.5 rounded-[4px] bg-[#12141F] border border-white/5">
-              <div className="flex items-center gap-1.5">
-                <Crown className={`h-3.5 w-3.5 ${plan.id === 'premium' ? 'text-[#D4AF37]' : plan.id === 'pro' ? 'text-blue-400' : 'text-slate-400'}`} />
-                <span className="text-[11px] font-bold text-white uppercase tracking-wider">{plan.name}</span>
+            {/* Indicador Minimalista e Discreto do Plano Atual -> /assinatura */}
+            <Link
+              to="/assinatura"
+              className="group flex items-center justify-between px-2.5 py-1.5 rounded-[4px] bg-[#11131E] hover:bg-[#151827] border border-white/[0.06] hover:border-[#D4AF37]/35 transition-all cursor-pointer"
+              title="Clique para gerenciar plano e assinatura"
+              data-testid="sidebar-plan-indicator"
+            >
+              <div className="flex items-center gap-2 min-w-0">
+                <Crown className={`h-3.5 w-3.5 shrink-0 ${plan.id === 'premium' ? 'text-[#D4AF37]' : plan.id === 'pro' ? 'text-amber-300' : 'text-slate-400'} group-hover:scale-110 transition-transform`} />
+                <div className="min-w-0">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[11px] font-bold text-white tracking-wide truncate group-hover:text-[#D4AF37] transition-colors">
+                      Plano {plan.name}
+                    </span>
+                    <span className="flex h-1.5 w-1.5 rounded-full bg-emerald-400 ring-2 ring-emerald-950 shrink-0" />
+                  </div>
+                </div>
               </div>
-              <button
-                onClick={() => openUpgradeModal({ title: "Planos & Assinatura" })}
-                className="text-[10px] font-semibold text-[#D4AF37] hover:underline cursor-pointer"
-              >
-                {plan.id === 'premium' ? 'Gerenciar' : 'Upgrade'}
-              </button>
-            </div>
+              <div className="flex items-center gap-1 text-[10px] font-medium text-slate-400 group-hover:text-amber-300 transition-colors pl-1 shrink-0">
+                <span>Assinatura</span>
+                <ChevronRight className="h-3 w-3 group-hover:translate-x-0.5 transition-transform" />
+              </div>
+            </Link>
           </div>
         )}
 
@@ -831,24 +872,29 @@ export default function Layout() {
             </div>
           </SheetHeader>
 
-          {/* Seletor de Unidade e Plano no Mobile Drawer */}
-          <div className="px-4 py-2.5 border-b border-white/[0.08] space-y-2 bg-[#0C0E16]">
+          {/* Seletor de Unidade e Indicador Minimalista do Plano no Mobile Drawer */}
+          <div className="px-4 py-2 border-b border-white/[0.08] space-y-1.5 bg-[#0C0E16]">
             <UnitSelector variant="sidebar" />
-            <div className="flex items-center justify-between px-2.5 py-1.5 rounded-[4px] bg-[#12141F] border border-white/5">
-              <div className="flex items-center gap-1.5">
-                <Crown className={`h-3.5 w-3.5 ${plan.id === 'premium' ? 'text-[#D4AF37]' : plan.id === 'pro' ? 'text-blue-400' : 'text-slate-400'}`} />
-                <span className="text-[11px] font-bold text-white uppercase tracking-wider">{plan.name}</span>
+            <Link
+              to="/assinatura"
+              onClick={() => setMobileDrawerOpen(false)}
+              className="group flex items-center justify-between px-2.5 py-1.5 rounded-[4px] bg-[#11131E] hover:bg-[#151827] border border-white/[0.06] hover:border-[#D4AF37]/35 transition-all cursor-pointer"
+              data-testid="drawer-plan-indicator"
+            >
+              <div className="flex items-center gap-2 min-w-0">
+                <Crown className={`h-3.5 w-3.5 shrink-0 ${plan.id === 'premium' ? 'text-[#D4AF37]' : plan.id === 'pro' ? 'text-amber-300' : 'text-slate-400'}`} />
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[11px] font-bold text-white tracking-wide truncate group-hover:text-[#D4AF37] transition-colors">
+                    Plano {plan.name}
+                  </span>
+                  <span className="flex h-1.5 w-1.5 rounded-full bg-emerald-400 ring-2 ring-emerald-950 shrink-0" />
+                </div>
               </div>
-              <button
-                onClick={() => {
-                  setMobileDrawerOpen(false);
-                  openUpgradeModal({ title: "Planos & Assinatura" });
-                }}
-                className="text-[10px] font-semibold text-[#D4AF37] hover:underline cursor-pointer"
-              >
-                {plan.id === 'premium' ? 'Gerenciar' : 'Upgrade'}
-              </button>
-            </div>
+              <div className="flex items-center gap-1 text-[10px] font-medium text-slate-400 group-hover:text-amber-300 transition-colors pl-1 shrink-0">
+                <span>Assinatura</span>
+                <ChevronRight className="h-3 w-3 group-hover:translate-x-0.5 transition-transform" />
+              </div>
+            </Link>
           </div>
 
           {/* Navegação completa no celular */}
@@ -1036,7 +1082,7 @@ export default function Layout() {
                   className="bg-[#131622] border border-white/10 text-white hover:bg-[#181B28] hover:border-[#D4AF37]/40 text-xs font-semibold h-9 px-3 rounded-[4px] gap-1.5 transition-colors shadow-none"
                   data-testid="quick-actions-trigger"
                 >
-                  <Sparkles className="h-3.5 w-3.5 text-[#D4AF37]" />
+                  <Plus className="h-3.5 w-3.5 text-[#D4AF37]" />
                   <span>+ Lançar</span>
                   <ChevronDown className="h-3 w-3 text-muted-foreground" />
                 </Button>
@@ -1046,7 +1092,7 @@ export default function Layout() {
                 className="w-56 bg-[#131622] border border-white/10 text-white p-1.5 rounded-[4px] shadow-xl"
               >
                 <DropdownMenuLabel className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider px-2 py-1">
-                  Ações Rápidas
+                  Lançamentos
                 </DropdownMenuLabel>
                 <DropdownMenuItem
                   onClick={() => setModalNovoAtendimento(true)}
@@ -1183,6 +1229,17 @@ export default function Layout() {
       <ErrorBoundary fallback={null}>
         <SubscriptionExpiredModal open={isSubscriptionExpired} />
       </ErrorBoundary>
+
+      {/* Modal Global: Assinatura Pix Automatizada via Asaas */}
+      <AsaasPixModal
+        open={globalDirectModal.open}
+        onOpenChange={(val) => setGlobalDirectModal((prev) => ({ ...prev, open: val }))}
+        planId={globalDirectModal.planId}
+        planName={globalDirectModal.planName}
+        price={globalDirectModal.price}
+        email={globalDirectModal.email || user?.email}
+        organizationId={user?.barbershop_id}
+      />
     </div>
   );
 }

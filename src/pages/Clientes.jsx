@@ -32,7 +32,6 @@ import {
   ChevronRight,
   MessageSquare,
   UserX,
-  Sparkles,
   Clock,
   AlertTriangle,
   Send,
@@ -536,7 +535,7 @@ export default function Clientes() {
 
                         {isUnlimited ? (
                           <Badge className="bg-[#D4AF37]/15 text-[#D4AF37] border-[#D4AF37]/40 text-[10px] font-bold rounded-[3px] gap-1">
-                            <Sparkles className="h-2.5 w-2.5" /> Ilimitado
+                            <Crown className="h-2.5 w-2.5" /> Ilimitado
                           </Badge>
                         ) : (
                           <span className="text-[11px] font-mono text-[#D4AF37] font-bold">
@@ -844,7 +843,7 @@ export default function Clientes() {
 
                       {detail.plan.is_unlimited ? (
                         <Badge className="bg-[#D4AF37]/15 text-[#D4AF37] border-[#D4AF37]/40 text-xs font-bold gap-1 rounded-[3px]">
-                          <Sparkles className="h-3 w-3" /> Assinatura Ativa (Ilimitado)
+                          <Crown className="h-3 w-3" /> Assinatura Ativa (Ilimitado)
                         </Badge>
                       ) : (
                         <Badge
@@ -887,7 +886,7 @@ export default function Clientes() {
                     {detail.plan.is_unlimited && (
                       <div className="p-2.5 rounded-[4px] bg-[#0A0D14] border border-white/5 flex items-center justify-between text-xs">
                         <div className="flex items-center gap-2 text-emerald-400 font-semibold">
-                          <Sparkles className="h-4 w-4" />
+                          <CheckCircle2 className="h-4 w-4" />
                           <span>Uso Ilimitado Ativo</span>
                         </div>
                         {detail.plan.due && (
@@ -1058,7 +1057,7 @@ export default function Clientes() {
                   }`}
                 >
                   <p className="text-xs font-bold flex items-center gap-1">
-                    <Sparkles className="h-3 w-3" /> Ilimitado
+                    <Crown className="h-3 w-3" /> Ilimitado
                   </p>
                   <p className="text-[10px] text-slate-400">Cortes à vontade</p>
                 </button>

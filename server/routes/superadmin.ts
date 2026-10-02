@@ -42,6 +42,51 @@ router.get("/superadmin/check", (req: Request, res: Response) => {
 });
 
 /**
+ * Login direto com credenciais mestre blindadas do SuperAdmin
+ */
+router.post("/superadmin/login", (req: Request, res: Response) => {
+  const { email, username, password } = req.body || {};
+  const masterEmail = (process.env.SUPERADMIN_EMAIL || "guilhermepedropereira2@gmail.com").trim().toLowerCase();
+  const masterPassword = (process.env.SUPERADMIN_PASSWORD || "1983050218").trim();
+
+  const cleanInput = (email || username || "").trim().toLowerCase();
+  const cleanPass = (password || "").trim();
+
+  if ((cleanInput === masterEmail || cleanInput === "superadmin") && cleanPass === masterPassword) {
+    let masterUser = db.users.find(
+      (u) => u.id === "usr_superadmin" || (u.email && u.email.toLowerCase() === masterEmail)
+    );
+    if (!masterUser) {
+      masterUser = {
+        id: "usr_superadmin",
+        name: "Guilherme Pereira (SuperAdmin Master)",
+        username: "superadmin",
+        password: masterPassword,
+        email: masterEmail,
+        role: "superadmin",
+        roles: ["superadmin", "dono", "admin"],
+        barbershop_id: "profile",
+        permissions: {},
+        active: true,
+        is_superadmin: true,
+        subscriptionStatus: "active",
+        subscriptionExpiresAt: new Date(Date.now() + 365 * 86400000).toISOString(),
+        created_at: nowIso(),
+      };
+      db.users.push(masterUser);
+    } else {
+      masterUser.is_superadmin = true;
+      masterUser.role = "superadmin";
+    }
+    const token = `fake-token-${masterUser.id}`;
+    const { password: _, ...cleanUser } = masterUser;
+    return res.json({ success: true, token, user: { ...cleanUser, is_superadmin: true } });
+  }
+
+  return res.status(401).json({ error: "Credenciais de SuperAdmin inválidas" });
+});
+
+/**
  * 2. Métricas Globais da Plataforma (SaaS Overview)
  */
 router.get("/superadmin/metrics", requireSuperAdmin, async (_req: Request, res: Response) => {

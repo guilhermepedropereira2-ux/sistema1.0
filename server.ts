@@ -19,6 +19,7 @@ import financialsRoutes from "./server/routes/financials.js";
 import barberPortalRoutes from "./server/routes/barberPortal.js";
 import analyticsRoutes from "./server/routes/analytics.js";
 import superadminRoutes from "./server/routes/superadmin.js";
+import webhooksAsaasRoutes from "./server/routes/webhooksAsaas.js";
 
 dotenv.config();
 
@@ -119,6 +120,7 @@ apiRouter.use(financialsRoutes);
 apiRouter.use(barberPortalRoutes);
 apiRouter.use(analyticsRoutes);
 apiRouter.use(superadminRoutes);
+apiRouter.use(webhooksAsaasRoutes);
 
 app.use("/api", apiRouter);
 

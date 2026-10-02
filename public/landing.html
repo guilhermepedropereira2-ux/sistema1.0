@@ -724,10 +724,13 @@
           </div>
 
           <div class="mt-8">
-            <a href="/login" class="w-full py-2.5 px-4 rounded-md border border-white/15 hover:border-white/30 text-white font-semibold text-xs flex items-center justify-center gap-2 transition-colors">
-              <span>Garantir Acesso Oficial</span>
-              <i data-lucide="arrow-right" class="h-3.5 w-3.5"></i>
-            </a>
+            <button onclick="openAsaasPixModal('Basic', 79.9, 'R$ 79,90/mês')" class="w-full py-2.5 px-4 rounded-md border border-white/15 hover:border-[#D4AF37]/50 text-white font-semibold text-xs flex items-center justify-center gap-2 transition-colors cursor-pointer bg-white/5 hover:bg-white/10">
+              <i data-lucide="qr-code" class="h-3.5 w-3.5 text-[#10B981]"></i>
+              <span>Assinar com Pix (Ativação Automática)</span>
+            </button>
+            <p class="text-[10px] text-center text-slate-400 mt-2">
+              Ativação Instantânea via Asaas
+            </p>
           </div>
         </div>
 
@@ -777,12 +780,12 @@
           </div>
 
           <div class="mt-8">
-            <a href="/login" class="btn-gold w-full py-2.5 px-4 rounded-md text-xs flex items-center justify-center gap-2 cursor-pointer">
-              <span>Garantir Acesso Oficial</span>
-              <i data-lucide="arrow-right" class="h-3.5 w-3.5"></i>
-            </a>
+            <button onclick="openAsaasPixModal('Pro', 169.9, 'R$ 169,90/mês')" class="btn-gold w-full py-2.5 px-4 rounded-md text-xs flex items-center justify-center gap-2 cursor-pointer font-bold">
+              <i data-lucide="qr-code" class="h-3.5 w-3.5"></i>
+              <span>Pagar com Pix (Ativação Automática)</span>
+            </button>
             <p class="text-[10px] text-center text-slate-400 mt-2">
-              Ativação Instantânea • Portal Oficial Kupola
+              Ativação Instantânea • Asaas Gateway
             </p>
           </div>
         </div>
@@ -823,10 +826,13 @@
           </div>
 
           <div class="mt-8">
-            <a href="/login" class="w-full py-2.5 px-4 rounded-md border border-white/15 hover:border-white/30 text-white font-semibold text-xs flex items-center justify-center gap-2 transition-colors">
-              <span>Garantir Acesso para Redes</span>
-              <i data-lucide="arrow-right" class="h-3.5 w-3.5"></i>
-            </a>
+            <button onclick="openAsaasPixModal('Premium', 299.9, 'R$ 299,90/mês')" class="w-full py-2.5 px-4 rounded-md border border-[#D4AF37]/40 hover:border-[#D4AF37] text-[#D4AF37] font-semibold text-xs flex items-center justify-center gap-2 transition-colors cursor-pointer bg-[#D4AF37]/10 hover:bg-[#D4AF37]/20">
+              <i data-lucide="qr-code" class="h-3.5 w-3.5"></i>
+              <span>Pagar com Pix (Ativação Automática)</span>
+            </button>
+            <p class="text-[10px] text-center text-slate-400 mt-2">
+              Ativação Instantânea • Redes e Franquias
+            </p>
           </div>
         </div>
 
@@ -1137,6 +1143,170 @@
         }
       });
     });
+
+    // ========================================================
+    // MODAL DE ASSINATURA AUTOMATIZADA VIA ASAAS PIX (LANDING)
+    // ========================================================
+    const asaasPixModal = document.getElementById('asaas-pix-modal');
+    const modalPlanTitle = document.getElementById('modal-plan-title');
+    const modalPlanPrice = document.getElementById('modal-plan-price');
+    const qrContainer = document.getElementById('modal-qr-container');
+    const qrImage = document.getElementById('modal-qr-image');
+    const pixInput = document.getElementById('modal-pix-payload-input');
+    const btnCopyPix = document.getElementById('btn-copy-pix-payload');
+    const modalLoading = document.getElementById('modal-loading-state');
+    const modalSuccess = document.getElementById('modal-success-state');
+    const modalActive = document.getElementById('modal-active-state');
+    let landingPollingTimer = null;
+
+    window.openAsaasPixModal = async function(planName, priceNum, priceText) {
+      if (!asaasPixModal) return;
+      modalPlanTitle.textContent = `Plano ${planName}`;
+      modalPlanPrice.textContent = `${priceText || ''} • 30 Dias de Acesso`;
+
+      modalLoading.classList.remove('hidden');
+      modalActive.classList.add('hidden');
+      modalSuccess.classList.add('hidden');
+      asaasPixModal.classList.remove('hidden');
+      if (window.lucide) lucide.createIcons();
+
+      try {
+        const res = await fetch('/api/asaas/pix/create', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ planId: planName.toLowerCase() }),
+        });
+        const data = await res.json();
+
+        if (data.encodedImage && data.payload) {
+          qrImage.src = data.encodedImage;
+          pixInput.value = data.payload;
+          modalLoading.classList.add('hidden');
+          modalActive.classList.remove('hidden');
+
+          // Polling do status
+          if (landingPollingTimer) clearInterval(landingPollingTimer);
+          landingPollingTimer = setInterval(async () => {
+            try {
+              const statusRes = await fetch(`/api/asaas/pix/status/${data.paymentId}`);
+              const statusData = await statusRes.json();
+              if (statusData.isPaid || statusData.status === 'RECEIVED' || statusData.status === 'CONFIRMED') {
+                clearInterval(landingPollingTimer);
+                modalActive.classList.add('hidden');
+                modalSuccess.classList.remove('hidden');
+              }
+            } catch (e) {}
+          }, 3000);
+        } else {
+          throw new Error('Falha ao gerar Pix');
+        }
+      } catch (err) {
+        modalLoading.classList.add('hidden');
+        alert('Não foi possível gerar a cobrança Pix no momento. Redirecionando para o login...');
+        window.location.href = '/login';
+      }
+    };
+
+    window.closeAsaasPixModal = function() {
+      if (asaasPixModal) asaasPixModal.classList.add('hidden');
+      if (landingPollingTimer) clearInterval(landingPollingTimer);
+    };
+
+    window.copyLandingPixPayload = function() {
+      if (!pixInput) return;
+      pixInput.select();
+      navigator.clipboard.writeText(pixInput.value);
+      if (btnCopyPix) {
+        btnCopyPix.textContent = 'Copiado!';
+        btnCopyPix.classList.add('bg-emerald-500', 'text-black');
+        setTimeout(() => {
+          btnCopyPix.textContent = 'Copiar Código';
+          btnCopyPix.classList.remove('bg-emerald-500', 'text-black');
+        }, 2500);
+      }
+    };
+
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') window.closeAsaasPixModal();
+    });
+    if (asaasPixModal) {
+      asaasPixModal.addEventListener('click', (e) => {
+        if (e.target === asaasPixModal) window.closeAsaasPixModal();
+      });
+    }
   </script>
+
+  <!-- Modal Nativo Asaas Pix (Landing Page) -->
+  <div id="asaas-pix-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-black/85 backdrop-blur-md">
+    <div class="bg-[#0D1019] border border-[#D4AF37]/40 text-white rounded-lg max-w-md w-full shadow-2xl overflow-hidden relative animate-in fade-in zoom-in-95 duration-200">
+      <div class="p-5 bg-gradient-to-r from-[#151827] via-[#181C2E] to-[#12141F] border-b border-[#D4AF37]/25 relative">
+        <button onclick="closeAsaasPixModal()" class="absolute right-4 top-4 text-slate-400 hover:text-white cursor-pointer">
+          <i data-lucide="x" class="h-5 w-5"></i>
+        </button>
+        <span class="text-[10px] uppercase font-bold text-[#10B981] tracking-wider block mb-1">Pagamento Automatizado Asaas</span>
+        <h3 id="modal-plan-title" class="text-lg font-bold text-white">Plano Pro</h3>
+        <p id="modal-plan-price" class="text-xs text-slate-300 mt-0.5">30 Dias de Acesso • Ativação Instantânea</p>
+      </div>
+
+      <div class="p-5 space-y-4 text-xs">
+        <!-- Estado de Carregamento -->
+        <div id="modal-loading-state" class="py-12 flex flex-col items-center justify-center text-center space-y-3">
+          <div class="h-8 w-8 rounded-full border-2 border-[#D4AF37] border-t-transparent animate-spin"></div>
+          <p class="font-semibold text-slate-200 text-sm">Gerando cobrança Pix oficial no Asaas...</p>
+          <p class="text-[11px] text-slate-500">Criando QR Code dinâmico e código Pix exclusivo.</p>
+        </div>
+
+        <!-- Estado de Sucesso -->
+        <div id="modal-success-state" class="hidden py-8 text-center space-y-3">
+          <div class="h-16 w-16 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center mx-auto border border-emerald-500/40">
+            <i data-lucide="check-circle-2" class="h-8 w-8 stroke-[3]"></i>
+          </div>
+          <h4 class="text-lg font-bold text-white">Pagamento Confirmado pelo Asaas!</h4>
+          <p class="text-xs text-emerald-300">Sua assinatura foi ativada com sucesso por 30 dias.</p>
+          <a href="/login" class="btn-gold block w-full py-3 rounded text-center text-xs font-bold uppercase mt-4">
+            Acessar o Sistema
+          </a>
+        </div>
+
+        <!-- Estado Ativo (QR Code + Copia e Cola) -->
+        <div id="modal-active-state" class="hidden space-y-4">
+          <div class="p-4 rounded-lg bg-[#111420] border border-[#D4AF37]/30 flex flex-col items-center justify-center space-y-3">
+            <div id="modal-qr-container" class="p-2.5 bg-white rounded-lg shadow-xl">
+              <img id="modal-qr-image" src="" alt="QR Code Pix" class="w-48 h-48 object-contain" />
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="relative flex h-2 w-2">
+                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                <span class="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+              </span>
+              <span class="text-xs font-semibold text-amber-300">
+                Aguardando confirmação bancária em tempo real...
+              </span>
+            </div>
+          </div>
+
+          <div class="space-y-1.5">
+            <span class="font-semibold text-slate-300 block">Código Pix Copia e Cola:</span>
+            <div class="flex items-center gap-2">
+              <input type="text" readonly id="modal-pix-payload-input" value="" class="flex-1 bg-[#090B12] border border-white/10 rounded px-3 py-2 font-mono text-slate-300 text-xs select-all outline-none focus:border-[#D4AF37]" />
+              <button onclick="copyLandingPixPayload()" id="btn-copy-pix-payload" class="px-3.5 py-2 rounded bg-[#D4AF37] hover:bg-[#c29f2f] text-black font-bold text-xs transition-colors cursor-pointer shrink-0">
+                Copiar Código
+              </button>
+            </div>
+          </div>
+
+          <div class="p-3 rounded bg-white/[0.03] border border-white/5 space-y-1 text-slate-400 text-[11px]">
+            <p>• Abra o aplicativo do seu banco e escolha a opção <strong>Pix Copia e Cola</strong> ou <strong>Ler QR Code</strong>.</p>
+            <p>• A confirmação é <strong>100% automatizada</strong> pelo Asaas: assim que o banco aprovar, seu acesso é liberado.</p>
+          </div>
+
+          <div class="flex items-center justify-between pt-2 border-t border-white/10 text-slate-400 text-[11px]">
+            <span>Já tem cadastro? <a href="/login" class="text-[#D4AF37] hover:underline font-semibold">Entrar no painel</a></span>
+            <button onclick="closeAsaasPixModal()" class="hover:text-white cursor-pointer">Fechar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 </body>
 </html>

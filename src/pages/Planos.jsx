@@ -5,6 +5,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useUnit } from "@/context/UnitContext";
 import { PLANS } from "@/lib/plans";
 import { redirectToExternalCheckout } from "@/lib/externalCheckout";
+import AsaasPixModal from "@/components/AsaasPixModal";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -13,7 +14,6 @@ import {
   CheckCircle2,
   Crown,
   ArrowRight,
-  Sparkles,
   ShieldCheck,
   Building2,
   Users2,
@@ -32,8 +32,19 @@ export default function Planos() {
   const { changePlan, plan: currentPlan, refreshUnits } = useUnit();
   const [selectedPlan, setSelectedPlan] = useState("pro");
   const [loading, setLoading] = useState(false);
+  const [directModalOpen, setDirectModalOpen] = useState(false);
+  const [directModalPlan, setDirectModalPlan] = useState({ planId: "pro", planName: "Pro", price: 169.9 });
 
   const isFromRegister = location.state?.fromRegister || false;
+
+  const handleOpenDirectCheckout = (p) => {
+    setDirectModalPlan({
+      planId: p.key,
+      planName: p.name,
+      price: p.amount || 169.9,
+    });
+    setDirectModalOpen(true);
+  };
 
   const handleSelectPlan = async (planKey) => {
     setSelectedPlan(planKey);
@@ -101,7 +112,7 @@ export default function Planos() {
         {/* Boas-vindas pós-cadastro ou upgrade */}
         <div className="text-center max-w-2xl mx-auto mb-10">
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#D4AF37]/10 border border-[#D4AF37]/30 text-[#D4AF37] text-xs font-semibold mb-3">
-            <Sparkles className="h-3.5 w-3.5" /> Comece com 7 dias de acesso liberado
+            <ShieldCheck className="h-3.5 w-3.5" /> Comece com 7 dias de acesso liberado
           </div>
           <h2 className="text-2xl sm:text-3xl font-display font-extrabold text-white">
             Selecione o plano da sua barbearia
@@ -167,19 +178,13 @@ export default function Planos() {
                   <Button
                     onClick={(e) => {
                       e.stopPropagation();
-                      redirectToExternalCheckout({
-                        planId: p.key,
-                        planName: p.name,
-                        price: p.amount || 169.9,
-                        email: user?.email,
-                        organizationId: user?.barbershop_id || "org_vintage",
-                      });
+                      handleOpenDirectCheckout(p);
                     }}
                     className="w-full h-11 font-black uppercase text-xs rounded-[4px] gap-2 cursor-pointer bg-[#D4AF37] hover:bg-[#C59F2E] text-[#0B0D14] shadow-md transition-all active:scale-[0.99]"
                     data-testid={`btn-assinar-checkout-pro-${p.key}`}
                   >
-                    <ExternalLink className="h-4 w-4" />
-                    <span>Assinar Plano (Checkout Seguro)</span>
+                    <CreditCard className="h-4 w-4" />
+                    <span>Assinar Plano (Pix, Cartão ou Boleto)</span>
                   </Button>
 
                   <Button
@@ -201,13 +206,27 @@ export default function Planos() {
                     )}
                   </Button>
                   <p className="text-[10px] text-center text-slate-400">
-                    Ambiente Seguro • Ativação Automática Imediata
+                    Ativação Instantânea • Fatura Asaas (Pix, Cartão ou Boleto)
                   </p>
                 </div>
               </div>
             );
           })}
         </div>
+
+        {/* Modal de Assinatura Pix Asaas Nativo */}
+        <AsaasPixModal
+          open={directModalOpen}
+          onOpenChange={setDirectModalOpen}
+          planId={directModalPlan.planId}
+          planName={directModalPlan.planName}
+          price={directModalPlan.price}
+          email={user?.email}
+          organizationId={user?.barbershop_id}
+          onSuccess={() => {
+            navigate("/");
+          }}
+        />
 
         {/* Garantias e segurança */}
         <div className="mt-12 p-6 rounded-[6px] bg-[#0E111A] border border-white/5 flex flex-col sm:flex-row items-center justify-around gap-4 text-center sm:text-left">

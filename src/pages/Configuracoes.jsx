@@ -12,7 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import {
   Save, Calendar, Users, Layers,
   CheckCircle2, Link2, Copy, Check, ExternalLink, Globe, Scissors,
-  Crown, Building2, Sparkles, Store, MessageCircle,
+  Crown, Building2, Store, MessageCircle,
 } from "lucide-react";
 import { useUnit } from "@/context/UnitContext";
 
@@ -311,7 +311,7 @@ export default function Configuracoes() {
               onClick={() => openUpgradeModal({ title: "Planos & Assinatura da Barbearia" })}
               className="bg-gradient-to-r from-[#F3CD68] via-[#D4AF37] to-[#B8860B] text-[#0B0F19] font-bold text-xs h-8 px-3 rounded-[4px] gap-1.5 shadow-none hover:brightness-105 cursor-pointer"
             >
-              <Sparkles className="h-3.5 w-3.5" />
+              <Crown className="h-3.5 w-3.5" />
               <span>{isPremium ? "Gerenciar Plano" : "Fazer Upgrade"}</span>
             </Button>
           </div>

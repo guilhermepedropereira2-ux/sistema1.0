@@ -16,7 +16,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Pencil, Trash2, Scissors, FileBarChart, Trophy, KeyRound, Crown, Sparkles, AlertCircle, Lock, Shield, Coins } from "lucide-react";
+import { Plus, Pencil, Trash2, Scissors, FileBarChart, Trophy, KeyRound, Crown, AlertCircle, Lock, Shield, Coins } from "lucide-react";
 import { brl, pct, monthRange } from "@/lib/format";
 import { useUnit } from "@/context/UnitContext";
 import { useBalcao } from "@/context/BalcaoContext";
@@ -350,7 +350,7 @@ export default function Equipe() {
                 }
                 className="bg-[#0A0D14] border-white/10 text-[#D4AF37] hover:bg-white/5 hover:border-[#D4AF37]/60 text-xs font-bold rounded-[4px] gap-1.5 shadow-none cursor-pointer"
               >
-                <Sparkles className="h-3.5 w-3.5" />
+                <Crown className="h-3.5 w-3.5" />
                 <span>Liberar Mais Vagas</span>
               </Button>
             )}
