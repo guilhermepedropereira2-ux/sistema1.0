@@ -5,24 +5,8 @@ dotenv.config();
 
 let poolInstance: pg.Pool | null = null;
 
-export const DEFAULT_SUPABASE_URL =
-  "postgresql://postgres.brnhqervmmqqcsedwvss:Joao%2F20%2F1234@aws-0-sa-east-1.pooler.supabase.com:5432/postgres";
-
 export function resolveDatabaseUrl(rawUrl?: string): string {
   const url = (rawUrl || process.env.DATABASE_URL || "").trim();
-
-  // Se não foi informada URL, ou se for localhost/127.0.0.1 (não existe daemon local no container),
-  // ou se for a referência ao projeto Supabase, utiliza o pooler IPv4 oficial do Supabase na AWS SA-East-1
-  if (
-    !url ||
-    url.includes("localhost") ||
-    url.includes("127.0.0.1") ||
-    url.includes("barberflow") ||
-    url.includes("brnhqervmmqqcsedwvss")
-  ) {
-    return DEFAULT_SUPABASE_URL;
-  }
-
   return url;
 }
 
@@ -33,31 +17,35 @@ export function getDbPool(): pg.Pool | null {
   const connectionString = resolveDatabaseUrl(rawUrl);
 
   if (!connectionString) {
-    console.warn("[PostgreSQL] No DATABASE_URL provided. Running in in-memory mode.");
     return null;
   }
 
-  poolInstance = new pg.Pool({
-    connectionString,
-    ssl: {
-      rejectUnauthorized: false,
-    },
-    max: 10,
-    idleTimeoutMillis: 30000,
-    connectionTimeoutMillis: 8000,
-  });
+  try {
+    poolInstance = new pg.Pool({
+      connectionString,
+      ssl: connectionString.includes("localhost") || connectionString.includes("127.0.0.1")
+        ? false
+        : { rejectUnauthorized: false },
+      max: 10,
+      idleTimeoutMillis: 30000,
+      connectionTimeoutMillis: 5000,
+    });
 
-  poolInstance.on("error", (err) => {
-    console.error("[PostgreSQL Pool Error]:", err.message);
-  });
+    poolInstance.on("error", (err) => {
+      console.error("[PostgreSQL Pool Error]:", err.message);
+    });
 
-  return poolInstance;
+    return poolInstance;
+  } catch (err: any) {
+    console.warn("[PostgreSQL] Erro ao instanciar pool:", err.message);
+    return null;
+  }
 }
 
 export async function testConnection(): Promise<{ ok: boolean; message: string; details?: any }> {
   const pool = getDbPool();
   if (!pool) {
-    return { ok: false, message: "DATABASE_URL not set" };
+    return { ok: false, message: "DATABASE_URL não configurada. Operando em modo de memória local." };
   }
 
   try {

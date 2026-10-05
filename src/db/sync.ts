@@ -13,9 +13,9 @@ let lastPgStatus: {
   error?: string;
 } = {
   connected: false,
-  engine: "PostgreSQL (Supabase)",
-  database: "postgres",
-  host: "aws-0-sa-east-1.pooler.supabase.com",
+  engine: "In-Memory Store (Active)",
+  database: "local_memory",
+  host: "local",
   lastChecked: new Date().toISOString(),
 };
 
@@ -24,9 +24,15 @@ export function getPgHealth() {
 }
 
 export async function initDatabaseWithPg(dbStore: any) {
+  const pool = getDbPool();
+  if (!pool) {
+    console.log("[Database Sync] DATABASE_URL não informada. Armazenamento em memória local ativo com dados completos.");
+    return;
+  }
+
   try {
     const start = Date.now();
-    console.log("[PostgreSQL Sync] Inicializando integração com Supabase...");
+    console.log("[PostgreSQL Sync] Inicializando integração com PostgreSQL...");
     
     // 1. Executa migrações
     const migResult = await runMigrations();
@@ -35,9 +41,9 @@ export async function initDatabaseWithPg(dbStore: any) {
     isPgReady = true;
     lastPgStatus = {
       connected: true,
-      engine: "PostgreSQL (Supabase)",
+      engine: "PostgreSQL",
       database: "postgres",
-      host: "aws-0-sa-east-1.pooler.supabase.com:5432",
+      host: "connected",
       latencyMs: latency,
       tables: migResult.tables,
       lastChecked: new Date().toISOString(),
@@ -45,14 +51,14 @@ export async function initDatabaseWithPg(dbStore: any) {
 
     console.log(`[PostgreSQL Sync] Conexão ativa (${latency}ms). Carregando dados persistidos...`);
     await loadFromPg(dbStore);
-    console.log("[PostgreSQL Sync] Dados sincronizados com o Supabase com sucesso!");
+    console.log("[PostgreSQL Sync] Dados sincronizados com o PostgreSQL com sucesso!");
   } catch (err: any) {
-    console.error("[PostgreSQL Sync Error]:", err.message);
+    console.warn("[PostgreSQL Sync Warning]:", err.message);
     lastPgStatus = {
       connected: false,
-      engine: "PostgreSQL (Supabase)",
-      database: "postgres",
-      host: "aws-0-sa-east-1.pooler.supabase.com:5432",
+      engine: "In-Memory Store (Active)",
+      database: "local_memory",
+      host: "local",
       lastChecked: new Date().toISOString(),
       error: err.message,
     };

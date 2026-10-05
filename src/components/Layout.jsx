@@ -698,12 +698,12 @@ export default function Layout() {
   };
 
   return (
-    <div className="flex min-h-screen bg-[#0B0D14] text-[#F8FAFC] antialiased overflow-x-hidden w-full selection:bg-[#D4AF37]/30 selection:text-[#D4AF37]">
+    <div className="flex min-h-screen bg-[#05070B] text-[#F5F5F5] antialiased overflow-x-hidden w-full selection:bg-[#D4AF37]/30 selection:text-[#D4AF37]">
       {/* ======================================================== */}
       {/* 1. DESKTOP SIDEBAR (>= 1024px) FIXA                       */}
       {/* ======================================================== */}
       <aside
-        className={`hidden lg:flex shrink-0 flex-col border-r border-white/[0.08] bg-[#0F121C] fixed inset-y-0 left-0 z-30 transition-all duration-300 ease-in-out ${
+        className={`hidden lg:flex shrink-0 flex-col border-r border-white/[0.07] bg-[#0A0E15] fixed inset-y-0 left-0 z-30 transition-all duration-300 ease-in-out ${
           isSidebarCollapsed ? "w-[70px]" : "w-64"
         }`}
         data-testid="desktop-sidebar"
@@ -711,12 +711,12 @@ export default function Layout() {
       >
         {/* Topo da Sidebar: Logo, nome e botão de alternância */}
         {isSidebarCollapsed ? (
-          <div className="flex flex-col items-center justify-center h-16 border-b border-white/[0.08] shrink-0 px-2">
+          <div className="flex flex-col items-center justify-center h-16 border-b border-white/[0.07] shrink-0 px-2">
             <Button
               variant="ghost"
               size="icon"
               onClick={toggleSidebar}
-              className="h-10 w-10 text-slate-300 hover:text-[#D4AF37] hover:bg-white/10 rounded-[4px] cursor-pointer flex items-center justify-center transition-colors group relative"
+              className="h-10 w-10 text-slate-300 hover:text-[#D4AF37] hover:bg-white/[0.05] rounded-[4px] cursor-pointer flex items-center justify-center transition-colors group relative"
               title="Expandir barra lateral"
               aria-label="Expandir barra lateral"
               data-testid="sidebar-toggle-btn"
@@ -726,13 +726,13 @@ export default function Layout() {
                 alt="Kupola" 
                 className="h-7 w-7 rounded-full object-cover border border-[#D4AF37]/30 shadow-sm group-hover:scale-95 transition-transform" 
               />
-              <span className="absolute -bottom-0.5 -right-0.5 h-4 w-4 rounded-full bg-[#12141F] border border-white/20 flex items-center justify-center text-[10px] text-[#D4AF37] shadow">
+              <span className="absolute -bottom-0.5 -right-0.5 h-4 w-4 rounded-full bg-[#0D121B] border border-white/20 flex items-center justify-center text-[10px] text-[#D4AF37] shadow">
                 <ChevronRight className="h-2.5 w-2.5" />
               </span>
             </Button>
           </div>
         ) : (
-          <div className="flex items-center justify-between px-4 h-16 border-b border-white/[0.08] shrink-0">
+          <div className="flex items-center justify-between px-4 h-16 border-b border-white/[0.07] shrink-0">
             <div className="flex items-center gap-3 min-w-0 overflow-hidden">
               <img 
                 src="/logo.png" 
@@ -740,11 +740,12 @@ export default function Layout() {
                 className="h-9 w-9 rounded-full object-cover border border-[#D4AF37]/30 shadow-md shadow-[#D4AF37]/10 shrink-0" 
               />
               <div className="min-w-0 flex-1">
-                <span className="font-display font-extrabold text-base tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-[#D4AF37] to-amber-500 block truncate leading-tight">
-                  Kupola
+                <span className="font-display font-extrabold text-base tracking-tight text-white flex items-center gap-1.5 leading-tight">
+                  <span>KUPOLA</span>
+                  <span className="text-[9px] font-bold tracking-widest text-[#D4AF37] uppercase bg-[#D4AF37]/10 px-1 py-0.5 rounded-[2px] border border-[#D4AF37]/20">PRO</span>
                 </span>
-                <p className="text-[10px] text-slate-400 font-medium tracking-wider truncate mt-0.5">
-                  {barbershop?.name || "Painel de Gestão"}
+                <p className="text-[10px] text-[#8B93A1] font-medium tracking-wider truncate mt-0.5 uppercase">
+                  {barbershop?.name || "Gestão para Barbearias"}
                 </p>
               </div>
             </div>
@@ -752,7 +753,7 @@ export default function Layout() {
               variant="ghost"
               size="icon"
               onClick={toggleSidebar}
-              className="h-8 w-8 text-slate-400 hover:text-[#D4AF37] hover:bg-white/10 rounded-[4px] shrink-0 cursor-pointer transition-colors"
+              className="h-8 w-8 text-[#8B93A1] hover:text-[#D4AF37] hover:bg-white/[0.05] rounded-[4px] shrink-0 cursor-pointer transition-colors"
               title="Recolher barra lateral"
               aria-label="Recolher barra lateral"
               data-testid="sidebar-toggle-btn"
@@ -764,22 +765,22 @@ export default function Layout() {
 
         {/* Seletor de Unidade & Badge do Plano na Sidebar */}
         {isSidebarCollapsed ? (
-          <div className="py-2.5 flex flex-col items-center justify-center border-b border-white/[0.08] bg-[#0C0E16]">
+          <div className="py-2.5 flex flex-col items-center justify-center border-b border-white/[0.07] bg-[#070A0F]">
             <button
               type="button"
               onClick={() => openUpgradeModal({ title: "Planos & Assinatura" })}
-              className="h-8 w-8 rounded-[4px] bg-[#12141F] border border-white/10 flex items-center justify-center text-[#D4AF37] hover:bg-[#D4AF37]/15 transition-colors cursor-pointer"
+              className="h-8 w-8 rounded-[4px] bg-[#0D121B] border border-white/[0.08] flex items-center justify-center text-[#D4AF37] hover:bg-[#D4AF37]/15 transition-colors cursor-pointer"
               title={`Plano ${plan.name} (Clique para detalhes)`}
             >
               <Crown className="h-4 w-4" />
             </button>
           </div>
         ) : (
-          <div className="px-3 py-2.5 border-b border-white/[0.08] space-y-2 bg-[#0C0E16]">
+          <div className="px-3 py-2.5 border-b border-white/[0.07] space-y-2 bg-[#070A0F]">
             <div className="w-full">
               <UnitSelector variant="sidebar" />
             </div>
-            <div className="flex items-center justify-between px-2.5 py-1.5 rounded-[4px] bg-[#12141F] border border-white/5">
+            <div className="flex items-center justify-between px-2.5 py-1.5 rounded-[4px] bg-[#0D121B] border border-white/[0.05]">
               <div className="flex items-center gap-1.5">
                 <Crown className={`h-3.5 w-3.5 ${plan.id === 'premium' ? 'text-[#D4AF37]' : plan.id === 'pro' ? 'text-blue-400' : 'text-slate-400'}`} />
                 <span className="text-[11px] font-bold text-white uppercase tracking-wider">{plan.name}</span>
@@ -800,7 +801,7 @@ export default function Layout() {
         </div>
 
         {/* Rodapé da Sidebar: Perfil do Usuário */}
-        <div className={`${isSidebarCollapsed ? "p-1.5" : "p-3"} border-t border-white/[0.08] bg-[#0C0E16] shrink-0 relative z-30`}>
+        <div className={`${isSidebarCollapsed ? "p-1.5" : "p-3"} border-t border-white/[0.07] bg-[#070A0F] shrink-0 relative z-30`}>
           <UserAvatarMenu variant="sidebar" collapsed={isSidebarCollapsed} />
         </div>
       </aside>
@@ -811,9 +812,9 @@ export default function Layout() {
       <Sheet open={mobileDrawerOpen} onOpenChange={setMobileDrawerOpen}>
         <SheetContent
           side="left"
-          className="w-[300px] p-0 bg-[#0F121C] border-r border-white/[0.08] text-white flex flex-col z-50 shadow-xl"
+          className="w-[300px] p-0 bg-[#0A0E15] border-r border-white/[0.07] text-white flex flex-col z-50 shadow-xl"
         >
-          <SheetHeader className="p-4 border-b border-white/[0.08] flex flex-row items-center justify-between">
+          <SheetHeader className="p-4 border-b border-white/[0.07] flex flex-row items-center justify-between">
             <div className="flex items-center gap-3 text-left">
               <img 
                 src="/logo.png" 
@@ -821,10 +822,11 @@ export default function Layout() {
                 className="h-10 w-10 rounded-full object-cover border border-[#D4AF37]/30 shadow-md shrink-0" 
               />
               <div>
-                <SheetTitle className="text-base font-bold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-[#D4AF37] to-amber-500">
-                  Kupola
+                <SheetTitle className="text-base font-bold tracking-tight text-white flex items-center gap-1.5">
+                  <span>KUPOLA</span>
+                  <span className="text-[9px] font-bold tracking-widest text-[#D4AF37] uppercase bg-[#D4AF37]/10 px-1 py-0.5 rounded-[2px] border border-[#D4AF37]/20">PRO</span>
                 </SheetTitle>
-                <p className="text-[10px] text-slate-400 font-medium tracking-wider truncate max-w-[170px]">
+                <p className="text-[10px] text-[#8B93A1] font-medium tracking-wider truncate max-w-[170px]">
                   {barbershop?.name || "Menu Principal"}
                 </p>
               </div>
@@ -832,9 +834,9 @@ export default function Layout() {
           </SheetHeader>
 
           {/* Seletor de Unidade e Plano no Mobile Drawer */}
-          <div className="px-4 py-2.5 border-b border-white/[0.08] space-y-2 bg-[#0C0E16]">
+          <div className="px-4 py-2.5 border-b border-white/[0.07] space-y-2 bg-[#070A0F]">
             <UnitSelector variant="sidebar" />
-            <div className="flex items-center justify-between px-2.5 py-1.5 rounded-[4px] bg-[#12141F] border border-white/5">
+            <div className="flex items-center justify-between px-2.5 py-1.5 rounded-[4px] bg-[#0D121B] border border-white/[0.05]">
               <div className="flex items-center gap-1.5">
                 <Crown className={`h-3.5 w-3.5 ${plan.id === 'premium' ? 'text-[#D4AF37]' : plan.id === 'pro' ? 'text-blue-400' : 'text-slate-400'}`} />
                 <span className="text-[11px] font-bold text-white uppercase tracking-wider">{plan.name}</span>
@@ -857,7 +859,7 @@ export default function Layout() {
           </div>
 
           {/* Rodapé do Drawer com perfil e logout */}
-          <div className="p-3 border-t border-white/[0.08] bg-[#0C0E16]">
+          <div className="p-3 border-t border-white/[0.07] bg-[#070A0F]">
             <UserAvatarMenu variant="sidebar" />
           </div>
         </SheetContent>
@@ -870,7 +872,7 @@ export default function Layout() {
         isSidebarCollapsed ? "lg:pl-[70px]" : "lg:pl-64"
       }`}>
         {/* CABEÇALHO MOBILE (< 1024px) */}
-        <header className="lg:hidden sticky top-0 z-40 bg-[#0F121C] border-b border-white/[0.08]">
+        <header className="lg:hidden sticky top-0 z-40 bg-[#0A0E15] border-b border-white/[0.07]">
           {/* Linha 1: Hambúrguer, Logo, Sino com badge e Avatar com status online */}
           <div className="flex items-center justify-between h-14 px-4">
             <div className="flex items-center gap-2.5">
@@ -878,7 +880,7 @@ export default function Layout() {
                 variant="ghost"
                 size="icon"
                 onClick={() => setMobileDrawerOpen(true)}
-                className="h-9 w-9 text-slate-300 hover:text-white hover:bg-white/5 -ml-1 rounded-[4px]"
+                className="h-9 w-9 text-slate-300 hover:text-white hover:bg-white/[0.05] -ml-1 rounded-[4px]"
                 aria-label="Abrir menu de navegação"
                 data-testid="mobile-menu-trigger"
               >
@@ -892,10 +894,10 @@ export default function Layout() {
                   className="h-8 w-8 rounded-full object-cover border border-[#D4AF37]/30 shadow-sm shrink-0" 
                 />
                 <div className="flex flex-col">
-                  <span className="font-display font-extrabold text-sm tracking-tight leading-none text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-[#D4AF37] to-amber-400">
-                    Kupola
+                  <span className="font-display font-extrabold text-sm tracking-tight leading-none text-white flex items-center gap-1">
+                    <span>KUPOLA</span>
                   </span>
-                  <span className="text-[9px] text-slate-400 font-medium truncate max-w-[130px] mt-0.5">
+                  <span className="text-[9px] text-[#8B93A1] font-medium truncate max-w-[130px] mt-0.5 uppercase tracking-wide">
                     {barbershop?.name || "Gestão"}
                   </span>
                 </div>
@@ -919,12 +921,12 @@ export default function Layout() {
                 href="/landing"
                 target="_blank"
                 rel="noreferrer"
-                className="h-8 px-2 text-xs font-semibold text-slate-300 hover:text-white bg-[#131622] border border-white/10 hover:border-[#D4AF37]/50 rounded-[4px] flex items-center gap-1 transition-colors"
+                className="h-8 px-2 text-xs font-semibold text-[#8B93A1] hover:text-[#F5F5F5] bg-[#0D121B] border border-white/[0.07] hover:border-[#D4AF37]/40 rounded-[4px] flex items-center gap-1 transition-colors"
                 title="Acessar Página de Vendas / Landing Page"
                 data-testid="mobile-landing-link"
               >
                 <Globe className="h-3.5 w-3.5 text-[#D4AF37]" />
-                <span className="text-[11px]">Início</span>
+                <span className="text-[11px]">Site</span>
               </a>
 
               <Button
@@ -935,7 +937,7 @@ export default function Layout() {
                 title={`Copiar link público: /agendar/${shopSlug}`}
                 data-testid="mobile-copy-public-link"
               >
-                {copiedShopLink ? <Check className="h-4 w-4 text-emerald-400 stroke-[3]" /> : <Link2 className="h-4 w-4" />}
+                {copiedShopLink ? <Check className="h-4 w-4 text-[#20C997] stroke-[3]" /> : <Link2 className="h-4 w-4" />}
               </Button>
               <NotificationsBell />
               <UserAvatarMenu />
@@ -943,20 +945,20 @@ export default function Layout() {
           </div>
 
           {/* Linha 2 (Filtro de período) */}
-          <div className="px-4 py-2 bg-[#0B0D14] border-t border-white/[0.08] flex items-center justify-center">
+          <div className="px-4 py-2 bg-[#05070B] border-t border-white/[0.07] flex items-center justify-center">
             <MonthSwitcher variant="mobile-bar" />
           </div>
         </header>
 
         {/* CABEÇALHO DESKTOP (>= 1024px) */}
-        <header className="hidden lg:flex items-center justify-between h-16 px-6 lg:px-8 border-b border-white/[0.08] bg-[#0B0D14] sticky top-0 z-20">
+        <header className="hidden lg:flex items-center justify-between h-16 px-6 lg:px-8 border-b border-white/[0.07] bg-[#05070B] sticky top-0 z-20">
           {/* Breadcrumb e Toggle do Menu */}
           <div className="flex items-center gap-2.5 text-sm">
             <Button
               variant="ghost"
               size="icon"
               onClick={toggleSidebar}
-              className="h-8 w-8 text-slate-400 hover:text-[#D4AF37] hover:bg-white/10 rounded-[4px] cursor-pointer transition-colors"
+              className="h-8 w-8 text-[#8B93A1] hover:text-[#D4AF37] hover:bg-white/[0.05] rounded-[4px] cursor-pointer transition-colors"
               title={isSidebarCollapsed ? "Expandir barra lateral" : "Recolher barra lateral"}
               aria-label="Alternar barra lateral"
               data-testid="header-sidebar-toggle-btn"
@@ -964,14 +966,14 @@ export default function Layout() {
               {isSidebarCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
             </Button>
             <div className="flex items-center gap-2">
-              <span className="text-muted-foreground font-medium">Painel ADM</span>
+              <span className="text-[#8B93A1] font-medium text-xs">KUPOLA</span>
               <span className="text-white/20">/</span>
-              <span className="text-white font-bold">{pageTitle}</span>
-              <Badge className="ml-1 bg-[#D4AF37]/15 text-[#D4AF37] border-[#D4AF37]/30 text-[10px] font-bold uppercase rounded-[3px]">
+              <span className="text-white font-bold text-sm tracking-tight">{pageTitle}</span>
+              <Badge className="ml-1 bg-[#D4AF37]/10 text-[#D4AF37] border-[#D4AF37]/25 text-[10px] font-bold uppercase rounded-[2px]">
                 {isDono(user) ? "Dono" : isGerente(user) ? "Gerente" : isCaixa(user) ? "Caixa" : "Barbeiro"}
               </Badge>
             </div>
-            <div className="h-4 w-px bg-white/10" />
+            <div className="h-4 w-px bg-white/[0.08]" />
             <UnitSelector variant="header" />
           </div>
 
@@ -987,13 +989,13 @@ export default function Layout() {
               href="/landing"
               target="_blank"
               rel="noreferrer"
-              className="bg-[#131622] border border-white/10 text-slate-300 hover:text-white hover:border-[#D4AF37]/50 text-xs font-semibold h-9 px-3 rounded-[4px] gap-1.5 transition-colors shadow-none flex items-center"
+              className="bg-[#0A0E15] border border-white/[0.07] text-[#8B93A1] hover:text-[#F5F5F5] hover:border-[#D4AF37]/40 text-xs font-semibold h-9 px-3 rounded-[4px] gap-1.5 transition-colors shadow-none flex items-center"
               title="Abrir Página Inicial / Landing Page de Vendas"
               data-testid="header-landing-link"
             >
               <Globe className="h-3.5 w-3.5 text-[#D4AF37]" />
-              <span className="hidden xl:inline">Página de Vendas</span>
-              <span className="xl:hidden">Início</span>
+              <span className="hidden xl:inline">Site Público</span>
+              <span className="xl:hidden">Site</span>
               <ArrowUpRight className="h-3 w-3 text-slate-500" />
             </a>
 
@@ -1005,7 +1007,7 @@ export default function Layout() {
               className={`h-9 px-3 text-xs rounded-[4px] gap-1.5 transition-colors border ${
                 isBalcaoMode
                   ? "bg-amber-500/15 border-amber-500/40 text-amber-300 font-bold hover:bg-amber-500/25"
-                  : "bg-[#131622] border-white/10 text-slate-400 hover:text-white hover:bg-[#181B28]"
+                  : "bg-[#0A0E15] border-white/[0.07] text-[#8B93A1] hover:text-white hover:bg-[#0D121B]"
               }`}
               title={isBalcaoMode ? "Modo Caixa Seguro ativo (dados sensíveis ocultos no balcão). Clique para desativar." : "Ativar Modo Caixa Seguro para recepção/balcão"}
               data-testid="toggle-balcao-header"
@@ -1019,12 +1021,12 @@ export default function Layout() {
               variant="outline"
               size="sm"
               onClick={copyPublicLink}
-              className="bg-[#131622] border border-white/10 text-[#D4AF37] hover:bg-[#D4AF37]/10 hover:border-[#D4AF37]/40 text-xs font-semibold h-9 px-3 rounded-[4px] gap-1.5 transition-colors shadow-none"
+              className="bg-[#0A0E15] border border-white/[0.07] text-[#D4AF37] hover:bg-[#D4AF37]/10 hover:border-[#D4AF37]/40 text-xs font-semibold h-9 px-3 rounded-[4px] gap-1.5 transition-colors shadow-none"
               title={`Copiar link público geral da barbearia (/agendar/${shopSlug})`}
               data-testid="header-copy-public-link"
             >
-              {copiedShopLink ? <Check className="h-3.5 w-3.5 text-emerald-400 stroke-[3]" /> : <Link2 className="h-3.5 w-3.5" />}
-              <span className="hidden xl:inline">{copiedShopLink ? "Link Copiado!" : "Link de Agendamento"}</span>
+              {copiedShopLink ? <Check className="h-3.5 w-3.5 text-[#20C997] stroke-[3]" /> : <Link2 className="h-3.5 w-3.5" />}
+              <span className="hidden xl:inline">{copiedShopLink ? "Link Copiado!" : "Agendamento Online"}</span>
               <span className="xl:hidden">{copiedShopLink ? "Copiado!" : "Link"}</span>
             </Button>
 
@@ -1033,20 +1035,20 @@ export default function Layout() {
               <DropdownMenuTrigger asChild>
                 <Button
                   variant="outline"
-                  className="bg-[#131622] border border-white/10 text-white hover:bg-[#181B28] hover:border-[#D4AF37]/40 text-xs font-semibold h-9 px-3 rounded-[4px] gap-1.5 transition-colors shadow-none"
+                  className="bg-[#0A0E15] border border-white/[0.07] text-white hover:bg-[#0D121B] hover:border-[#D4AF37]/40 text-xs font-semibold h-9 px-3 rounded-[4px] gap-1.5 transition-colors shadow-none"
                   data-testid="quick-actions-trigger"
                 >
                   <Sparkles className="h-3.5 w-3.5 text-[#D4AF37]" />
-                  <span>+ Lançar</span>
-                  <ChevronDown className="h-3 w-3 text-muted-foreground" />
+                  <span>+ Ações</span>
+                  <ChevronDown className="h-3 w-3 text-[#8B93A1]" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent
                 align="end"
-                className="w-56 bg-[#131622] border border-white/10 text-white p-1.5 rounded-[4px] shadow-xl"
+                className="w-56 bg-[#0D121B] border border-white/[0.07] text-white p-1.5 rounded-[4px] shadow-xl"
               >
-                <DropdownMenuLabel className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider px-2 py-1">
-                  Ações Rápidas
+                <DropdownMenuLabel className="text-[10px] uppercase font-bold text-[#8B93A1] tracking-wider px-2 py-1">
+                  Lançamento Rápido
                 </DropdownMenuLabel>
                 <DropdownMenuItem
                   onClick={() => setModalNovoAtendimento(true)}
@@ -1101,8 +1103,8 @@ export default function Layout() {
           </div>
         </header>
 
-        {/* ÁREA DE CONTEÚDO PRINCIPAL (com padding lateral seguro px-4 e overflow-x-hidden) */}
-        <main className="flex-1 w-full max-w-full overflow-x-hidden px-4 py-5 sm:px-6 lg:px-8 lg:py-7 pb-28 lg:pb-10">
+        {/* ÁREA DE CONTEÚDO PRINCIPAL (com padding inferior amplo e safe-area para nunca cortar conteúdo sob a barra fixa) */}
+        <main className="flex-1 w-full max-w-full overflow-x-hidden px-3.5 py-4 sm:px-6 lg:px-8 lg:py-7 pb-[calc(7.5rem+env(safe-area-inset-bottom,20px))] lg:pb-12">
           <div className="w-full max-w-full 2xl:max-w-[1920px] mx-auto">
             <ErrorBoundary title="Ops! Erro ao carregar esta tela">
               <Outlet
@@ -1120,7 +1122,7 @@ export default function Layout() {
       {/* ======================================================== */}
       {/* 4. BARRA DE NAVEGAÇÃO INFERIOR FIXA (MOBILE < 1024px)     */}
       {/* ======================================================== */}
-      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-40 h-16 bg-[#0F121C] border-t border-white/[0.08] flex items-center justify-around px-2 shadow-xl pb-[max(env(safe-area-inset-bottom),0px)]">
+      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-40 h-16 bg-[#0A0E15]/95 backdrop-blur-md border-t border-white/[0.07] flex items-center justify-around px-2 shadow-2xl pb-[max(env(safe-area-inset-bottom),0px)]">
         {MOBILE_BOTTOM_NAV.map((item) => {
           const Icon = item.icon;
           const isActive = item.end ? location.pathname === "/" : location.pathname.startsWith(item.to);
@@ -1130,18 +1132,18 @@ export default function Layout() {
               to={item.to}
               end={item.end}
               className={`flex flex-col items-center justify-center flex-1 h-full py-1 transition-colors ${
-                isActive ? "text-[#D4AF37]" : "text-slate-400 hover:text-white"
+                isActive ? "text-[#D4AF37]" : "text-[#8B93A1] hover:text-[#F5F5F5]"
               }`}
             >
-              <Icon className={`h-5 w-5 ${isActive ? "text-[#D4AF37]" : ""}`} />
+              <Icon className={`h-5 w-5 ${isActive ? "text-[#D4AF37]" : "text-[#8B93A1]"}`} />
               <span
-                className={`text-[11px] mt-1 tracking-tight ${
+                className={`text-[10px] mt-1 tracking-tight ${
                   isActive ? "font-bold text-[#D4AF37]" : "font-medium"
                 }`}
               >
                 {item.label}
               </span>
-              {isActive && <div className="h-0.5 w-6 bg-[#D4AF37] mt-0.5" />}
+              {isActive && <div className="h-0.5 w-6 bg-[#D4AF37] mt-0.5 rounded-full" />}
             </NavLink>
           );
         })}
