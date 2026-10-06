@@ -3,7 +3,7 @@ import {
   LayoutDashboard, Users2, CalendarDays, Contact, Crown, Scissors,
   Package, Tags, TrendingUp, Receipt, CreditCard, Coins, HandCoins,
   ArrowRightLeft, BarChart3, History, Settings as SettingsIcon,
-  ShieldCheck, Users, Wallet, ChevronLeft, ChevronRight, Sparkles,
+  ShieldCheck, Users, Wallet, ChevronLeft, ChevronRight, Store, Menu,
   ExternalLink, Smartphone,
 } from "lucide-react";
 
@@ -32,7 +32,7 @@ export const PREVIEW_SECTIONS = [
   {
     title: "Administração",
     items: [
-      { id: "barbearia", label: "Cadastro da Barbearia", icon: Sparkles, file: "Barbearia" },
+      { id: "barbearia", label: "Cadastro da Barbearia", icon: Store, file: "Barbearia" },
       { id: "equipe", label: "Equipe & Escala", icon: Users2, file: "Equipe" },
       { id: "barbeiro-relatorio", label: "Relatório do Barbeiro", icon: Users2, file: "BarberReport" },
       { id: "clientes", label: "Clientes", icon: Contact, file: "Clientes" },
@@ -334,7 +334,7 @@ export default function PreviewShell({ active, onNavigate, children }) {
                 className="lg:hidden h-8 w-8 text-slate-300 hover:text-white hover:bg-white/5 rounded-[4px] flex items-center justify-center"
                 aria-label="Menu"
               >
-                <Sparkles className="h-4 w-4 text-[#D4AF37]" />
+                <Menu className="h-4 w-4 text-[#D4AF37]" />
               </button>
               <div className="flex items-center gap-2">
                 <span className="text-muted-foreground text-sm font-medium hidden sm:inline">Painel ADM</span>

@@ -14,7 +14,7 @@ import {
 import {
   Scissors, Clock, CheckCircle2, UserCheck, Plus, EyeOff, Shield,
   ArrowRightLeft, Contact, Search, Play, Check, X, Phone, Calendar as CalendarIcon,
-  RefreshCw, UserPlus, Sparkles, FileText, Tag, Copy, ExternalLink,
+  RefreshCw, UserPlus, FileText, Tag, Copy, ExternalLink,
 } from "lucide-react";
 import { emitirNFSeSimplificada, isValidCPF } from "@/lib/fiscalEngine";
 import { getActiveIdlePromotions } from "@/lib/marketingEngine";

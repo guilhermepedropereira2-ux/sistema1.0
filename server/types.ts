@@ -69,6 +69,7 @@ export interface Service {
   name: string;
   price: number;
   duration_min: number;
+  icon?: string;
   active: boolean;
   created_at: string;
 }
@@ -80,6 +81,7 @@ export interface Product {
   price: number;
   cost: number;
   stock: number;
+  icon?: string;
   active: boolean;
   created_at: string;
 }
@@ -209,6 +211,10 @@ export interface Client {
   barbershop_id: string;
   name: string;
   phone?: string;
+  email?: string;
+  cpf?: string;
+  photo?: string;
+  avatar?: string;
   birthdate?: string;
   notes?: string;
   has_plan: boolean;

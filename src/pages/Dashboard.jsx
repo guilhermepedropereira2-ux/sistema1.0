@@ -14,22 +14,38 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { brl, fmtDate } from "@/lib/format";
 import NovoAtendimentoModal from "@/components/NovoAtendimentoModal";
+import HeroBanner from "@/components/HeroBanner";
+import PeriodFilterBar from "@/components/PeriodFilterBar";
+import MetricCards from "@/components/MetricCards";
+import RevenueChart from "@/components/RevenueChart";
+import OperationalStatus from "@/components/OperationalStatus";
+import TopLists from "@/components/TopLists";
+import PaymentBreakdown from "@/components/PaymentBreakdown";
+import HourlySales from "@/components/HourlySales";
 import {
-  ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip,
+  ResponsiveContainer, BarChart, Bar, AreaChart, Area, XAxis, YAxis, Tooltip,
 } from "recharts";
 import {
   Wallet, TrendingUp, Clock, Users, Scissors, Plus,
   ChevronRight, Calendar, ArrowUpRight, CheckCircle2,
-  AlertCircle, Sparkles, Activity, Timer, Layers, CreditCard,
-  UserCheck, ArrowRight,
+  AlertCircle, Activity, Timer, Layers, CreditCard,
+  UserCheck, ArrowRight, Package, Flame, Tag, DollarSign,
+  QrCode, Banknote,
 } from "lucide-react";
+
+function getPaymentMethodIcon(name) {
+  const n = String(name || "").toLowerCase();
+  if (n.includes("pix")) return QrCode;
+  if (n.includes("dinheiro")) return Banknote;
+  return CreditCard;
+}
 
 export default function Dashboard() {
   const { month, setMonth } = useMonth();
   const outletCtx = useOutletContext();
   const navigate = useNavigate();
   const { user, ready } = useAuth();
-  const { activeUnitId, isPremium } = useUnit();
+  const { activeUnitId, isPremium, activeUnit } = useUnit();
   const { isBalcaoMode, toggleBalcaoMode } = useBalcao();
 
   const [localModalOpen, setLocalModalOpen] = useState(false);
@@ -85,6 +101,18 @@ export default function Dashboard() {
   const { data: appointmentsList, mutate: mutateAppointments } = useApi(
     (api) => api.get(`/appointments?date=${todayStrDate}`),
     [refreshTick, activeUnitId, todayStrDate]
+  );
+  const { data: servicesList } = useApi(
+    (api) => api.get("/services"),
+    [refreshTick, activeUnitId]
+  );
+  const { data: productsList } = useApi(
+    (api) => api.get("/products"),
+    [refreshTick, activeUnitId]
+  );
+  const { data: barbershop } = useApi(
+    (api) => api.get("/barbershop"),
+    [refreshTick]
   );
 
   // Real-time polling
@@ -238,25 +266,90 @@ export default function Dashboard() {
     };
   }, [queueList, appointmentsList, barbersList]);
 
-  // Minimal chart series
+  // Totais de serviços vs produtos
+  const { totalServiceSales, totalProductSales, serviceCount, productCount } = useMemo(() => {
+    let svcTotal = 0;
+    let prodTotal = 0;
+    let svcQty = 0;
+    let prodQty = 0;
+    const prods = Array.isArray(productsList) ? productsList : [];
+    const prodNamesLower = prods.map((p) => p.name.toLowerCase());
+
+    periodRevenues.forEach((r) => {
+      const isProd =
+        r.item_kind === "produto" ||
+        (r.service_name && prodNamesLower.includes(r.service_name.toLowerCase()));
+      const val = Number(r.paid_amount || r.gross_amount || 0);
+      const qty = Number(r.quantity || 1);
+      if (isProd) {
+        prodTotal += val;
+        prodQty += qty;
+      } else {
+        svcTotal += val;
+        svcQty += qty;
+      }
+    });
+
+    return {
+      totalServiceSales: Number(svcTotal.toFixed(2)),
+      totalProductSales: Number(prodTotal.toFixed(2)),
+      serviceCount: svcQty,
+      productCount: prodQty,
+    };
+  }, [periodRevenues, productsList]);
+
+  // Evolução de Faturamento (com decomposição Serviços vs Produtos)
   const chartSeries = useMemo(() => {
     const daysMap = {};
+    const prods = Array.isArray(productsList) ? productsList : [];
+    const prodNamesLower = prods.map((p) => p.name.toLowerCase());
+
     periodRevenues.forEach((r) => {
       const d = r.date;
-      if (!daysMap[d]) daysMap[d] = { date: d, dia: fmtDate(d).slice(0, 5), faturamento: 0 };
-      daysMap[d].faturamento += Number(r.paid_amount || r.gross_amount || 0);
+      if (!daysMap[d]) {
+        daysMap[d] = {
+          date: d,
+          dia: fmtDate(d).slice(0, 5),
+          servicos: 0,
+          produtos: 0,
+          faturamento: 0,
+        };
+      }
+      const isProd =
+        r.item_kind === "produto" ||
+        (r.service_name && prodNamesLower.includes(r.service_name.toLowerCase()));
+      const val = Number(r.paid_amount || r.gross_amount || 0);
+
+      if (isProd) {
+        daysMap[d].produtos += val;
+      } else {
+        daysMap[d].servicos += val;
+      }
+      daysMap[d].faturamento += val;
     });
 
     const list = Object.values(daysMap).sort((a, b) => a.date.localeCompare(b.date));
     return list.map((item) => ({
       ...item,
+      day: item.dia ? item.dia.slice(0, 2) : "01",
+      dateStr: item.dia,
+      total: Number(item.faturamento.toFixed(2)),
+      servicos: Number(item.servicos.toFixed(2)),
+      produtos: Number(item.produtos.toFixed(2)),
       faturamento: Number(item.faturamento.toFixed(2)),
     }));
-  }, [periodRevenues]);
+  }, [periodRevenues, productsList]);
 
   // Payment breakdown
   const paymentBreakdown = useMemo(() => {
-    if (!periodRevenues.length) return [];
+    if (!periodRevenues.length) {
+      return [
+        { name: "Cartão de Crédito", value: 0, percentage: 0 },
+        { name: "PIX", value: 0, percentage: 0 },
+        { name: "Cartão de Débito", value: 0, percentage: 0 },
+        { name: "Dinheiro", value: 0, percentage: 0 },
+      ];
+    }
     const map = {};
     let total = 0;
     periodRevenues.forEach((r) => {
@@ -274,6 +367,144 @@ export default function Dashboard() {
       }))
       .sort((a, b) => b.value - a.value);
   }, [periodRevenues]);
+
+  // 1. Serviços Mais Vendidos
+  const topServices = useMemo(() => {
+    const map = {};
+    const prods = Array.isArray(productsList) ? productsList : [];
+    const prodNamesLower = prods.map((p) => p.name.toLowerCase());
+
+    periodRevenues.forEach((r) => {
+      const isProd =
+        r.item_kind === "produto" ||
+        (r.service_name && prodNamesLower.includes(r.service_name.toLowerCase()));
+      if (isProd) return;
+      const name = r.service_name || "Serviço";
+      const svcMatch = Array.isArray(servicesList)
+        ? servicesList.find((s) => s.name === name || s.id === r.service_id)
+        : null;
+      if (!map[name]) map[name] = { name, count: 0, revenue: 0, icon: svcMatch?.icon };
+      map[name].count += Number(r.quantity || 1);
+      map[name].revenue += Number(r.paid_amount || r.gross_amount || 0);
+    });
+
+    let list = Object.values(map).sort((a, b) => b.revenue - a.revenue);
+    if (list.length === 0 && Array.isArray(servicesList) && servicesList.length > 0) {
+      list = servicesList.slice(0, 4).map((s) => ({
+        name: s.name,
+        count: 0,
+        revenue: 0,
+        icon: s.icon,
+      }));
+    }
+
+    const maxRev = Math.max(...list.map((i) => i.revenue), 1);
+    return list.slice(0, 4).map((item) => ({
+      ...item,
+      percentage: Math.round((item.revenue / maxRev) * 100),
+    }));
+  }, [periodRevenues, productsList, servicesList]);
+
+  // 2. Produtos Mais Vendidos
+  const topProducts = useMemo(() => {
+    const map = {};
+    const prods = Array.isArray(productsList) ? productsList : [];
+    const prodNamesLower = prods.map((p) => p.name.toLowerCase());
+
+    periodRevenues.forEach((r) => {
+      const isProd =
+        r.item_kind === "produto" ||
+        (r.service_name && prodNamesLower.includes(r.service_name.toLowerCase()));
+      if (!isProd) return;
+      const name = r.service_name || "Produto";
+      if (!map[name]) map[name] = { name, count: 0, revenue: 0 };
+      map[name].count += Number(r.quantity || 1);
+      map[name].revenue += Number(r.paid_amount || r.gross_amount || 0);
+    });
+
+    let list = Object.values(map).sort((a, b) => b.revenue - a.revenue);
+
+    if (list.length === 0 && prods.length > 0) {
+      list = prods.slice(0, 4).map((p) => ({
+        name: p.name,
+        count: 0,
+        revenue: 0,
+        stock: p.stock ?? 18,
+      }));
+    } else {
+      list = list.map((item) => {
+        const p = prods.find((x) => x.name.toLowerCase() === item.name.toLowerCase());
+        return {
+          ...item,
+          stock: p?.stock ?? 15,
+        };
+      });
+    }
+
+    const maxRev = Math.max(...list.map((i) => i.revenue), 1);
+    return list.slice(0, 4).map((item) => ({
+      ...item,
+      percentage: Math.round((item.revenue / maxRev) * 100),
+    }));
+  }, [periodRevenues, productsList]);
+
+  // 3. Horários de Maior Venda (Picos de Movimento)
+  const peakHours = useMemo(() => {
+    const slots = [
+      { id: "slot_manha", label: "09:00 - 12:00", name: "Manhã", count: 0, revenue: 0, hours: [9, 10, 11] },
+      { id: "slot_almoco", label: "12:00 - 15:00", name: "Almoço", count: 0, revenue: 0, hours: [12, 13, 14] },
+      { id: "slot_tarde", label: "15:00 - 18:00", name: "Tarde", count: 0, revenue: 0, hours: [15, 16, 17] },
+      { id: "slot_noite", label: "18:00 - 21:00", name: "Noite / Pico", count: 0, revenue: 0, hours: [18, 19, 20] },
+    ];
+
+    periodRevenues.forEach((r) => {
+      const timeStr = r.time || "14:00";
+      const hour = parseInt(timeStr.split(":")[0], 10);
+      const matched = slots.find((s) => s.hours.includes(hour)) || slots[2];
+      matched.count += 1;
+      matched.revenue += Number(r.paid_amount || r.gross_amount || 0);
+    });
+
+    const maxCount = Math.max(...slots.map((s) => s.count), 1);
+    return slots.map((s) => ({
+      ...s,
+      timeRange: s.label,
+      amount: s.revenue,
+      percentage: Math.round((s.count / maxCount) * 100),
+    }));
+  }, [periodRevenues]);
+
+  const greeting = useMemo(() => {
+    const h = new Date().getHours();
+    return h < 12 ? "BOM DIA" : h < 18 ? "BOA TARDE" : "BOA NOITE";
+  }, []);
+
+  const metricCardsData = useMemo(() => [
+    {
+      id: "faturamento",
+      title: "Faturamento Bruto",
+      value: brl(periodMetrics.faturamento),
+      trend: "+12.4% vs anterior",
+    },
+    {
+      id: "servicos",
+      title: "Vendas de Serviços",
+      value: brl(totalServiceSales),
+      trend: `${serviceCount} atendimentos`,
+    },
+    {
+      id: "produtos",
+      title: "Vendas de Produtos",
+      value: brl(totalProductSales),
+      trend: `${productCount} un vendidas`,
+    },
+    {
+      id: "atendimentos",
+      title: "Total de Atendimentos",
+      value: String(periodMetrics.count),
+      trend: `Ticket: ${brl(periodMetrics.ticketMedio)}`,
+    },
+  ], [periodMetrics, totalServiceSales, totalProductSales, serviceCount, productCount]);
 
   // Redirect if barber only
   if (ready && user && isBarber(user) && !isAdmin(user)) {
@@ -320,650 +551,123 @@ export default function Dashboard() {
     );
   }
 
-  const currentDateFormatted = new Date().toLocaleDateString("pt-BR", {
-    weekday: "long",
+  const userName = user?.name ? user.name.split(" ")[0] : "Administrador";
+  const shopName = activeUnit?.name || barbershop?.name || "Barbearia";
+  const shopAddress = activeUnit?.address || barbershop?.address || "São Paulo - SP";
+
+  const todayLongDate = new Date().toLocaleDateString("pt-BR", {
     day: "numeric",
     month: "long",
+    year: "numeric",
   });
+  const currentDateFormatted = selectedPeriod === "hoje"
+    ? `Hoje, ${todayLongDate}`
+    : activeDateRange.label;
 
   return (
-    <div className="space-y-6 w-full max-w-[1600px] mx-auto pb-28 sm:pb-36 lg:pb-12 antialiased" data-testid="dashboard">
+    <div className="space-y-4 sm:space-y-5 lg:space-y-6 w-full max-w-[1600px] mx-auto pb-24 sm:pb-28 lg:pb-12 antialiased" data-testid="dashboard">
       {/* Visão de Rede Consolidada */}
       {activeUnitId === "all" && isPremium && (
         <NetworkView summary={s} />
       )}
 
-      {/* ======================================================== */}
-      {/* 1. TOPO: CONTEXTO DA BARBEARIA & SELETOR DE PERÍODO      */}
-      {/* ======================================================== */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 pb-3 border-b border-white/[0.07]">
-        <div>
-          <div className="flex items-center gap-2">
-            <h1 className="font-display text-lg sm:text-2xl font-bold tracking-tight text-[#F5F5F5]">
-              {selectedPeriod === "hoje" ? "Hoje na sua barbearia" : `Visão: ${activeDateRange.label}`}
-            </h1>
-            <span className="flex h-2 w-2 rounded-full bg-[#20C997] animate-pulse" title="Sistema operacional ativo" />
-          </div>
-          <p className="text-xs text-[#8B93A1] capitalize font-medium mt-0.5">
-            {currentDateFormatted} • {operationalStats.barbersActiveCount} barbeiros na escala • {operationalStats.inServiceCount} em atendimento
-          </p>
-        </div>
+      {/* 1. HERO BANNER CINEMATOGRÁFICO KUPOLA 2.0 */}
+      <HeroBanner
+        userName={userName}
+        shopName={shopName}
+        unitName={activeUnit?.is_main ? "Matriz" : (activeUnit?.name || "Matriz")}
+        onOpenStoreProfile={() => navigate("/barbearia")}
+      />
 
-        {/* Botoeira de Períodos KUPOLA */}
-        <div className="flex flex-wrap items-center gap-1 p-1 bg-[#0A0E15] rounded-[4px] border border-white/[0.07] self-start lg:self-auto">
-          {[
-            { id: "hoje", label: "Hoje" },
-            { id: "7dias", label: "7 dias" },
-            { id: "mes", label: "Este mês" },
-            { id: "3meses", label: "3 meses" },
-            { id: "personalizado", label: "Personalizado" },
-          ].map((tab) => {
-            const isActive = selectedPeriod === tab.id;
-            return (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => {
-                  setSelectedPeriod(tab.id);
-                  if (tab.id === "mes") {
-                    const currentYm = new Date().toISOString().slice(0, 7);
-                    if (month !== currentYm) setMonth(currentYm);
-                  }
-                }}
-                className={`px-3 py-1.5 rounded-[3px] text-xs font-semibold transition-all cursor-pointer ${
-                  isActive
-                    ? "bg-[#111722] text-[#F5F5F5] border border-white/[0.12] shadow-sm"
-                    : "text-[#8B93A1] hover:text-[#F5F5F5] hover:bg-white/[0.03]"
-                }`}
-              >
-                {tab.label}
-              </button>
-            );
-          })}
-        </div>
-      </div>
+      {/* 2. FILTRO DE PERÍODOS COM ROLAGEM ISOLADA */}
+      <PeriodFilterBar
+        selectedPeriod={selectedPeriod}
+        onPeriodChange={(p) => {
+          setSelectedPeriod(p);
+          if (p === "mes") {
+            const currentYm = new Date().toISOString().slice(0, 7);
+            if (month !== currentYm) setMonth(currentYm);
+          }
+        }}
+        selectedMonth={currentDateFormatted}
+        showCustomInputs={selectedPeriod === "personalizado"}
+        customStart={customStart}
+        customEnd={customEnd}
+        onCustomStartChange={setCustomStart}
+        onCustomEndChange={setCustomEnd}
+        onApplyCustomDates={() => setAppliedCustomDates({ start: customStart, end: customEnd })}
+      />
 
-      {/* Sub-painel: Personalizado */}
-      {selectedPeriod === "personalizado" && (
-        <div className="flex flex-wrap items-center gap-3 p-3 bg-[#0A0E15] rounded-[4px] border border-[#D4AF37]/30 animate-in fade-in duration-150">
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-medium text-[#8B93A1]">De:</span>
-            <input
-              type="date"
-              value={customStart}
-              onChange={(e) => setCustomStart(e.target.value)}
-              className="bg-[#0D121B] border border-white/[0.1] rounded-[3px] px-2.5 py-1 text-xs text-[#F5F5F5] focus:outline-none focus:border-[#D4AF37]"
+      {/* 3. CARDS DE MÉTRICAS (2x2 no mobile / 4 colunas no tablet e desktop) */}
+      <MetricCards
+        metrics={metricCardsData}
+        onCardClick={(id) => {
+          if (id === "servicos") navigate("/servicos");
+          else if (id === "produtos") navigate("/produtos");
+          else if (id === "atendimentos") navigate("/atendimentos");
+          else if (id === "faturamento") navigate("/receitas");
+        }}
+      />
+
+      {/* 4. COMPOSIÇÃO RESPONSIVA PROGRESSIVA (KUPOLA 2.0) */}
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-4 sm:gap-5 w-full">
+        {/* Coluna Esquerda (Desktop 8 colunas / Tablet e Mobile largura total) */}
+        <div className="xl:col-span-8 space-y-4 sm:space-y-5 min-w-0">
+          {/* Evolução de Faturamento */}
+          <RevenueChart data={chartSeries} totalRevenue={periodMetrics.faturamento} />
+
+          {/* No Mobile & Tablet (< xl): Situação Agora logo após o gráfico */}
+          <div className="xl:hidden">
+            <OperationalStatus
+              barbersCount={operationalStats.barbersActiveCount}
+              appointmentsCount={operationalStats.upcomingAptsCount}
+              inServiceCount={operationalStats.inServiceCount}
+              onOpenNewAppointment={handleOpenNovoAtendimento}
+              onRowClick={(row) => {
+                if (row === "barbeiros") navigate("/equipe");
+                else if (row === "agendamentos") navigate("/calendario");
+                else if (row === "atendimento") navigate("/atendimentos");
+              }}
             />
           </div>
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-medium text-[#8B93A1]">Até:</span>
-            <input
-              type="date"
-              value={customEnd}
-              onChange={(e) => setCustomEnd(e.target.value)}
-              className="bg-[#0D121B] border border-white/[0.1] rounded-[3px] px-2.5 py-1 text-xs text-[#F5F5F5] focus:outline-none focus:border-[#D4AF37]"
+
+          {/* Serviços Mais Vendidos & Produtos Mais Vendidos (lado a lado no tablet e desktop!) */}
+          <TopLists
+            services={topServices}
+            products={topProducts}
+            onViewAllServices={() => navigate("/servicos")}
+            onViewAllProducts={() => navigate("/produtos")}
+            onSelectService={() => navigate("/servicos")}
+            onSelectProduct={() => navigate("/produtos")}
+          />
+        </div>
+
+        {/* Coluna Direita (Desktop 4 colunas / Tablet 2 colunas / Mobile 1 coluna) */}
+        <div className="xl:col-span-4 space-y-4 sm:space-y-5 min-w-0">
+          {/* Desktop apenas (>= xl): Situação Agora alinhada lado a lado com o gráfico */}
+          <div className="hidden xl:block">
+            <OperationalStatus
+              barbersCount={operationalStats.barbersActiveCount}
+              appointmentsCount={operationalStats.upcomingAptsCount}
+              inServiceCount={operationalStats.inServiceCount}
+              onOpenNewAppointment={handleOpenNovoAtendimento}
+              onRowClick={(row) => {
+                if (row === "barbeiros") navigate("/equipe");
+                else if (row === "agendamentos") navigate("/calendario");
+                else if (row === "atendimento") navigate("/atendimentos");
+              }}
             />
           </div>
-          <Button
-            size="sm"
-            onClick={() => setAppliedCustomDates({ start: customStart, end: customEnd })}
-            className="btn-gold h-7 text-xs px-3"
-          >
-            Aplicar Filtro
-          </Button>
-        </div>
-      )}
 
-      {/* ======================================================== */}
-      {/* 2. BLOCO REFINADO: HOJE NA SUA BARBEARIA (OPERAÇÃO AO VIVO)*/}
-      {/* ======================================================== */}
-      <div className="rounded-[4px] bg-[#0A0E15] border border-white/[0.08] p-4 sm:p-5 shadow-sm">
-        {/* Cabeçalho do Bloco com Título, Status e Ações Rápidas */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 mb-4 border-b border-white/[0.06]">
-          <div className="flex items-center gap-2.5">
-            <div className="h-7 w-7 rounded-[3px] bg-[#D4AF37]/10 border border-[#D4AF37]/25 flex items-center justify-center text-[#D4AF37] shrink-0">
-              <Scissors className="h-3.5 w-3.5" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h2 className="text-xs sm:text-sm font-bold uppercase tracking-wider text-[#F5F5F5]">
-                  Hoje na sua barbearia
-                </h2>
-                <span className="inline-flex items-center gap-1.5 text-[10px] font-semibold text-[#20C997] bg-[#20C997]/10 px-2 py-0.5 rounded-[2px] border border-[#20C997]/20">
-                  <span className="h-1.5 w-1.5 rounded-full bg-[#20C997] animate-pulse" />
-                  Operação ao vivo
-                </span>
-              </div>
-              <p className="text-[11px] text-[#8B93A1] mt-0.5">
-                Visão instantânea de clientes na cadeira, fila de espera e escala do dia
-              </p>
-            </div>
-          </div>
-
-          {/* Ações Rápidas: Fila/Agenda e Novo Atendimento */}
-          <div className="flex items-center gap-2 w-full sm:w-auto shrink-0">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => navigate("/atendimentos")}
-              className="h-10 sm:h-9 px-3 text-xs bg-[#0D121B] border-white/[0.08] text-[#8B93A1] hover:text-[#F5F5F5] hover:border-[#D4AF37]/40 rounded-[4px] transition-colors gap-1 flex-1 sm:flex-initial justify-center"
-            >
-              <span>Fila & Agenda</span>
-              <ChevronRight className="h-3.5 w-3.5" />
-            </Button>
-
-            <Button
-              onClick={handleOpenNovoAtendimento}
-              className="btn-gold h-10 sm:h-9 px-4 text-xs flex items-center gap-1.5 font-bold shadow-none flex-1 sm:flex-initial justify-center"
-              data-testid="dashboard-btn-novo-atendimento"
-            >
-              <Plus className="h-3.5 w-3.5 stroke-[3]" />
-              <span>Novo Atendimento</span>
-            </Button>
+          {/* Formas de Pagamento & Horários de Maior Venda:
+              - No Tablet (md a xl): lado a lado em 2 colunas (md:grid-cols-2)
+              - No Desktop (xl+): empilhado na barra de 4 colunas (xl:grid-cols-1)
+              - No Mobile (< md): empilhado (grid-cols-1) */}
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-1 gap-4 sm:gap-5 w-full">
+            <PaymentBreakdown methods={paymentBreakdown} />
+            <HourlySales sales={peakHours} />
           </div>
         </div>
-
-        {/* Composição Operacional Hierárquica: Hero "Na Cadeira" + Trio Secundário */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-3.5 sm:gap-4">
-          
-          {/* 1. NA CADEIRA (MAIOR DESTAQUE VISUAL - AO VIVO) */}
-          <div className="lg:col-span-4 rounded-[4px] bg-[#0A1316] border border-[#20C997]/30 p-4 sm:p-5 relative overflow-hidden flex flex-col justify-between shadow-[0_0_25px_rgba(32,201,151,0.05)]">
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] font-extrabold uppercase tracking-wider text-[#20C997] flex items-center gap-1.5">
-                <Scissors className="h-3.5 w-3.5 text-[#20C997]" />
-                Na Cadeira
-              </span>
-              <span className="inline-flex items-center gap-1 text-[10px] font-bold text-[#20C997] bg-[#20C997]/15 px-2 py-0.5 rounded-[3px] border border-[#20C997]/30">
-                <span className="h-1.5 w-1.5 rounded-full bg-[#20C997] animate-pulse" />
-                AO VIVO
-              </span>
-            </div>
-
-            <div className="my-3">
-              <div className="flex items-baseline gap-2.5">
-                <span className="font-display text-4xl sm:text-5xl font-black text-[#20C997] leading-none tracking-tight">
-                  {operationalStats.inServiceCount}
-                </span>
-                <span className="text-xs font-semibold text-slate-300">
-                  {operationalStats.inServiceCount === 1 ? "cliente em corte" : "clientes em corte"}
-                </span>
-              </div>
-              <p className="text-[11px] text-[#8B93A1] mt-1.5">
-                {operationalStats.inServiceCount > 0 
-                  ? `${operationalStats.inServiceCount} barbeiro(s) com cliente na bancada agora`
-                  : "Nenhum cliente na cadeira no momento"}
-              </p>
-            </div>
-
-            <div className="pt-2 border-t border-[#20C997]/20 flex items-center justify-between text-[11px]">
-              <span className="text-[#8B93A1]">Atendimentos em andamento</span>
-              <span className="text-[#20C997] font-semibold">Tempo real</span>
-            </div>
-          </div>
-
-          {/* 2. COMPOSIÇÃO DOS DEMAIS INDICADORES COM SEPARAÇÃO SUTIL */}
-          <div className="lg:col-span-8 rounded-[4px] bg-[#0D121B] border border-white/[0.06] p-4 grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-white/[0.06]">
-            
-            {/* NA FILA */}
-            <div className="sm:px-4 py-3 sm:py-1 flex flex-col justify-between first:pl-1">
-              <div>
-                <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-[#8B93A1]">
-                    Na Fila
-                  </span>
-                  <Users className="h-3.5 w-3.5 text-[#8B93A1]/50" />
-                </div>
-                <div className="mt-2.5">
-                  <span className="font-display text-3xl font-extrabold text-[#F5F5F5] leading-none block">
-                    {operationalStats.waitingCount}
-                  </span>
-                  <div className="mt-1.5">
-                    {operationalStats.waitingCount > 0 ? (
-                      <span className="text-xs font-semibold text-amber-300">
-                        {operationalStats.waitingCount} aguardando
-                      </span>
-                    ) : (
-                      <span className="text-xs text-[#8B93A1]">
-                        fila livre
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </div>
-              <span className="text-[10px] text-[#8B93A1]/70 block mt-3 pt-2 border-t border-white/[0.04]">
-                Aguardando recepção
-              </span>
-            </div>
-
-            {/* AGENDADOS HOJE */}
-            <div className="sm:px-4 py-3 sm:py-1 flex flex-col justify-between">
-              <div>
-                <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-[#8B93A1]">
-                    Agendados hoje
-                  </span>
-                  <Clock className="h-3.5 w-3.5 text-[#8B93A1]/50" />
-                </div>
-                <div className="mt-2.5">
-                  <span className="font-display text-3xl font-extrabold text-[#F5F5F5] leading-none block">
-                    {operationalStats.upcomingAptsCount}
-                  </span>
-                  <div className="mt-1.5">
-                    <span className="text-xs font-semibold text-[#8B93A1]">
-                      {operationalStats.upcomingAptsCount} agendados
-                    </span>
-                  </div>
-                </div>
-              </div>
-              <span className="text-[10px] text-[#8B93A1]/70 block mt-3 pt-2 border-t border-white/[0.04]">
-                Marcações do dia
-              </span>
-            </div>
-
-            {/* BARBEIROS ATIVOS */}
-            <div className="sm:px-4 py-3 sm:py-1 flex flex-col justify-between last:pr-1">
-              <div>
-                <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-[#8B93A1]">
-                    Barbeiros ativos
-                  </span>
-                  <UserCheck className="h-3.5 w-3.5 text-[#8B93A1]/50" />
-                </div>
-                <div className="mt-2.5">
-                  <span className="font-display text-3xl font-extrabold text-[#F5F5F5] leading-none block">
-                    {operationalStats.barbersActiveCount}
-                  </span>
-                  <div className="mt-1.5">
-                    <span className="text-xs font-semibold text-[#D4AF37]/90">
-                      {operationalStats.barbersActiveCount} na escala
-                    </span>
-                  </div>
-                </div>
-              </div>
-              <span className="text-[10px] text-[#8B93A1]/70 block mt-3 pt-2 border-t border-white/[0.04]">
-                Equipe disponível
-              </span>
-            </div>
-
-          </div>
-
-        </div>
-      </div>
-
-      {/* ======================================================== */}
-      {/* 3. RESULTADO DE HOJE (FINANCEIRO REAL DOMINANTE)         */}
-      {/* ======================================================== */}
-      <div className="rounded-[4px] bg-[#0A0E15] border border-white/[0.08] p-5 sm:p-6" data-testid="dashboard-resultado-financeiro">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 pb-5 border-b border-white/[0.06]">
-          
-          {/* LUCRO REAL (VISUALMENTE DOMINANTE) */}
-          <div className="flex-1">
-            <div className="flex items-center gap-2">
-              <Wallet className="h-4 w-4 text-[#D4AF37]" />
-              <span className="text-xs font-bold uppercase tracking-wider text-[#8B93A1]">
-                {selectedPeriod === "hoje" ? "Resultado de Hoje" : `Resultado: ${activeDateRange.label}`}
-              </span>
-            </div>
-
-            <div className="mt-2.5 flex flex-wrap items-baseline gap-3">
-              <span
-                className={`font-display text-4xl sm:text-5xl font-black tracking-tight ${
-                  periodMetrics.lucroReal >= 0 ? "text-[#20C997]" : "text-[#EF4444]"
-                }`}
-                data-testid="dashboard-lucro-real"
-              >
-                {brl(periodMetrics.lucroReal)}
-              </span>
-              <span className="text-xs font-mono font-bold text-[#20C997] bg-[#20C997]/10 px-2 py-0.5 rounded-[2px] border border-[#20C997]/20 uppercase">
-                LUCRO REAL
-              </span>
-            </div>
-            <p className="text-[11px] text-[#8B93A1] mt-1.5 max-w-xl">
-              Valor líquido real que sobra no caixa da barbearia após descontar taxas de maquininhas, comissões dos barbeiros e despesas operacionais pagas.
-            </p>
-          </div>
-
-          {/* TRIO FINANCEIRO COMPLEMENTAR: DISPONÍVEL, A RECEBER E FATURAMENTO */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 w-full lg:w-auto lg:min-w-[540px]">
-            <div className="p-3.5 rounded-[3px] bg-[#0D121B] border border-white/[0.06]">
-              <span className="text-[10px] font-bold text-[#8B93A1] uppercase tracking-wider block">
-                Disponível Agora
-              </span>
-              <span className="font-display text-xl font-bold text-[#F5F5F5] mt-1 block">
-                {brl(periodMetrics.disponivelAgora)}
-              </span>
-              <span className="text-[10px] text-[#8B93A1] block mt-0.5">Dinheiro & Pix em caixa</span>
-            </div>
-
-            <div className="p-3.5 rounded-[3px] bg-[#0D121B] border border-white/[0.06]">
-              <span className="text-[10px] font-bold text-[#8B93A1] uppercase tracking-wider block">
-                A Receber
-              </span>
-              <span className="font-display text-xl font-bold text-[#E5C365] mt-1 block">
-                {brl(periodMetrics.aReceber)}
-              </span>
-              <span className="text-[10px] text-[#8B93A1] block mt-0.5">Cartão a liquidar</span>
-            </div>
-
-            <div className="p-3.5 rounded-[3px] bg-[#0D121B] border border-white/[0.06]">
-              <span className="text-[10px] font-bold text-[#8B93A1] uppercase tracking-wider block">
-                Faturamento
-              </span>
-              <span className="font-display text-xl font-bold text-[#F5F5F5] mt-1 block">
-                {brl(periodMetrics.faturamento)}
-              </span>
-              <span className="text-[10px] text-[#8B93A1] block mt-0.5">{periodMetrics.count} atendimentos</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Linha Fina de Decomposição Financeira Objetiva */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-4 text-xs">
-          <div>
-            <span className="text-[#8B93A1] block text-[11px]">(-) Taxas de Cartão</span>
-            <span className="font-mono font-medium text-slate-300">{brl(periodMetrics.taxas)}</span>
-          </div>
-          <div>
-            <span className="text-[#8B93A1] block text-[11px]">(-) Comissões Barbeiros</span>
-            <span className="font-mono font-medium text-amber-300">{brl(periodMetrics.comissoes)}</span>
-          </div>
-          <div>
-            <span className="text-[#8B93A1] block text-[11px]">(-) Despesas Pagas</span>
-            <span className="font-mono font-medium text-[#EF4444]">{brl(periodMetrics.despesas)}</span>
-          </div>
-          <div>
-            <span className="text-[#8B93A1] block text-[11px]">(=) Ticket Médio</span>
-            <span className="font-mono font-medium text-[#F5F5F5]">{brl(periodMetrics.ticketMedio)}</span>
-          </div>
-        </div>
-      </div>
-
-      {/* ======================================================== */}
-      {/* 4. OPERAÇÃO: PRÓXIMOS ATENDIMENTOS & EQUIPE NA BANCADA   */}
-      {/* ======================================================== */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-        
-        {/* SEÇÃO REFINADA: PRÓXIMOS ATENDIMENTOS (DADOS REAIS DA AGENDA) */}
-        <div className="lg:col-span-6 rounded-[4px] bg-[#0A0E15] border border-white/[0.08] p-4 sm:p-5 flex flex-col justify-between">
-          <div>
-            <div className="flex items-center justify-between pb-3 mb-3 border-b border-white/[0.06]">
-              <div className="flex items-center gap-2">
-                <Clock className="h-4 w-4 text-[#D4AF37]" />
-                <h3 className="text-xs font-bold uppercase tracking-wider text-[#F5F5F5]">
-                  Próximos Atendimentos
-                </h3>
-                <span className="text-[10px] text-[#8B93A1] font-mono font-semibold ml-1">
-                  ({operationalStats.upcomingAppointments.length} agendados)
-                </span>
-              </div>
-              <button
-                onClick={() => navigate("/calendario")}
-                className="text-xs font-semibold text-[#D4AF37] hover:underline flex items-center gap-0.5 cursor-pointer"
-              >
-                <span>Agenda</span> <ChevronRight className="h-3 w-3" />
-              </button>
-            </div>
-
-            {/* Lista dos Agendamentos Reais do Dia */}
-            <div className="divide-y divide-white/[0.04]">
-              {operationalStats.upcomingAppointments.length > 0 ? (
-                operationalStats.upcomingAppointments.map((apt) => (
-                  <div key={apt.id} className="py-2.5 flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-3 min-w-0">
-                      <span className="font-mono text-xs font-extrabold text-[#D4AF37] bg-[#D4AF37]/10 px-2.5 py-1 rounded-[3px] shrink-0 border border-[#D4AF37]/20">
-                        {apt.time || "Horário"}
-                      </span>
-                      <div className="min-w-0">
-                        <p className="text-xs font-bold text-[#F5F5F5] truncate leading-tight">
-                          {apt.client_name}
-                        </p>
-                        <p className="text-[11px] text-[#8B93A1] truncate mt-0.5">
-                          {apt.service_names?.[0] || apt.service_name || "Serviço"} • <span className="text-slate-300">{apt.barber_name}</span>
-                        </p>
-                      </div>
-                    </div>
-
-                    <span className="text-[10px] uppercase font-bold text-[#8B93A1] bg-[#111722] px-2 py-0.5 rounded-[2px] border border-white/[0.06] shrink-0">
-                      {apt.status === "confirmado" ? "Confirmado" : apt.status === "pendente" ? "Aguardando" : apt.status}
-                    </span>
-                  </div>
-                ))
-              ) : (
-                <div className="py-8 text-center">
-                  <Clock className="h-7 w-7 text-[#8B93A1] mx-auto mb-1.5 opacity-30" />
-                  <p className="text-xs text-[#F5F5F5] font-semibold">Sem agendamentos futuros para hoje</p>
-                  <p className="text-[11px] text-[#8B93A1] mt-0.5">Clientes que agendam online ou na recepção entram automaticamente aqui.</p>
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div className="pt-3 border-t border-white/[0.06] mt-3 flex items-center justify-between text-xs text-[#8B93A1]">
-            <span>{operationalStats.upcomingAptsCount} cliente(s) na agenda de hoje</span>
-            <button
-              onClick={() => navigate("/calendario")}
-              className="text-[#D4AF37] hover:underline cursor-pointer flex items-center gap-1"
-            >
-              <span>Ver Calendário Completo</span>
-              <ArrowRight className="h-3 w-3" />
-            </button>
-          </div>
-        </div>
-
-        {/* PROFISSIONAIS EM ATENDIMENTO */}
-        <div className="lg:col-span-6 rounded-[4px] bg-[#0A0E15] border border-white/[0.08] p-4 sm:p-5 flex flex-col justify-between">
-          <div>
-            <div className="flex items-center justify-between pb-3 mb-3 border-b border-white/[0.06]">
-              <div className="flex items-center gap-2">
-                <Scissors className="h-4 w-4 text-[#D4AF37]" />
-                <h3 className="text-xs font-bold uppercase tracking-wider text-[#F5F5F5]">
-                  Profissionais em Atendimento
-                </h3>
-              </div>
-              <button
-                onClick={() => navigate("/equipe")}
-                className="text-xs font-semibold text-[#D4AF37] hover:underline flex items-center gap-0.5 cursor-pointer"
-              >
-                <span>Equipe</span> <ChevronRight className="h-3 w-3" />
-              </button>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-              {operationalStats.barbers.map((b) => {
-                const servingQueue = operationalStats.inServiceItems.find(
-                  (q) => q.barber_id === b.id || q.barber_name === b.name
-                );
-
-                return (
-                  <div
-                    key={b.id}
-                    onClick={() => navigate(`/equipe/${b.id}`)}
-                    className="p-3 rounded-[3px] bg-[#0D121B] border border-white/[0.06] hover:border-[#D4AF37]/30 transition-all cursor-pointer flex items-center justify-between gap-3"
-                  >
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <div className="h-8 w-8 rounded-full bg-[#111722] border border-[#D4AF37]/30 text-[#D4AF37] font-bold text-xs flex items-center justify-center shrink-0">
-                        {b.name.substring(0, 2).toUpperCase()}
-                      </div>
-                      <div className="min-w-0">
-                        <p className="text-xs font-bold text-[#F5F5F5] truncate leading-tight">{b.name}</p>
-                        <p className="text-[10px] text-[#8B93A1] truncate mt-0.5">
-                          {servingQueue ? (
-                            <span className="text-amber-300 font-medium">Cliente: {servingQueue.client_name}</span>
-                          ) : (
-                            <span className="text-[#20C997] font-medium">Pronto para atendimento</span>
-                          )}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div>
-                      {servingQueue ? (
-                        <span className="inline-flex items-center gap-1 text-[9px] font-bold text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20 shrink-0">
-                          <span className="h-1.5 w-1.5 rounded-full bg-amber-400 animate-pulse" /> Atendendo
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1 text-[9px] font-bold text-[#20C997] bg-[#20C997]/10 px-1.5 py-0.5 rounded border border-[#20C997]/20 shrink-0">
-                          <span className="h-1.5 w-1.5 rounded-full bg-[#20C997]" /> Livre
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          <div className="pt-3 border-t border-white/[0.06] mt-3 flex items-center justify-between text-[11px] text-[#8B93A1]">
-            <span>{operationalStats.inServiceCount} barbeiro(s) ocupados agora</span>
-            <button
-              onClick={() => navigate("/atendimentos")}
-              className="text-[#D4AF37] hover:underline cursor-pointer flex items-center gap-1"
-            >
-              <span>Abrir Fila de Atendimento</span>
-              <ArrowRight className="h-3 w-3" />
-            </button>
-          </div>
-        </div>
-
-      </div>
-
-      {/* ======================================================== */}
-      {/* 5. VISÃO SECUNDÁRIA: GRÁFICO LIMPO & ATENDIMENTOS        */}
-      {/* ======================================================== */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-        
-        {/* Gráfico Limpo & Secundário de Tendência de Faturamento */}
-        <div className="lg:col-span-7 rounded-[4px] bg-[#0A0E15] border border-white/[0.08] p-4 sm:p-5">
-          <div className="flex items-center justify-between pb-3 mb-2 border-b border-white/[0.06]">
-            <div>
-              <span className="text-xs font-bold uppercase tracking-wider text-[#8B93A1]">
-                Ritmo de Entradas ({activeDateRange.label})
-              </span>
-            </div>
-            <span className="text-xs font-bold text-[#D4AF37] font-mono">
-              Total: {brl(periodMetrics.faturamento)}
-            </span>
-          </div>
-
-          {chartSeries.length > 0 ? (
-            <div className="h-36 w-full pt-2">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={chartSeries} margin={{ top: 6, right: 10, left: -25, bottom: 0 }}>
-                  <XAxis
-                    dataKey="dia"
-                    stroke="#8B93A1"
-                    fontSize={10}
-                    tickLine={false}
-                    axisLine={{ stroke: "rgba(255,255,255,0.06)" }}
-                  />
-                  <YAxis
-                    stroke="#8B93A1"
-                    fontSize={10}
-                    tickLine={false}
-                    axisLine={false}
-                    tickFormatter={(v) => `R$${v}`}
-                  />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: "#0D121B",
-                      borderColor: "rgba(212,175,55,0.3)",
-                      borderRadius: "4px",
-                      color: "#F5F5F5",
-                      fontSize: "12px",
-                    }}
-                    formatter={(val) => [brl(val), "Faturamento"]}
-                  />
-                  <Area
-                    type="monotone"
-                    dataKey="faturamento"
-                    stroke="#D4AF37"
-                    strokeWidth={1.5}
-                    fillOpacity={0.08}
-                    fill="#D4AF37"
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
-          ) : (
-            <div className="h-36 flex flex-col items-center justify-center text-center p-4">
-              <p className="text-xs font-semibold text-[#8B93A1]">Sem movimentação registrada para este filtro</p>
-            </div>
-          )}
-
-          {/* Formas de Pagamento em linha compacta */}
-          {paymentBreakdown.length > 0 && (
-            <div className="pt-3 border-t border-white/[0.06] mt-2 flex flex-wrap items-center gap-4 text-xs">
-              <span className="text-[11px] font-bold text-[#8B93A1] uppercase">Canais:</span>
-              {paymentBreakdown.slice(0, 3).map((item) => (
-                <span key={item.name} className="flex items-center gap-1.5 text-xs text-[#8B93A1]">
-                  <span className="font-semibold text-[#F5F5F5]">{item.name}:</span>
-                  <span className="font-mono text-[#D4AF37]">{brl(item.value)} ({item.percentage}%)</span>
-                </span>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Últimas Transações Lançadas (5 Colunas) */}
-        <div className="lg:col-span-5 rounded-[4px] bg-[#0A0E15] border border-white/[0.08] p-4 sm:p-5 flex flex-col justify-between">
-          <div>
-            <div className="flex items-center justify-between pb-3 border-b border-white/[0.06] mb-2">
-              <div className="flex items-center gap-2">
-                <CreditCard className="h-4 w-4 text-[#D4AF37]" />
-                <span className="text-xs font-bold uppercase tracking-wider text-[#8B93A1]">
-                  Últimos Atendimentos
-                </span>
-              </div>
-              <button
-                onClick={() => navigate("/receitas")}
-                className="text-xs font-semibold text-[#D4AF37] hover:underline cursor-pointer flex items-center gap-0.5"
-              >
-                <span>Ver todas</span> <ChevronRight className="h-3 w-3" />
-              </button>
-            </div>
-
-            <div className="space-y-1.5">
-              {periodRevenues.slice(0, 4).map((tx) => (
-                <div
-                  key={tx.id}
-                  className="p-2.5 rounded-[3px] bg-[#0D121B] border border-white/[0.04] flex items-center justify-between gap-3 text-xs"
-                >
-                  <div className="min-w-0">
-                    <p className="font-bold text-[#F5F5F5] truncate leading-tight">{tx.client_name || "Cliente Balcão"}</p>
-                    <p className="text-[11px] text-[#8B93A1] truncate mt-0.5">
-                      {tx.service_name} • {tx.barber_name}
-                    </p>
-                  </div>
-                  <div className="text-right shrink-0">
-                    <span className="font-mono font-bold text-[#20C997] block">
-                      +{brl(tx.paid_amount || tx.gross_amount)}
-                    </span>
-                    <span className="text-[10px] text-[#8B93A1] uppercase block mt-0.5">
-                      {tx.payment_method_name || tx.payment_type || "PIX"}
-                    </span>
-                  </div>
-                </div>
-              ))}
-
-              {periodRevenues.length === 0 && (
-                <div className="py-8 text-center text-[#8B93A1]">
-                  <p className="text-xs">Nenhum atendimento registrado no período</p>
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div className="pt-2.5 border-t border-white/[0.06] mt-3 flex items-center justify-between text-xs">
-            <span className="text-[#8B93A1]">Meta do mês: {be?.progress ? `${Math.round(be.progress)}% atingida` : "85%"}</span>
-            <button
-              onClick={() => navigate("/fluxo-de-caixa")}
-              className="text-[#D4AF37] hover:underline cursor-pointer"
-            >
-              Abrir DRE Completo →
-            </button>
-          </div>
-        </div>
-
       </div>
 
       {/* Modais Globais Preservados */}

@@ -7,10 +7,10 @@ import {
   ArrowRightLeft, CalendarDays, Wallet, BarChart3, History,
   Settings as SettingsIcon, ChevronLeft, ChevronRight,
   Store, Scissors, Package, ShieldCheck, LogIn, LogOut,
-  UserCircle2, Contact, Bell, Plus, Sparkles, ChevronDown, CheckCircle2,
+  UserCircle2, Contact, Bell, Plus, ChevronDown, CheckCircle2,
   AlertTriangle, AlertCircle, Info, Menu, HandCoins, X,
   Link2, Copy, Check, ExternalLink, Crown, EyeOff, Shield,
-  Globe, ArrowUpRight, Coins,
+  Globe, ArrowUpRight, Coins, Home, Calendar, LayoutGrid, HelpCircle, MessageCircle, Send, Search,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -37,65 +37,37 @@ import NovaRetiradaModal from "@/components/NovaRetiradaModal";
 import UnitSelector from "@/components/UnitSelector";
 import UpgradeModal from "@/components/UpgradeModal";
 import SubscriptionExpiredModal from "@/components/SubscriptionExpiredModal";
+import KupolaLogo from "@/components/KupolaLogo";
+import Sidebar from "@/components/Sidebar";
 
-// Estrutura de Navegação Completa Organizada por Módulos
+// Estrutura de Navegação Principal Exata conforme a Referência Visual KUPOLA
+export const PRIMARY_NAV_ITEMS = [
+  { to: "/", label: "Início", icon: Home, end: true, testId: "nav-inicio" },
+  { to: "/calendario", label: "Agenda", icon: Calendar, testId: "nav-agenda" },
+  { to: "/atendimentos", label: "Atendimentos", icon: Scissors, testId: "nav-atendimentos" },
+  { to: "/clientes", label: "Clientes", icon: Users, testId: "nav-clientes" },
+  { to: "/equipe", label: "Barbeiros", icon: Users2, testId: "nav-barbeiros" },
+  { to: "/servicos", label: "Serviços", icon: LayoutGrid, testId: "nav-servicos" },
+  { to: "/produtos", label: "Produtos", icon: Package, testId: "nav-produtos" },
+  { to: "/maquininhas", label: "Formas de Pagamento", icon: CreditCard, testId: "nav-pagamentos" },
+  { to: "/relatorios", label: "Relatórios", icon: BarChart3, testId: "nav-relatorios" },
+  { to: "/configuracoes", label: "Configurações", icon: SettingsIcon, testId: "nav-configuracoes" },
+];
+
 export const NAV_SECTIONS = [
   {
-    title: "OPERACIONAL (DO DIA)",
-    items: [
-      { to: "/atendimentos", label: "Fila & Agenda do Dia", icon: Users, badge: "Ao Vivo", testId: "nav-atendimentos", perm: ["ver_receitas", "gerenciar_fila", "gerenciar_agenda"] },
-      { to: "/", label: "Dashboard Geral", icon: LayoutDashboard, end: true, testId: "nav-dashboard", perm: ["ver_dashboard", "ver_financeiro"] },
-      { to: "/fluxo-de-caixa", label: "Fluxo de Caixa & DRE", icon: Wallet, testId: "nav-fluxo-de-caixa", perm: ["ver_financeiro", "ver_relatorios"], donoOnly: true },
-      { to: "/calendario", label: "Calendário Operacional", icon: CalendarDays, testId: "nav-calendario", perm: ["ver_financeiro", "registrar_despesas"] },
-    ],
-  },
-  {
-    title: "LANÇAMENTOS & CAIXA",
-    items: [
-      { action: "novo_atendimento", label: "Novo Atendimento", icon: Scissors, badge: "Rápido", perm: ["registrar_atendimentos"] },
-      { to: "/receitas", label: "Receitas & Histórico", icon: TrendingUp, testId: "nav-receitas", perm: ["ver_receitas"] },
-      { to: "/despesas", label: "Despesas Operacionais", icon: Receipt, testId: "nav-despesas", perm: ["registrar_despesas"] },
-      { to: "/comissoes", label: "Comissões dos Barbeiros", icon: Coins, testId: "nav-comissoes", perm: ["ver_financeiro"] },
-      { to: "/retiradas", label: "Retiradas do Dono", icon: HandCoins, testId: "nav-retiradas", perm: ["ver_financeiro"], donoOnly: true },
-      { to: "/fechamento", label: "Fechamento de Caixa", icon: ArrowRightLeft, testId: "nav-fechamento", perm: ["ver_financeiro"] },
-    ],
-  },
-  {
-    title: "ADMINISTRAÇÃO",
-    items: [
-      { to: "/barbearia", label: "Cadastro da Barbearia", icon: Store, testId: "nav-barbearia", perm: ["alterar_configuracoes"] },
-      { to: "/equipe", label: "Equipe & Escala de Barbeiros", icon: Users2, testId: "nav-equipe", perm: ["gerenciar_barbeiros", "cadastrar_barbeiros", "editar_barbeiros"] },
-      { to: "/clientes", label: "Clientes", icon: Contact, testId: "nav-clientes", perm: ["gerenciar_clientes"] },
-      { to: "/planos-clientes", label: "Planos & Assinaturas", icon: Crown, testId: "nav-planos-clientes", perm: ["gerenciar_clientes"] },
-      { to: "/servicos", label: "Catálogo de Serviços", icon: Scissors, testId: "nav-servicos", perm: ["gerenciar_servicos"] },
-      { to: "/produtos", label: "Estoque de Produtos", icon: Package, testId: "nav-produtos", perm: ["gerenciar_produtos"] },
-      { to: "/categorias", label: "Categorias", icon: Tags, testId: "nav-categorias", perm: ["alterar_configuracoes"] },
-      { to: "/usuarios", label: "Usuários & Acessos", icon: ShieldCheck, testId: "nav-usuarios", donoOnly: true },
-    ],
-  },
-  {
-    title: "ANÁLISES & CONFIGURAÇÕES",
-    items: [
-      { to: "/comparacao", label: "Comparar Maquininhas", icon: BarChart3, testId: "nav-comparacao", perm: ["ver_financeiro", "ver_relatorios"], donoOnly: true },
-      { to: "/maquininhas", label: "Maquininhas & Taxas", icon: CreditCard, testId: "nav-maquininhas", perm: ["alterar_taxas"], donoOnly: true },
-      { to: "/historico", label: "Histórico / Logs", icon: History, testId: "nav-historico", perm: ["ver_relatorios", "alterar_configuracoes"] },
-      { to: "/configuracoes", label: "Configurações Operacionais", icon: SettingsIcon, testId: "nav-configuracoes", perm: ["alterar_configuracoes"] },
-    ],
-  },
-  {
-    title: "SISTEMA & PLATAFORMA (MASTER)",
-    items: [
-      { to: "/superadmin", label: "Painel SuperAdmin", icon: ShieldCheck, badge: "Master", testId: "nav-superadmin", superadminOnly: true },
-    ],
+    title: "MENU PRINCIPAL",
+    items: PRIMARY_NAV_ITEMS,
   },
 ];
 
-// Mobile Bottom Navigation (4 abas fundamentais)
+// Mobile Bottom Navigation (5 abas exatas conforme a referência)
 const MOBILE_BOTTOM_NAV = [
-  { to: "/", label: "Início", icon: LayoutDashboard, end: true },
-  { to: "/atendimentos", label: "Atendimentos", icon: Users },
-  { to: "/clientes", label: "Clientes", icon: Contact },
-  { to: "/fluxo-de-caixa", label: "Relatórios", icon: BarChart3 },
+  { to: "/", label: "Início", icon: Home, end: true },
+  { to: "/calendario", label: "Agenda", icon: Calendar },
+  { to: "/atendimentos", label: "Atendimentos", icon: Scissors },
+  { to: "/clientes", label: "Clientes", icon: Users },
+  { to: "/relatorios", label: "Relatórios", icon: BarChart3 },
 ];
 
 function MonthSwitcher({ compact = false, variant = "default" }) {
@@ -337,8 +309,8 @@ function UserAvatarMenu({ variant = "header", collapsed = false }) {
   const { isBalcaoMode, toggleBalcaoMode } = useBalcao();
   const navigate = useNavigate();
 
-  const displayName = user?.name || "Guilherme Pereira";
-  const userRole = user?.role === "dono" ? "Dono" : rolesLabel(user) || "Dono";
+  const displayName = user?.name || "Administrador";
+  const userRole = user?.role === "dono" ? "Dono" : rolesLabel(user) || "Administrador";
 
   return (
     <DropdownMenu>
@@ -399,24 +371,18 @@ function UserAvatarMenu({ variant = "header", collapsed = false }) {
         ) : (
           <button
             type="button"
-            className="relative flex items-center gap-2.5 rounded-[4px] p-1 lg:px-2.5 lg:py-1.5 transition-colors hover:bg-white/5 border border-transparent hover:border-white/10 focus:outline-none cursor-pointer"
+            className="flex items-center gap-2.5 rounded-[6px] p-1 lg:px-2 lg:py-1.5 transition-colors hover:bg-white/5 border border-transparent hover:border-white/10 focus:outline-none cursor-pointer"
             data-testid="header-user-btn"
             aria-label="Menu do usuário"
           >
-            <div className="relative shrink-0">
-              <div className="h-8 w-8 rounded-full bg-gradient-to-br from-[#EAB308] to-[#D4AF37] flex items-center justify-center text-[#0B0F19] font-black text-xs border border-[#D4AF37]/50">
-                {displayName.substring(0, 2).toUpperCase()}
-              </div>
-              <span
-                className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-[#10B981] ring-2 ring-[#0B0F19]"
-                title="Online"
-              />
+            <div className="h-8 w-8 rounded-full bg-[#0A0E15] border border-[#D4AF37] text-[#D4AF37] flex items-center justify-center font-bold text-xs shrink-0 shadow-sm">
+              {displayName.split(" ").map(n => n[0]).slice(0, 2).join("").toUpperCase() || "GP"}
             </div>
             <div className="hidden lg:flex flex-col text-left leading-tight">
               <span className="text-xs font-bold text-white tracking-tight">{displayName}</span>
-              <span className="text-[10px] text-muted-foreground">({userRole})</span>
+              <span className="text-[10px] text-[#8B93A1] font-medium">{userRole} • Administrador</span>
             </div>
-            <ChevronDown className="hidden lg:block h-3.5 w-3.5 text-muted-foreground ml-0.5" />
+            <ChevronDown className="hidden lg:block h-3.5 w-3.5 text-[#8B93A1] ml-0.5" />
           </button>
         )}
       </DropdownMenuTrigger>
@@ -703,403 +669,97 @@ export default function Layout() {
       {/* 1. DESKTOP SIDEBAR (>= 1024px) FIXA                       */}
       {/* ======================================================== */}
       <aside
-        className={`hidden lg:flex shrink-0 flex-col border-r border-white/[0.07] bg-[#0A0E15] fixed inset-y-0 left-0 z-30 transition-all duration-300 ease-in-out ${
-          isSidebarCollapsed ? "w-[70px]" : "w-64"
-        }`}
+        className="hidden lg:flex shrink-0 flex-col fixed inset-y-0 left-0 z-30 w-[260px] sm:w-[270px] h-screen max-h-screen overflow-hidden"
         data-testid="desktop-sidebar"
-        data-collapsed={isSidebarCollapsed}
       >
-        {/* Topo da Sidebar: Logo, nome e botão de alternância */}
-        {isSidebarCollapsed ? (
-          <div className="flex flex-col items-center justify-center h-16 border-b border-white/[0.07] shrink-0 px-2">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={toggleSidebar}
-              className="h-10 w-10 text-slate-300 hover:text-[#D4AF37] hover:bg-white/[0.05] rounded-[4px] cursor-pointer flex items-center justify-center transition-colors group relative"
-              title="Expandir barra lateral"
-              aria-label="Expandir barra lateral"
-              data-testid="sidebar-toggle-btn"
-            >
-              <img 
-                src="/logo.png" 
-                alt="Kupola" 
-                className="h-7 w-7 rounded-full object-cover border border-[#D4AF37]/30 shadow-sm group-hover:scale-95 transition-transform" 
-              />
-              <span className="absolute -bottom-0.5 -right-0.5 h-4 w-4 rounded-full bg-[#0D121B] border border-white/20 flex items-center justify-center text-[10px] text-[#D4AF37] shadow">
-                <ChevronRight className="h-2.5 w-2.5" />
-              </span>
-            </Button>
-          </div>
-        ) : (
-          <div className="flex items-center justify-between px-4 h-16 border-b border-white/[0.07] shrink-0">
-            <div className="flex items-center gap-3 min-w-0 overflow-hidden">
-              <img 
-                src="/logo.png" 
-                alt="Kupola" 
-                className="h-9 w-9 rounded-full object-cover border border-[#D4AF37]/30 shadow-md shadow-[#D4AF37]/10 shrink-0" 
-              />
-              <div className="min-w-0 flex-1">
-                <span className="font-display font-extrabold text-base tracking-tight text-white flex items-center gap-1.5 leading-tight">
-                  <span>KUPOLA</span>
-                  <span className="text-[9px] font-bold tracking-widest text-[#D4AF37] uppercase bg-[#D4AF37]/10 px-1 py-0.5 rounded-[2px] border border-[#D4AF37]/20">PRO</span>
-                </span>
-                <p className="text-[10px] text-[#8B93A1] font-medium tracking-wider truncate mt-0.5 uppercase">
-                  {barbershop?.name || "Gestão para Barbearias"}
-                </p>
-              </div>
-            </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={toggleSidebar}
-              className="h-8 w-8 text-[#8B93A1] hover:text-[#D4AF37] hover:bg-white/[0.05] rounded-[4px] shrink-0 cursor-pointer transition-colors"
-              title="Recolher barra lateral"
-              aria-label="Recolher barra lateral"
-              data-testid="sidebar-toggle-btn"
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-          </div>
-        )}
-
-        {/* Seletor de Unidade & Badge do Plano na Sidebar */}
-        {isSidebarCollapsed ? (
-          <div className="py-2.5 flex flex-col items-center justify-center border-b border-white/[0.07] bg-[#070A0F]">
-            <button
-              type="button"
-              onClick={() => openUpgradeModal({ title: "Planos & Assinatura" })}
-              className="h-8 w-8 rounded-[4px] bg-[#0D121B] border border-white/[0.08] flex items-center justify-center text-[#D4AF37] hover:bg-[#D4AF37]/15 transition-colors cursor-pointer"
-              title={`Plano ${plan.name} (Clique para detalhes)`}
-            >
-              <Crown className="h-4 w-4" />
-            </button>
-          </div>
-        ) : (
-          <div className="px-3 py-2.5 border-b border-white/[0.07] space-y-2 bg-[#070A0F]">
-            <div className="w-full">
-              <UnitSelector variant="sidebar" />
-            </div>
-            <div className="flex items-center justify-between px-2.5 py-1.5 rounded-[4px] bg-[#0D121B] border border-white/[0.05]">
-              <div className="flex items-center gap-1.5">
-                <Crown className={`h-3.5 w-3.5 ${plan.id === 'premium' ? 'text-[#D4AF37]' : plan.id === 'pro' ? 'text-blue-400' : 'text-slate-400'}`} />
-                <span className="text-[11px] font-bold text-white uppercase tracking-wider">{plan.name}</span>
-              </div>
-              <button
-                onClick={() => openUpgradeModal({ title: "Planos & Assinatura" })}
-                className="text-[10px] font-semibold text-[#D4AF37] hover:underline cursor-pointer"
-              >
-                {plan.id === 'premium' ? 'Gerenciar' : 'Upgrade'}
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Links de Navegação Organizados por Módulos */}
-        <div className={`flex-1 overflow-y-auto ${isSidebarCollapsed ? "px-2 py-2 space-y-1.5" : "px-3 py-3 space-y-2"}`}>
-          {NAV_SECTIONS.map((section) => renderNavSection(section, false, isSidebarCollapsed))}
-        </div>
-
-        {/* Rodapé da Sidebar: Perfil do Usuário */}
-        <div className={`${isSidebarCollapsed ? "p-1.5" : "p-3"} border-t border-white/[0.07] bg-[#070A0F] shrink-0 relative z-30`}>
-          <UserAvatarMenu variant="sidebar" collapsed={isSidebarCollapsed} />
-        </div>
+        <Sidebar isMobile={false} />
       </aside>
 
       {/* ======================================================== */}
-      {/* 2. DRAWER MOBILE LATERAL COMPLETO (Trigger via Hambúrguer)*/}
+      {/* 2. DRAWER MOBILE LATERAL COMPLETO (Com APENAS UM botão 'X')*/}
       {/* ======================================================== */}
-      <Sheet open={mobileDrawerOpen} onOpenChange={setMobileDrawerOpen}>
-        <SheetContent
-          side="left"
-          className="w-[300px] p-0 bg-[#0A0E15] border-r border-white/[0.07] text-white flex flex-col z-50 shadow-xl"
-        >
-          <SheetHeader className="p-4 border-b border-white/[0.07] flex flex-row items-center justify-between">
-            <div className="flex items-center gap-3 text-left">
-              <img 
-                src="/logo.png" 
-                alt="Kupola" 
-                className="h-10 w-10 rounded-full object-cover border border-[#D4AF37]/30 shadow-md shrink-0" 
-              />
-              <div>
-                <SheetTitle className="text-base font-bold tracking-tight text-white flex items-center gap-1.5">
-                  <span>KUPOLA</span>
-                  <span className="text-[9px] font-bold tracking-widest text-[#D4AF37] uppercase bg-[#D4AF37]/10 px-1 py-0.5 rounded-[2px] border border-[#D4AF37]/20">PRO</span>
-                </SheetTitle>
-                <p className="text-[10px] text-[#8B93A1] font-medium tracking-wider truncate max-w-[170px]">
-                  {barbershop?.name || "Menu Principal"}
-                </p>
-              </div>
-            </div>
-          </SheetHeader>
-
-          {/* Seletor de Unidade e Plano no Mobile Drawer */}
-          <div className="px-4 py-2.5 border-b border-white/[0.07] space-y-2 bg-[#070A0F]">
-            <UnitSelector variant="sidebar" />
-            <div className="flex items-center justify-between px-2.5 py-1.5 rounded-[4px] bg-[#0D121B] border border-white/[0.05]">
-              <div className="flex items-center gap-1.5">
-                <Crown className={`h-3.5 w-3.5 ${plan.id === 'premium' ? 'text-[#D4AF37]' : plan.id === 'pro' ? 'text-blue-400' : 'text-slate-400'}`} />
-                <span className="text-[11px] font-bold text-white uppercase tracking-wider">{plan.name}</span>
-              </div>
-              <button
-                onClick={() => {
-                  setMobileDrawerOpen(false);
-                  openUpgradeModal({ title: "Planos & Assinatura" });
-                }}
-                className="text-[10px] font-semibold text-[#D4AF37] hover:underline cursor-pointer"
-              >
-                {plan.id === 'premium' ? 'Gerenciar' : 'Upgrade'}
-              </button>
-            </div>
+      {mobileDrawerOpen && (
+        <div className="fixed inset-0 z-50 lg:hidden flex" data-testid="mobile-drawer-overlay">
+          {/* Backdrop blur com fechamento ao clicar fora */}
+          <div
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm transition-opacity"
+            onClick={() => setMobileDrawerOpen(false)}
+            aria-hidden="true"
+          />
+          {/* Painel lateral deslizando com sombra suave e sem botões duplicados */}
+          <div className="relative z-10 w-[270px] max-w-[85vw] h-full max-h-screen flex flex-col shadow-2xl animate-in slide-in-from-left duration-200 overflow-hidden">
+            <Sidebar isMobile={true} onCloseMobile={() => setMobileDrawerOpen(false)} />
           </div>
-
-          {/* Navegação completa no celular */}
-          <div className="flex-1 overflow-y-auto px-3 py-3 space-y-3">
-            {NAV_SECTIONS.map((section) => renderNavSection(section, true))}
-          </div>
-
-          {/* Rodapé do Drawer com perfil e logout */}
-          <div className="p-3 border-t border-white/[0.07] bg-[#070A0F]">
-            <UserAvatarMenu variant="sidebar" />
-          </div>
-        </SheetContent>
-      </Sheet>
+        </div>
+      )}
 
       {/* ======================================================== */}
       {/* 3. CONTEÚDO PRINCIPAL (Área Central)                      */}
       {/* ======================================================== */}
-      <div className={`flex-1 flex flex-col min-w-0 w-full transition-all duration-300 ease-in-out ${
-        isSidebarCollapsed ? "lg:pl-[70px]" : "lg:pl-64"
-      }`}>
-        {/* CABEÇALHO MOBILE (< 1024px) */}
-        <header className="lg:hidden sticky top-0 z-40 bg-[#0A0E15] border-b border-white/[0.07]">
-          {/* Linha 1: Hambúrguer, Logo, Sino com badge e Avatar com status online */}
-          <div className="flex items-center justify-between h-14 px-4">
-            <div className="flex items-center gap-2.5">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setMobileDrawerOpen(true)}
-                className="h-9 w-9 text-slate-300 hover:text-white hover:bg-white/[0.05] -ml-1 rounded-[4px]"
-                aria-label="Abrir menu de navegação"
-                data-testid="mobile-menu-trigger"
-              >
-                <Menu className="h-5 w-5" />
-              </Button>
+      <div className="flex-1 flex flex-col min-w-0 w-full transition-all duration-300 ease-in-out lg:pl-[260px] sm:lg:pl-[270px]">
+        {/* CABEÇALHO MOBILE (< 1024px) - KUPOLA 2.0 COM LOGO CENTRALIZADO E PROTEGIDO CONTRA CORTES */}
+        <header className="lg:hidden sticky top-0 z-40 bg-[#05070B]/95 backdrop-blur-md border-b border-[#121824] px-3 sm:px-4 py-2">
+          <div className="flex items-center justify-between gap-2 max-w-full">
+            {/* Lado Esquerdo: Botão Hambúrguer */}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setMobileDrawerOpen(true)}
+              className="p-2 -ml-1 text-slate-300 hover:text-white hover:bg-slate-800/60 rounded-xl shrink-0"
+              aria-label="Abrir menu de navegação"
+              data-testid="mobile-menu-trigger"
+            >
+              <Menu className="w-5 h-5" />
+            </Button>
 
-              <div className="flex items-center gap-2">
-                <img 
-                  src="/logo.png" 
-                  alt="Kupola" 
-                  className="h-8 w-8 rounded-full object-cover border border-[#D4AF37]/30 shadow-sm shrink-0" 
-                />
-                <div className="flex flex-col">
-                  <span className="font-display font-extrabold text-sm tracking-tight leading-none text-white flex items-center gap-1">
-                    <span>KUPOLA</span>
-                  </span>
-                  <span className="text-[9px] text-[#8B93A1] font-medium truncate max-w-[130px] mt-0.5 uppercase tracking-wide">
-                    {barbershop?.name || "Gestão"}
-                  </span>
-                </div>
+            {/* Centro: Logotipo KUPOLA Oficial 2.0 (min-w-max, nunca cortado, centralizado com orgulho) */}
+            <div className="flex items-center justify-center flex-1 shrink-0 px-1 min-w-max">
+              <KupolaLogo subtext="GESTÃO PARA BARBEARIAS" />
+            </div>
+
+            {/* Lado Direito: Notificações (e mês a partir de telas sm) */}
+            <div className="flex items-center gap-1.5 shrink-0">
+              <div className="hidden sm:block">
+                <MonthSwitcher />
               </div>
-            </div>
-
-            {/* Ações Topo Direito */}
-            <div className="flex items-center gap-1.5">
-              {isBalcaoMode && (
-                <span
-                  onClick={toggleBalcaoMode}
-                  role="button"
-                  className="px-2 py-1 rounded-[3px] bg-amber-500/15 border border-amber-500/30 text-[10px] text-amber-300 font-bold flex items-center gap-1 cursor-pointer"
-                  title="Modo Caixa Seguro Ativo (Clique para desativar)"
-                >
-                  <EyeOff className="h-3 w-3" /> Caixa
-                </span>
-              )}
-              {/* Atalho para Landing Page / Página de Vendas */}
-              <a
-                href="/landing"
-                target="_blank"
-                rel="noreferrer"
-                className="h-8 px-2 text-xs font-semibold text-[#8B93A1] hover:text-[#F5F5F5] bg-[#0D121B] border border-white/[0.07] hover:border-[#D4AF37]/40 rounded-[4px] flex items-center gap-1 transition-colors"
-                title="Acessar Página de Vendas / Landing Page"
-                data-testid="mobile-landing-link"
-              >
-                <Globe className="h-3.5 w-3.5 text-[#D4AF37]" />
-                <span className="text-[11px]">Site</span>
-              </a>
-
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={copyPublicLink}
-                className="h-8 w-8 text-[#D4AF37] hover:bg-[#D4AF37]/15 rounded-[4px]"
-                title={`Copiar link público: /agendar/${shopSlug}`}
-                data-testid="mobile-copy-public-link"
-              >
-                {copiedShopLink ? <Check className="h-4 w-4 text-[#20C997] stroke-[3]" /> : <Link2 className="h-4 w-4" />}
-              </Button>
               <NotificationsBell />
-              <UserAvatarMenu />
             </div>
-          </div>
-
-          {/* Linha 2 (Filtro de período) */}
-          <div className="px-4 py-2 bg-[#05070B] border-t border-white/[0.07] flex items-center justify-center">
-            <MonthSwitcher variant="mobile-bar" />
           </div>
         </header>
 
-        {/* CABEÇALHO DESKTOP (>= 1024px) */}
-        <header className="hidden lg:flex items-center justify-between h-16 px-6 lg:px-8 border-b border-white/[0.07] bg-[#05070B] sticky top-0 z-20">
-          {/* Breadcrumb e Toggle do Menu */}
-          <div className="flex items-center gap-2.5 text-sm">
+        {/* CABEÇALHO DESKTOP (>= 1024px) - KUPOLA 2.0 */}
+        <header className="hidden lg:flex items-center justify-between h-16 px-6 lg:px-8 border-b border-[#121824] bg-[#05070B]/95 backdrop-blur-md sticky top-0 z-20">
+          {/* Lado Esquerdo: Toggle Hambúrguer + Input de Busca Elegante */}
+          <div className="flex items-center gap-4 flex-1 max-w-xl">
             <Button
               variant="ghost"
               size="icon"
               onClick={toggleSidebar}
-              className="h-8 w-8 text-[#8B93A1] hover:text-[#D4AF37] hover:bg-white/[0.05] rounded-[4px] cursor-pointer transition-colors"
+              className="h-9 w-9 text-[#8B93A1] hover:text-[#D4AF37] hover:bg-white/[0.05] rounded-xl cursor-pointer transition-colors shrink-0"
               title={isSidebarCollapsed ? "Expandir barra lateral" : "Recolher barra lateral"}
               aria-label="Alternar barra lateral"
               data-testid="header-sidebar-toggle-btn"
             >
-              {isSidebarCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+              <Menu className="h-4 w-4" />
             </Button>
-            <div className="flex items-center gap-2">
-              <span className="text-[#8B93A1] font-medium text-xs">KUPOLA</span>
-              <span className="text-white/20">/</span>
-              <span className="text-white font-bold text-sm tracking-tight">{pageTitle}</span>
-              <Badge className="ml-1 bg-[#D4AF37]/10 text-[#D4AF37] border-[#D4AF37]/25 text-[10px] font-bold uppercase rounded-[2px]">
-                {isDono(user) ? "Dono" : isGerente(user) ? "Gerente" : isCaixa(user) ? "Caixa" : "Barbeiro"}
-              </Badge>
+
+            {/* Input de Busca Fiel ao Kupola 2.0 */}
+            <div 
+              onClick={() => navigate("/clientes")}
+              className="flex items-center gap-3 w-[280px] xl:w-[360px] px-3.5 py-1.5 bg-[#0A0E15] hover:bg-[#0D121B] border border-[#161e2c] hover:border-[#D4AF37]/40 rounded-xl text-left text-xs text-slate-400 transition-all shadow-inner group cursor-pointer"
+            >
+              <Search className="w-4 h-4 text-slate-400 group-hover:text-[#E5C365] transition-colors shrink-0" />
+              <span className="flex-1 truncate">Buscar cliente, agendamento ou atendimento...</span>
+              <kbd className="hidden xl:inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[10px] font-mono text-slate-400 bg-[#111722] rounded border border-slate-700/60 shrink-0">Ctrl K</kbd>
             </div>
-            <div className="h-4 w-px bg-white/[0.08]" />
-            <UnitSelector variant="header" />
           </div>
 
-          {/* Seletor de Mês Centralizado */}
-          <div>
+          {/* Lado Direito: Seletor de Mês, Notificações com badge, Perfil */}
+          <div className="flex items-center gap-3">
             <MonthSwitcher />
-          </div>
-
-          {/* Ações Topo Direito */}
-          <div className="flex items-center gap-2.5">
-            {/* Atalho para Landing Page / Página de Vendas */}
-            <a
-              href="/landing"
-              target="_blank"
-              rel="noreferrer"
-              className="bg-[#0A0E15] border border-white/[0.07] text-[#8B93A1] hover:text-[#F5F5F5] hover:border-[#D4AF37]/40 text-xs font-semibold h-9 px-3 rounded-[4px] gap-1.5 transition-colors shadow-none flex items-center"
-              title="Abrir Página Inicial / Landing Page de Vendas"
-              data-testid="header-landing-link"
-            >
-              <Globe className="h-3.5 w-3.5 text-[#D4AF37]" />
-              <span className="hidden xl:inline">Site Público</span>
-              <span className="xl:hidden">Site</span>
-              <ArrowUpRight className="h-3 w-3 text-slate-500" />
-            </a>
-
-            {/* Botão Modo Balcão / Caixa Seguro */}
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={toggleBalcaoMode}
-              className={`h-9 px-3 text-xs rounded-[4px] gap-1.5 transition-colors border ${
-                isBalcaoMode
-                  ? "bg-amber-500/15 border-amber-500/40 text-amber-300 font-bold hover:bg-amber-500/25"
-                  : "bg-[#0A0E15] border-white/[0.07] text-[#8B93A1] hover:text-white hover:bg-[#0D121B]"
-              }`}
-              title={isBalcaoMode ? "Modo Caixa Seguro ativo (dados sensíveis ocultos no balcão). Clique para desativar." : "Ativar Modo Caixa Seguro para recepção/balcão"}
-              data-testid="toggle-balcao-header"
-            >
-              {isBalcaoMode ? <EyeOff className="h-3.5 w-3.5 text-amber-400" /> : <Shield className="h-3.5 w-3.5" />}
-              <span className="hidden xl:inline">{isBalcaoMode ? "Modo Caixa Ativo" : "Modo Caixa (Balcão)"}</span>
-            </Button>
-
-            {/* Botão Copiar Link Público Geral da Barbearia */}
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={copyPublicLink}
-              className="bg-[#0A0E15] border border-white/[0.07] text-[#D4AF37] hover:bg-[#D4AF37]/10 hover:border-[#D4AF37]/40 text-xs font-semibold h-9 px-3 rounded-[4px] gap-1.5 transition-colors shadow-none"
-              title={`Copiar link público geral da barbearia (/agendar/${shopSlug})`}
-              data-testid="header-copy-public-link"
-            >
-              {copiedShopLink ? <Check className="h-3.5 w-3.5 text-[#20C997] stroke-[3]" /> : <Link2 className="h-3.5 w-3.5" />}
-              <span className="hidden xl:inline">{copiedShopLink ? "Link Copiado!" : "Agendamento Online"}</span>
-              <span className="xl:hidden">{copiedShopLink ? "Copiado!" : "Link"}</span>
-            </Button>
-
-            {/* Menu Rápido "+ Lançar" */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="outline"
-                  className="bg-[#0A0E15] border border-white/[0.07] text-white hover:bg-[#0D121B] hover:border-[#D4AF37]/40 text-xs font-semibold h-9 px-3 rounded-[4px] gap-1.5 transition-colors shadow-none"
-                  data-testid="quick-actions-trigger"
-                >
-                  <Sparkles className="h-3.5 w-3.5 text-[#D4AF37]" />
-                  <span>+ Ações</span>
-                  <ChevronDown className="h-3 w-3 text-[#8B93A1]" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent
-                align="end"
-                className="w-56 bg-[#0D121B] border border-white/[0.07] text-white p-1.5 rounded-[4px] shadow-xl"
-              >
-                <DropdownMenuLabel className="text-[10px] uppercase font-bold text-[#8B93A1] tracking-wider px-2 py-1">
-                  Lançamento Rápido
-                </DropdownMenuLabel>
-                <DropdownMenuItem
-                  onClick={() => setModalNovoAtendimento(true)}
-                  className="text-xs focus:bg-white/10 focus:text-white cursor-pointer py-2 rounded-[2px]"
-                >
-                  <Scissors className="mr-2 h-4 w-4 text-[#D4AF37]" /> Novo Atendimento
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => setModalNovaDespesa(true)}
-                  className="text-xs focus:bg-white/10 focus:text-white cursor-pointer py-2 rounded-[2px]"
-                >
-                  <Receipt className="mr-2 h-4 w-4 text-[#EF4444]" /> Nova Despesa
-                </DropdownMenuItem>
-                {isDono(user) && (
-                  <DropdownMenuItem
-                    onClick={() => setModalNovaRetirada(true)}
-                    className="text-xs focus:bg-white/10 focus:text-white cursor-pointer py-2 rounded-[2px]"
-                  >
-                    <HandCoins className="mr-2 h-4 w-4 text-[#D4AF37]" /> Retirada do Dono
-                  </DropdownMenuItem>
-                )}
-                <DropdownMenuSeparator className="bg-white/10" />
-                <DropdownMenuItem
-                  onClick={() => navigate("/fechamento")}
-                  className="text-xs focus:bg-white/10 focus:text-white cursor-pointer py-2 rounded-[2px]"
-                >
-                  <ArrowRightLeft className="mr-2 h-4 w-4 text-blue-400" /> Fechar Caixa do Dia
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => navigate("/clientes")}
-                  className="text-xs focus:bg-white/10 focus:text-white cursor-pointer py-2 rounded-[2px]"
-                >
-                  <Contact className="mr-2 h-4 w-4 text-[#10B981]" /> Cadastrar Novo Cliente
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-
             <NotificationsBell />
-
-            <Button
-              onClick={() => setModalNovoAtendimento(true)}
-              className="bg-[#D4AF37] hover:bg-[#C59F2E] text-[#0B0D14] font-bold text-xs uppercase h-9 px-4 rounded-[4px] shadow-none active:translate-y-[1px] transition-colors gap-1.5 cursor-pointer"
-              data-testid="header-new-service-btn"
-            >
-              <Plus className="h-4 w-4 stroke-[3]" />
-              <span>Novo Atendimento</span>
-            </Button>
-
-            <div className="pl-1 border-l border-white/10">
-              <UserAvatarMenu />
-            </div>
+            <div className="h-6 w-px bg-white/[0.08]" />
+            <UserAvatarMenu />
           </div>
         </header>
 
@@ -1125,7 +785,11 @@ export default function Layout() {
       <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-40 h-16 bg-[#0A0E15]/95 backdrop-blur-md border-t border-white/[0.07] flex items-center justify-around px-2 shadow-2xl pb-[max(env(safe-area-inset-bottom),0px)]">
         {MOBILE_BOTTOM_NAV.map((item) => {
           const Icon = item.icon;
-          const isActive = item.end ? location.pathname === "/" : location.pathname.startsWith(item.to);
+          const isActive =
+            item.to === "/"
+              ? location.pathname === "/"
+              : location.pathname === item.to ||
+                location.pathname.startsWith(item.to + "/");
           return (
             <NavLink
               key={item.to}

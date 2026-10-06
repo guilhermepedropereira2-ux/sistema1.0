@@ -3,6 +3,7 @@ import { db, authUser, getUnitFilter } from "../db.js";
 import { newId, nowIso, todayStr, parseDateStr, formatBRL, QueueItem, Appointment, Revenue } from "../types.js";
 import { persistQueue, persistAppointment, persistRevenue } from "../../src/db/sync.js";
 import { storage } from "../storage.js";
+import { calculateCommission } from "../services/commissionService.js";
 
 const router = express.Router();
 
@@ -35,22 +36,21 @@ function recordAttendanceRevenue({
 }): Revenue {
   const pm = db.paymentMethods.find((p) => p.id === payment_method_id) || db.paymentMethods[0];
   const barber = db.barbers.find((b) => b.id === barber_id);
-  const paid = Math.max(Number((gross - discount).toFixed(2)), 0);
-  const feePercent = pm?.fees[payment_type] || 0;
-  const fee = Number(((paid * feePercent) / 100).toFixed(2));
-  const net = Number((paid - fee).toFixed(2));
+  const feePercent = pm?.fees?.[payment_type] || 0;
 
-  let comm = 0;
-  if (barber) {
-    if (barber.commission_type === "fixo") {
-      comm = barber.commission_value;
-    } else {
-      const base = db.settings.commission_on === "original" ? gross : paid;
-      comm = Number(((base * barber.commission_percent) / 100).toFixed(2));
-    }
-  }
-  comm = Math.min(comm, Math.max(net, 0));
-  const shop = Number((net - comm).toFixed(2));
+  const calc = calculateCommission({
+    gross,
+    discount,
+    feePercent,
+    barber,
+    settings: db.settings,
+  });
+
+  const paid = calc.paidAmount;
+  const fee = calc.feeAmount;
+  const net = calc.netAmount;
+  const comm = calc.commissionAmount;
+  const shop = calc.shopAmount;
 
   const settlementDays = pm?.settlement_days[payment_type] || 0;
   const dateObj = parseDateStr(date || todayStr());

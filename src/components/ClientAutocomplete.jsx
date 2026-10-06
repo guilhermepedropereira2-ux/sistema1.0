@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useMemo } from "react";
-import { User, Phone, Check, Search, Sparkles } from "lucide-react";
+import { User, Phone, Check, Search } from "lucide-react";
+import ClientAvatar from "@/components/ClientAvatar";
 
 /**
  * ClientAutocomplete
@@ -133,7 +134,7 @@ export default function ClientAutocomplete({
         >
           <div className="p-1.5 bg-[#080A10] border-b border-white/10 flex items-center justify-between text-[10px] text-slate-400 font-semibold px-2.5">
             <span className="flex items-center gap-1 text-[#D4AF37]">
-              <Sparkles className="h-3 w-3" /> Clientes Encontrados
+              <User className="h-3 w-3" /> Clientes Encontrados
             </span>
             <span>{suggestions.length} sugestõ{suggestions.length > 1 ? "es" : "e"}</span>
           </div>
@@ -158,15 +159,11 @@ export default function ClientAutocomplete({
                   data-testid={`client-option-${client.id}`}
                 >
                   <div className="flex items-center gap-2 min-w-0">
-                    <div
-                      className={`h-6 w-6 rounded-full flex items-center justify-center text-[11px] font-bold shrink-0 ${
-                        isHighlighted
-                          ? "bg-[#D4AF37] text-[#0A0D14]"
-                          : "bg-white/10 text-slate-300"
-                      }`}
-                    >
-                      {client.name ? client.name.charAt(0).toUpperCase() : "C"}
-                    </div>
+                    <ClientAvatar
+                      name={client.name}
+                      photo={client.photo || client.avatar}
+                      size="xs"
+                    />
                     <div className="truncate">
                       <p className="truncate text-xs font-medium text-white">
                         {client.name}

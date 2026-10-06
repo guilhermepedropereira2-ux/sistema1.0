@@ -18,7 +18,6 @@ import {
   LogOut,
   ArrowRight,
   ExternalLink,
-  Sparkles,
   ShieldCheck,
   CreditCard,
   QrCode,
@@ -54,7 +53,7 @@ export default function SubscriptionExpiredModal({ open = true }) {
           <div className="flex items-start justify-between gap-4">
             <div className="flex items-start gap-3.5">
               <div className="h-12 w-12 rounded-[6px] bg-[#D4AF37]/15 border border-[#D4AF37]/40 flex items-center justify-center text-[#D4AF37] shrink-0 shadow-sm mt-0.5">
-                <Sparkles className="h-6 w-6" />
+                <Crown className="h-6 w-6" />
               </div>
               <div>
                 <div className="flex flex-wrap items-center gap-2">
@@ -257,7 +256,7 @@ export default function SubscriptionExpiredModal({ open = true }) {
           {/* Rodapé Informativo */}
           <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2 text-xs text-slate-400">
             <div className="flex items-center gap-2">
-              <Sparkles className="h-4 w-4 text-[#D4AF37]" />
+              <ShieldCheck className="h-4 w-4 text-[#D4AF37]" />
               <span>Sem fidelidade obrigatória. Você pode cancelar ou alterar seu plano quando desejar.</span>
             </div>
             <a

@@ -36,7 +36,6 @@ import {
   X,
   CreditCard,
   User,
-  Sparkles,
   Loader2,
   WifiOff,
 } from "lucide-react";

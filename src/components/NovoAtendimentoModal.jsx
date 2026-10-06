@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { Scissors, User, CreditCard, Sparkles, Check } from "lucide-react";
+import { Scissors, User, CreditCard, Check } from "lucide-react";
 import ClientAutocomplete from "@/components/ClientAutocomplete";
 import PaymentChannelSelector from "@/components/PaymentChannelSelector";
 import {

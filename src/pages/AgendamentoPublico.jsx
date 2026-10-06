@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Scissors, MapPin, Clock, Phone, Calendar as CalendarIcon,
-  CheckCircle2, Sparkles, ChevronRight, ChevronLeft, User,
+  CheckCircle2, ChevronRight, ChevronLeft, User,
   MessageCircle, ShieldCheck, AlertCircle, Share2, Check,
   ExternalLink,
 } from "lucide-react";
@@ -532,7 +532,7 @@ export default function AgendamentoPublico() {
               >
                 <div className="flex items-center gap-3">
                   <div className="h-10 w-10 rounded-[2px] bg-[#D4AF37]/15 border border-[#D4AF37]/30 flex items-center justify-center text-[#D4AF37] font-bold text-sm">
-                    <Sparkles className="h-4 w-4" />
+                    <User className="h-4 w-4" />
                   </div>
                   <div>
                     <div className="flex items-center gap-2">

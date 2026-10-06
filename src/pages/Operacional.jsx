@@ -43,7 +43,6 @@ import {
   Timer,
   AlertCircle,
   Phone,
-  Sparkles,
 } from "lucide-react";
 import ClientAutocomplete from "@/components/ClientAutocomplete";
 import PaymentChannelSelector from "@/components/PaymentChannelSelector";

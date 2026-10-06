@@ -8,7 +8,6 @@ import { PLANS } from "@/lib/plans";
 import {
   Crown,
   CheckCircle2,
-  Sparkles,
   Zap,
   Lock,
   ArrowRight,

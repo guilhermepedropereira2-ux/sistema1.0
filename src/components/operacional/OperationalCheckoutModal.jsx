@@ -1,7 +1,9 @@
 import { useState, useMemo } from "react";
 import { toast } from "sonner";
 import { api } from "@/lib/api";
+import { useApi } from "@/hooks/useApi";
 import { brl as formatBRL } from "@/lib/format";
+import { calculateCommission } from "@/lib/commission";
 import {
   Dialog,
   DialogContent,
@@ -49,6 +51,7 @@ export default function OperationalCheckoutModal({
     item.barber_id || barbers[0]?.id || ""
   );
   const [saving, setSaving] = useState(false);
+  const { data: settings } = useApi((api) => api.get("/settings"));
 
   const selectedPm = useMemo(
     () => paymentMethods.find((p) => p.id === paymentMethodId) || paymentMethods[0],
@@ -60,24 +63,24 @@ export default function OperationalCheckoutModal({
     [barbers, selectedBarberId]
   );
 
-  // Financial preview calculation
+  // Financial preview calculation based on official rules
   const gross = Number(grossAmount) || 0;
   const discount = Number(discountAmount) || 0;
-  const paid = Math.max(gross - discount, 0);
   const feePercent = selectedPm?.fees?.[paymentType] || 0;
-  const fee = Number(((paid * feePercent) / 100).toFixed(2));
-  const net = Number((paid - fee).toFixed(2));
 
-  let comm = 0;
-  if (selectedBarber) {
-    if (selectedBarber.commission_type === "fixo") {
-      comm = selectedBarber.commission_value;
-    } else {
-      comm = Number(((paid * selectedBarber.commission_percent) / 100).toFixed(2));
-    }
-  }
-  comm = Math.min(comm, Math.max(net, 0));
-  const shop = Number((net - comm).toFixed(2));
+  const calc = calculateCommission({
+    gross,
+    discount,
+    feePercent,
+    barber: selectedBarber,
+    settings,
+  });
+
+  const paid = calc.paidAmount;
+  const fee = calc.feeAmount;
+  const net = calc.netAmount;
+  const comm = calc.commissionAmount;
+  const shop = calc.shopAmount;
 
   const handleFinish = async (e) => {
     e.preventDefault();

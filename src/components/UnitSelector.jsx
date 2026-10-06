@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Store, ChevronDown, Check, Building2, Layers, Sparkles, Plus, Crown } from "lucide-react";
+import { Store, ChevronDown, Check, Building2, Layers, Plus, Crown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -152,9 +152,8 @@ export default function UnitSelector({ variant = "header" }) {
               <Layers className="h-3.5 w-3.5" />
             </div>
             <div className="flex flex-col min-w-0">
-              <span className="font-bold flex items-center gap-1">
+              <span className="font-bold">
                 Todas as Unidades (Visão Geral)
-                <Sparkles className="h-3 w-3 text-[#D4AF37]" />
               </span>
               <span className="text-[10px] text-muted-foreground truncate">
                 Faturamento e métricas somadas de toda a rede

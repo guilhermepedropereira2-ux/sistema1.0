@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { api } from "@/lib/api";
 import { useApi } from "@/hooks/useApi";
@@ -48,10 +49,12 @@ import {
   Scissors,
   ArrowRightLeft,
   Receipt,
-  Sparkles,
+  Settings,
+  ArrowRight,
 } from "lucide-react";
 
 export default function Comissoes() {
+  const navigate = useNavigate();
   const [period, setPeriod] = useState("mes");
   const [custom, setCustom] = useState({ start: "", end: "" });
   const [selectedBarberId, setSelectedBarberId] = useState("todos");
@@ -66,6 +69,8 @@ export default function Comissoes() {
   const [payDate, setPayDate] = useState(todayISO());
   const [payNotes, setPayNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
+
+  const { data: settings } = useApi((api) => api.get("/settings"));
 
   const { start, end } = useMemo(() => periodRange(period, custom), [period, custom]);
 
@@ -230,6 +235,43 @@ export default function Comissoes() {
             <span>Pagar / Quitar Comissão</span>
           </Button>
         </div>
+      </div>
+
+      {/* Indicação da Regra Atual de Comissões e Link para Configurações */}
+      <div
+        className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-4 py-2.5 rounded-[4px] bg-[#12141F] border border-white/10"
+        data-testid="banner-regra-comissao-atual"
+      >
+        <div className="flex flex-wrap items-center gap-2 text-xs">
+          <div className="flex items-center gap-2">
+            <span className="flex h-2 w-2 rounded-full bg-[#D4AF37]" />
+            <span className="text-slate-400 font-medium">Regra atual:</span>
+            <span className="font-semibold text-white">
+              {settings?.commission_base === "net"
+                ? "Comissão calculada sobre valor líquido"
+                : "Comissão calculada sobre valor bruto"}
+            </span>
+          </div>
+          <span className="text-slate-600 hidden sm:inline">·</span>
+          <span className="text-slate-400">
+            Descontos afetam a comissão:{" "}
+            <strong className="text-slate-200">
+              {settings?.discount_affects_commission !== false ? "Sim" : "Não"}
+            </strong>
+          </span>
+        </div>
+
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => navigate("/configuracoes?tab=comissao#regras-comissao")}
+          className="h-7 px-2.5 text-xs text-[#D4AF37] hover:text-[#E5C365] hover:bg-[#D4AF37]/10 rounded-[3px] font-semibold gap-1.5 self-start sm:self-auto cursor-pointer"
+          data-testid="btn-alterar-regra-comissao"
+        >
+          <Settings className="h-3.5 w-3.5" />
+          <span>Alterar regra</span>
+          <ArrowRight className="h-3 w-3" />
+        </Button>
       </div>
 
       {/* Barra de Filtros: Barbeiro + Período */}

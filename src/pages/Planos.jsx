@@ -11,7 +11,6 @@ import {
   CheckCircle2,
   Crown,
   ArrowRight,
-  Sparkles,
   ShieldCheck,
   Building2,
   Users2,
@@ -97,7 +96,7 @@ export default function Planos() {
         {/* Boas-vindas pós-cadastro ou upgrade */}
         <div className="text-center max-w-2xl mx-auto mb-10">
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#D4AF37]/10 border border-[#D4AF37]/30 text-[#D4AF37] text-xs font-semibold mb-3">
-            <Sparkles className="h-3.5 w-3.5" /> Comece com 7 dias de acesso liberado
+            <ShieldCheck className="h-3.5 w-3.5" /> Comece com 7 dias de acesso liberado
           </div>
           <h2 className="text-2xl sm:text-3xl font-display font-extrabold text-white">
             Selecione o plano da sua barbearia

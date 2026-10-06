@@ -3,6 +3,7 @@ import { db, authUser, enrichClient } from "../db.js";
 import { newId, nowIso, todayStr, parseDateStr, formatBRL, Revenue, Client } from "../types.js";
 import { persistRevenue, persistClient } from "../../src/db/sync.js";
 import { storage } from "../storage.js";
+import { calculateCommission } from "../services/commissionService.js";
 
 const router = express.Router();
 
@@ -34,15 +35,20 @@ router.post("/barber/atendimento", async (req, res) => {
   items.forEach((it: any, idx: number) => {
     const itemGross = Number(it.price || 0) * Number(it.quantity || 1);
     const itemDisc = idx === items.length - 1 ? discount - idx * (discount / items.length) : discount / items.length;
-    const itemPaid = Math.max(itemGross - itemDisc, 0);
-    const fee = Number(((itemPaid * feePercent) / 100).toFixed(2));
-    const net = Number((itemPaid - fee).toFixed(2));
 
-    let comm = 0;
-    if (barber.commission_type === "fixo") comm = barber.commission_value;
-    else comm = Number(((itemPaid * barber.commission_percent) / 100).toFixed(2));
-    comm = Math.min(comm, Math.max(net, 0));
-    const shop = Number((net - comm).toFixed(2));
+    const calc = calculateCommission({
+      gross: itemGross,
+      discount: itemDisc,
+      feePercent,
+      barber,
+      settings: db.settings,
+    });
+
+    const itemPaid = calc.paidAmount;
+    const fee = calc.feeAmount;
+    const net = calc.netAmount;
+    const comm = calc.commissionAmount;
+    const shop = calc.shopAmount;
 
     totalCommissionCalculated += comm;
     totalNetCalculated += net;

@@ -1,4 +1,4 @@
-import { Scissors, Plus, Home, Calendar, Users, BarChart3, User, Send, Camera, Sparkles } from "lucide-react";
+import { Scissors, Plus, Home, Calendar, Users, BarChart3, User, Send, Camera } from "lucide-react";
 import { PreviewHeader, PB, Avatar } from "../PreviewShell";
 import { BRL } from "../data";
 
@@ -39,7 +39,7 @@ export default function BarbeiroApp() {
                   </div>
                 </div>
                 <div className="h-7 w-7 rounded-full bg-[#D4AF37]/15 border border-[#D4AF37]/30 flex items-center justify-center">
-                  <Sparkles className="h-3.5 w-3.5 text-[#D4AF37]" />
+                  <Scissors className="h-3.5 w-3.5 text-[#D4AF37]" />
                 </div>
               </div>
               <div className="rounded-[10px] bg-[#D4AF37] p-3">

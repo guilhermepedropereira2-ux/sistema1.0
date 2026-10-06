@@ -5,7 +5,7 @@ import { useAuth } from "@/context/AuthContext";
 import { api } from "@/lib/api";
 import {
   ShieldCheck, Users, Clock, AlertTriangle, CheckCircle2,
-  TrendingUp, RefreshCw, Search, Filter, Calendar, Sparkles,
+  TrendingUp, RefreshCw, Search, Filter, Calendar,
   SlidersHorizontal, ChevronRight, Ban, PlayCircle, MoreHorizontal,
   PlusCircle, Shield, ArrowUpRight, DollarSign, Download, Building2,
   Mail, Phone, ExternalLink, HelpCircle, Layers, Crown, Zap

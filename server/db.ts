@@ -81,6 +81,8 @@ export class Database {
   settings = {
     id: "settings",
     barbershop_id: "profile",
+    commission_base: "gross", // "gross" | "net"
+    discount_affects_commission: true, // boolean
     commission_on: "pago",
     initial_balance: 3000.0,
     shop_name: "Barbearia Vintage Club",
@@ -135,6 +137,8 @@ export class Database {
     this.settings = {
       id: "settings",
       barbershop_id: "profile",
+      commission_base: "gross",
+      discount_affects_commission: true,
       commission_on: "pago",
       initial_balance: 3000.0,
       shop_name: "Barbearia Vintage Club",
@@ -154,20 +158,20 @@ export class Database {
 
     // Services
     const svcs: Service[] = [
-      { id: "svc_corte", barbershop_id: "profile", name: "Corte Tradicional", price: 50, duration_min: 30, active: true, created_at: nowIso() },
-      { id: "svc_barba", barbershop_id: "profile", name: "Barba Terapia", price: 35, duration_min: 30, active: true, created_at: nowIso() },
-      { id: "svc_combo", barbershop_id: "profile", name: "Corte + Barba", price: 75, duration_min: 60, active: true, created_at: nowIso() },
-      { id: "svc_degrade", barbershop_id: "profile", name: "Corte Degradê", price: 60, duration_min: 40, active: true, created_at: nowIso() },
-      { id: "svc_sobrancelha", barbershop_id: "profile", name: "Sobrancelha", price: 20, duration_min: 15, active: true, created_at: nowIso() },
+      { id: "svc_corte", barbershop_id: "profile", name: "Corte Tradicional", price: 50, duration_min: 30, icon: "corte_tradicional", active: true, created_at: nowIso() },
+      { id: "svc_barba", barbershop_id: "profile", name: "Barba Terapia", price: 35, duration_min: 30, icon: "corte_barba", active: true, created_at: nowIso() },
+      { id: "svc_combo", barbershop_id: "profile", name: "Corte + Barba", price: 75, duration_min: 60, icon: "barba_corte", active: true, created_at: nowIso() },
+      { id: "svc_degrade", barbershop_id: "profile", name: "Corte Degradê", price: 60, duration_min: 40, icon: "degrade", active: true, created_at: nowIso() },
+      { id: "svc_sobrancelha", barbershop_id: "profile", name: "Sobrancelha", price: 20, duration_min: 15, icon: "corte_sobrancelha", active: true, created_at: nowIso() },
     ];
     this.services = svcs;
 
     // Products
     const prods: Product[] = [
-      { id: "prod_pomada", barbershop_id: "profile", name: "Pomada Matte 100g", price: 45, cost: 20, stock: 28, active: true, created_at: nowIso() },
-      { id: "prod_shampoo", barbershop_id: "profile", name: "Shampoo Refrescante", price: 35, cost: 15, stock: 19, active: true, created_at: nowIso() },
-      { id: "prod_oleo", barbershop_id: "profile", name: "Óleo para Barba 30ml", price: 50, cost: 22, stock: 15, active: true, created_at: nowIso() },
-      { id: "prod_cera", barbershop_id: "profile", name: "Cera Modeladora Forte", price: 40, cost: 18, stock: 22, active: true, created_at: nowIso() },
+      { id: "prod_pomada", barbershop_id: "profile", name: "Pomada Matte 100g", price: 45, cost: 20, stock: 28, icon: "pomada", active: true, created_at: nowIso() },
+      { id: "prod_shampoo", barbershop_id: "profile", name: "Shampoo Refrescante", price: 35, cost: 15, stock: 19, icon: "shampoo", active: true, created_at: nowIso() },
+      { id: "prod_oleo", barbershop_id: "profile", name: "Óleo para Barba 30ml", price: 50, cost: 22, stock: 15, icon: "oleo_barba", active: true, created_at: nowIso() },
+      { id: "prod_cera", barbershop_id: "profile", name: "Cera Modeladora Forte", price: 40, cost: 18, stock: 22, icon: "cera", active: true, created_at: nowIso() },
     ];
     this.products = prods;
 
@@ -404,6 +408,8 @@ export class Database {
         barbershop_id: "profile",
         name: "João Pedro Silva",
         phone: "(11) 98765-4321",
+        photo: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&auto=format&fit=crop&q=80",
+        avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&auto=format&fit=crop&q=80",
         notes: "Prefere degradê navalhado",
         has_plan: true,
         plan: {
@@ -433,6 +439,8 @@ export class Database {
         barbershop_id: "profile",
         name: "Marcos Vinicius",
         phone: "(11) 96666-5555",
+        photo: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&auto=format&fit=crop&q=80",
+        avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&auto=format&fit=crop&q=80",
         notes: "Assinante do plano ilimitado",
         has_plan: true,
         plan: {

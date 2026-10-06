@@ -1,6 +1,7 @@
-import { Plus, Edit2, Star } from "lucide-react";
+import { Plus, Edit2 } from "lucide-react";
 import { PreviewHeader, PB } from "../PreviewShell";
 import { SERVICES, BRL } from "../data";
+import ServiceIcon from "@/components/services/ServiceIcon";
 
 export default function Servicos() {
   return (
@@ -26,13 +27,13 @@ export default function Servicos() {
               s.featured ? "border-[#D4AF37]/40 bg-[#D4AF37]/[0.04]" : "border-white/[0.08] bg-[#131622]"
             } ${!s.active ? "opacity-50" : ""}`}
           >
-            <div className="flex items-start justify-between gap-2 mb-3">
-              <div className="min-w-0">
-                <div className="flex items-center gap-1.5 mb-1">
-                  {s.featured && <Star className="h-3 w-3 text-[#D4AF37] fill-current" />}
+            <div className="flex items-start justify-between gap-3 mb-3">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <ServiceIcon iconKey={s.name} size="sm" />
+                <div className="min-w-0">
                   <p className="font-display text-sm font-bold text-white truncate">{s.name}</p>
+                  <PB tone="muted">{s.category}</PB>
                 </div>
-                <PB tone="muted">{s.category}</PB>
               </div>
               <button type="button" className="h-7 w-7 rounded-[3px] bg-[#0F121C] border border-white/10 hover:border-[#D4AF37]/40 flex items-center justify-center text-slate-400 hover:text-[#D4AF37]">
                 <Edit2 className="h-3 w-3" />

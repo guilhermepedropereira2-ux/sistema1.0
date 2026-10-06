@@ -26,6 +26,8 @@ import Comparacao from "@/pages/Comparacao";
 import Historico from "@/pages/Historico";
 import Configuracoes from "@/pages/Configuracoes";
 import Operacional from "@/pages/Operacional";
+import Atendimentos from "@/pages/Atendimentos";
+import Relatorios from "@/pages/Relatorios";
 import Login from "@/pages/Login";
 import BarberLayout from "@/components/BarberLayout";
 import BarberHome from "@/pages/barber/BarberHome";
@@ -78,14 +80,16 @@ function App() {
                 </Route>
                 <Route path="/" element={<Layout />}>
                   <Route index element={<Dashboard />} />
-                  <Route path="atendimentos" element={<Operacional />} />
+                  <Route path="atendimentos" element={<Atendimentos />} />
                   <Route path="operacional" element={<Operacional />} />
-                  <Route path="receitas" element={<Receitas />} />
+                  <Route path="receitas" element={<Navigate to="/relatorios?tab=movimentacao" replace />} />
                   <Route path="despesas" element={<Despesas />} />
                   <Route path="comissoes" element={<Comissoes />} />
                   <Route path="maquininhas" element={<Maquininhas />} />
+                  <Route path="formas-pagamento" element={<Navigate to="/maquininhas" replace />} />
                   <Route path="barbearia" element={<Barbearia />} />
                   <Route path="equipe" element={<Equipe />} />
+                  <Route path="barbeiros" element={<Navigate to="/equipe" replace />} />
                   <Route path="equipe/:id" element={<BarberReport />} />
                   <Route path="servicos" element={<Servicos />} />
                   <Route path="produtos" element={<Produtos />} />
@@ -94,8 +98,11 @@ function App() {
                   <Route path="planos-clientes" element={<PlanosClientes />} />
                   <Route path="assinaturas" element={<PlanosClientes />} />
                   <Route path="categorias" element={<Categorias />} />
-                  <Route path="fluxo-de-caixa" element={<FluxoCaixa />} />
+                  <Route path="relatorios" element={<Relatorios />} />
+                  <Route path="financeiro" element={<Navigate to="/relatorios" replace />} />
+                  <Route path="fluxo-de-caixa" element={<Navigate to="/relatorios?tab=dre" replace />} />
                   <Route path="calendario" element={<Calendario />} />
+                  <Route path="agenda" element={<Navigate to="/calendario" replace />} />
                   <Route path="fechamento" element={<Fechamento />} />
                   <Route path="retiradas" element={<Retiradas />} />
                   <Route path="comparacao" element={<Comparacao />} />

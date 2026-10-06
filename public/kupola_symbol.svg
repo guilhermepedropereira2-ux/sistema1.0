@@ -1,0 +1,158 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="1024" height="1024" fill="none">
+  <defs>
+    <!-- 24K Brilliant Polished Gold (Primary) -->
+    <linearGradient id="goldMain" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF" />
+      <stop offset="12%" stop-color="#FFF6B8" />
+      <stop offset="32%" stop-color="#FFD836" />
+      <stop offset="65%" stop-color="#F0A500" />
+      <stop offset="88%" stop-color="#D48800" />
+      <stop offset="100%" stop-color="#B86C00" />
+    </linearGradient>
+
+    <!-- Razor Blade Polished Mirror Gleam -->
+    <linearGradient id="razorBlade" x1="15%" y1="85%" x2="85%" y2="15%">
+      <stop offset="0%" stop-color="#C87800" />
+      <stop offset="20%" stop-color="#FFDE59" />
+      <stop offset="45%" stop-color="#FFFFFF" />
+      <stop offset="68%" stop-color="#FFECA0" />
+      <stop offset="88%" stop-color="#F5AC00" />
+      <stop offset="100%" stop-color="#B86C00" />
+    </linearGradient>
+
+    <!-- Facet Highlight (Direct Upper Light) -->
+    <linearGradient id="facetLight" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF" />
+      <stop offset="22%" stop-color="#FFFDE8" />
+      <stop offset="52%" stop-color="#FFDA4D" />
+      <stop offset="82%" stop-color="#F0A800" />
+      <stop offset="100%" stop-color="#C87800" />
+    </linearGradient>
+
+    <!-- Facet Shade (Warm Rich Amber - NEVER black/grey) -->
+    <linearGradient id="facetShade" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#F0A500" />
+      <stop offset="38%" stop-color="#CF8200" />
+      <stop offset="75%" stop-color="#A66000" />
+      <stop offset="100%" stop-color="#8A4800" />
+    </linearGradient>
+
+    <!-- Razor Spine Cylindrical Gradient -->
+    <linearGradient id="razorSpine" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#C87C00" />
+      <stop offset="28%" stop-color="#FFFFFF" />
+      <stop offset="58%" stop-color="#FFE266" />
+      <stop offset="88%" stop-color="#F0A500" />
+      <stop offset="100%" stop-color="#D18300" />
+    </linearGradient>
+
+    <!-- Razor Handle Frame (Curved Golden Scales) -->
+    <linearGradient id="handleFrame" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#B86C00" />
+      <stop offset="30%" stop-color="#FFDA4D" />
+      <stop offset="65%" stop-color="#FFF6C2" />
+      <stop offset="100%" stop-color="#D48800" />
+    </linearGradient>
+
+    <!-- Handle Inlay Channel (Deep Bronze Gold for contrast, NO black opacity box) -->
+    <linearGradient id="handleInlay" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#301B02" />
+      <stop offset="50%" stop-color="#523105" />
+      <stop offset="100%" stop-color="#301B02" />
+    </linearGradient>
+
+    <!-- Vertical Stem Slot -->
+    <linearGradient id="stemSlot" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#221402" />
+      <stop offset="50%" stop-color="#382103" />
+      <stop offset="100%" stop-color="#221402" />
+    </linearGradient>
+  </defs>
+
+  <g id="kupola-gold-symbol">
+    <!-- ============================================================== -->
+    <!-- 1. LEFT VERTICAL STEM WITH 3D BEVELS & SERIFS                  -->
+    <!-- ============================================================== -->
+    <!-- Top Serif & Crown -->
+    <polygon points="40,36 88,36 88,48 78,54 66,54 58,46 40,46" fill="url(#goldMain)" stroke="#FFF5B8" stroke-width="1" />
+    <polygon points="40,36 60,46 40,46" fill="#FFFFFF" opacity="0.95" />
+    <polygon points="66,36 88,36 88,48 78,48" fill="url(#facetLight)" />
+
+    <!-- Bottom Serif & Base Foot -->
+    <polygon points="40,164 88,164 88,152 78,146 66,146 58,154 40,154" fill="url(#goldMain)" stroke="#FFF5B8" stroke-width="1" />
+    <polygon points="40,164 58,154 40,154" fill="url(#facetShade)" />
+    <polygon points="66,164 88,164 88,152 78,152" fill="url(#facetShade)" />
+
+    <!-- Left Beveled Ridge of Stem -->
+    <polygon points="46,46 60,52 60,148 46,154" fill="url(#facetLight)" stroke="#FFF9D4" stroke-width="0.8" />
+
+    <!-- Inner Recessed Channel of Stem (Sculptural Depth) -->
+    <polygon points="60,52 70,52 70,148 60,148" fill="url(#stemSlot)" />
+    <!-- Bright Center Highlight Wire -->
+    <line x1="61.5" y1="52" x2="61.5" y2="148" stroke="#FFF8D0" stroke-width="1.5" />
+
+    <!-- Right Beveled Ridge of Stem -->
+    <polygon points="70,48 88,44 88,156 70,152" fill="url(#goldMain)" stroke="#FFEA8A" stroke-width="0.8" />
+
+    <!-- ============================================================== -->
+    <!-- 2. UPPER RIGHT BACK FACET OF "K"                               -->
+    <!-- ============================================================== -->
+    <polygon points="112,36 156,36 132,64 98,64" fill="url(#facetLight)" stroke="#FFF8D0" stroke-width="1" />
+    <polygon points="156,36 132,64 138,72 162,44" fill="url(#facetShade)" stroke="#F0A500" stroke-width="0.8" />
+
+    <!-- ============================================================== -->
+    <!-- 3. LOWER DIAGONAL LEG IN 3D FACETED PRISM                      -->
+    <!-- ============================================================== -->
+    <!-- Upper Face (Brilliantly Lit Face) -->
+    <polygon points="88,102 114,78 162,154 140,166" fill="url(#facetLight)" stroke="#FFF8CC" stroke-width="1" />
+    <!-- Lower Face (Warm Amber Shading) -->
+    <polygon points="88,102 140,166 112,166 76,120" fill="url(#facetShade)" stroke="#A66000" stroke-width="0.8" />
+    <!-- Foot Plate Ground Line -->
+    <polygon points="112,166 162,166 162,154 140,166" fill="url(#goldMain)" stroke="#FFEAA0" stroke-width="1" />
+    <!-- Ultra Sharp Central Ridge Bevel Glint -->
+    <line x1="88" y1="102" x2="140" y2="166" stroke="#FFFFFF" stroke-width="2.2" />
+
+    <!-- ============================================================== -->
+    <!-- 4. STRAIGHT RAZOR (NAVALHA) - UPPER ARM & CABO                  -->
+    <!-- ============================================================== -->
+    <!-- Razor Spine (Dorso Tubular da Lâmina) -->
+    <path d="M94,90 L152,38 C158,34 164,38 162,46 L158,52 L96,98 Z" fill="url(#razorSpine)" stroke="#FFFFFF" stroke-width="1" />
+
+    <!-- Hollow Ground Mirror Razor Blade Face -->
+    <polygon points="96,94 158,46 164,50 106,104" fill="url(#razorBlade)" />
+
+    <!-- Surgical Razor Cutting Edge (Gleaming Pure White/Gold Flash) -->
+    <line x1="106" y1="104" x2="164" y2="50" stroke="#FFFFFF" stroke-width="2.6" />
+    <line x1="106" y1="104" x2="164" y2="50" stroke="#FFF8CC" stroke-width="1.2" opacity="0.9" />
+
+    <!-- Pivot / Tang Connector -->
+    <path d="M88,96 C92,90 102,88 106,98 C104,106 94,108 88,102 Z" fill="url(#goldMain)" stroke="#FFF5B8" stroke-width="1" />
+
+    <!-- Razor Handle (Cabo Curvo Metálico da Navalha) -->
+    <path d="M40,134 C36,130 38,122 44,118 L96,86 C102,84 108,88 106,96 L52,142 C46,144 40,140 40,134 Z" fill="url(#handleFrame)" stroke="#FFEAA0" stroke-width="1.2" />
+
+    <!-- Inner Slot of the Handle -->
+    <path d="M44,132 C42,130 44,126 48,122 L92,92 C96,90 100,92 98,96 L54,138 C50,140 46,136 44,132 Z" fill="url(#handleInlay)" stroke="#E59E00" stroke-width="0.8" />
+
+    <!-- 3 Golden Metallic Screws / Rivets (Rebites 3D) -->
+    <!-- Rivet 1 (Base) -->
+    <circle cx="50" cy="130" r="5.2" fill="url(#goldMain)" stroke="#FFFFFF" stroke-width="0.8" />
+    <circle cx="50" cy="130" r="2.4" fill="#613702" />
+    <circle cx="48.8" cy="128.8" r="1.3" fill="#FFFFFF" />
+
+    <!-- Rivet 2 (Center) -->
+    <circle cx="68" cy="112" r="4.4" fill="url(#goldMain)" stroke="#FFFFFF" stroke-width="0.8" />
+    <circle cx="68" cy="112" r="2" fill="#613702" />
+    <circle cx="67" cy="111" r="1.1" fill="#FFFFFF" />
+
+    <!-- Rivet 3 (Top / Tang Pin) -->
+    <circle cx="84" cy="100" r="4.4" fill="url(#goldMain)" stroke="#FFFFFF" stroke-width="0.8" />
+    <circle cx="84" cy="100" r="2" fill="#613702" />
+    <circle cx="83" cy="99" r="1.1" fill="#FFFFFF" />
+
+    <!-- Specular Star Sparkle Highlights -->
+    <polygon points="156,38 158,34 160,38 164,40 160,42 158,46 156,42 152,40" fill="#FFFFFF" />
+    <polygon points="42,36 43,33 44,36 47,37 44,38 43,41 42,38 39,37" fill="#FFFFFF" />
+    <circle cx="164" cy="50" r="2.2" fill="#FFFFFF" />
+  </g>
+</svg>

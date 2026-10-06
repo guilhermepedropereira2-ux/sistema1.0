@@ -264,10 +264,21 @@ router.delete("/units/:id", (req, res) => {
 
 // Settings
 router.get("/settings", (_req, res) => {
+  if (!db.settings.commission_base) {
+    db.settings.commission_base = db.settings.commission_on === "original" ? "gross" : "net";
+  }
+  if (db.settings.discount_affects_commission === undefined) {
+    db.settings.discount_affects_commission = true;
+  }
   res.json(db.settings);
 });
 
 router.put("/settings", (req, res) => {
+  const user = authUser(req);
+  if (user && (user.role === "barbeiro" || user.role === "barber")) {
+    return res.status(403).json({ detail: "Barbeiros não possuem permissão para alterar as configurações do sistema." });
+  }
+
   const body = req.body || {};
   let slug = body.public_slug || body.slug;
   if (slug) {
@@ -282,6 +293,16 @@ router.put("/settings", (req, res) => {
     body.public_slug = slug || "barbearia-vintage";
     db.barbershop.slug = body.public_slug;
   }
+
+  // Handle commission calculation rules
+  if (body.commission_base) {
+    body.commission_base = body.commission_base === "net" ? "net" : "gross";
+    body.commission_on = body.commission_base === "gross" ? "original" : "pago";
+  }
+  if (body.discount_affects_commission !== undefined) {
+    body.discount_affects_commission = Boolean(body.discount_affects_commission);
+  }
+
   db.settings = { ...db.settings, ...body };
   if (body.shop_name) {
     db.barbershop.name = body.shop_name;

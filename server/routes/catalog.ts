@@ -50,6 +50,7 @@ router.post("/services", (req, res) => {
     name: body.name,
     price: Number(body.price || 0),
     duration_min: Number(body.duration_min || 30),
+    icon: body.icon || "corte_tradicional",
     active: body.active !== false,
     created_at: nowIso(),
   };
@@ -83,6 +84,7 @@ router.post("/products", (req, res) => {
     price: Number(body.price || 0),
     cost: Number(body.cost || 0),
     stock: Number(body.stock || 0),
+    icon: body.icon || "produto",
     active: body.active !== false,
     created_at: nowIso(),
   };
@@ -243,6 +245,10 @@ router.post("/clients", (req, res) => {
     barbershop_id: "profile",
     name: body.name.trim(),
     phone: body.phone?.trim() || null,
+    email: body.email?.trim() || null,
+    cpf: body.cpf?.trim() || null,
+    photo: body.photo || body.avatar || null,
+    avatar: body.avatar || body.photo || null,
     birthdate: body.birthdate || null,
     notes: body.notes || null,
     has_plan: hasPlan,
