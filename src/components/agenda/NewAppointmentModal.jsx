@@ -1,7 +1,35 @@
-import React, { useState } from "react";
-import { X, Calendar, Clock, User, Scissors, Check } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { X, Calendar, Clock, User, Scissors, Check, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { BARBERS, SERVICES, TIME_SLOTS } from "@/data/agendaData";
+import { api } from "@/lib/api";
+
+const DEFAULT_TIME_SLOTS = [
+  "08:00",
+  "08:30",
+  "09:00",
+  "09:30",
+  "10:00",
+  "10:30",
+  "11:00",
+  "11:30",
+  "12:00",
+  "12:30",
+  "13:00",
+  "13:30",
+  "14:00",
+  "14:30",
+  "15:00",
+  "15:30",
+  "16:00",
+  "16:30",
+  "17:00",
+  "17:30",
+  "18:00",
+  "18:30",
+  "19:00",
+  "19:30",
+  "20:00",
+];
 
 export default function NewAppointmentModal({
   open,
@@ -9,52 +37,97 @@ export default function NewAppointmentModal({
   onAddAppointment,
   initialBarberId,
   initialTime,
+  initialDate,
+  barbers: propBarbers = [],
+  services: propServices = [],
 }) {
   const [clientName, setClientName] = useState("");
   const [clientPhone, setClientPhone] = useState("");
-  const [barberId, setBarberId] = useState(initialBarberId || BARBERS[0]?.id);
-  const [serviceId, setServiceId] = useState(SERVICES[0]?.id);
-  const [date, setDate] = useState("2026-10-06");
+  const [barberId, setBarberId] = useState("");
+  const [serviceId, setServiceId] = useState("");
+  const [date, setDate] = useState(() => initialDate || new Date().toISOString().slice(0, 10));
   const [time, setTime] = useState(initialTime || "10:00");
   const [notes, setNotes] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  const [barbersList, setBarbersList] = useState(propBarbers);
+  const [servicesList, setServicesList] = useState(propServices);
+
+  useEffect(() => {
+    if (!open) return;
+
+    if (initialTime) setTime(initialTime);
+    if (initialDate) setDate(initialDate);
+    if (initialBarberId) setBarberId(initialBarberId);
+
+    // Carrega dados da API caso não tenham sido passados
+    if (propBarbers.length === 0 || propServices.length === 0) {
+      Promise.all([api.get("/barbers"), api.get("/services")])
+        .then(([bRes, sRes]) => {
+          const activeB = (Array.isArray(bRes) ? bRes : []).filter((b) => b.active !== false);
+          const activeS = (Array.isArray(sRes) ? sRes : []).filter((s) => s.active !== false);
+          setBarbersList(activeB);
+          setServicesList(activeS);
+
+          if (!barberId && activeB.length > 0) {
+            setBarberId(initialBarberId || activeB[0].id);
+          }
+          if (!serviceId && activeS.length > 0) {
+            setServiceId(activeS[0].id);
+          }
+        })
+        .catch((err) => {
+          console.error("Erro ao carregar catálogo para agendamento:", err);
+        });
+    } else {
+      setBarbersList(propBarbers);
+      setServicesList(propServices);
+      if (!barberId && propBarbers.length > 0) {
+        setBarberId(initialBarberId || propBarbers[0].id);
+      }
+      if (!serviceId && propServices.length > 0) {
+        setServiceId(propServices[0].id);
+      }
+    }
+  }, [open, initialBarberId, initialTime, initialDate, propBarbers, propServices]);
 
   if (!open) return null;
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!clientName.trim()) {
       toast.error("Por favor, informe o nome do cliente.");
       return;
     }
 
-    const selectedService = SERVICES.find((s) => s.id === serviceId);
-    const selectedBarber = BARBERS.find((b) => b.id === barberId);
+    const selectedService = servicesList.find((s) => s.id === serviceId) || servicesList[0];
+    const selectedBarber = barbersList.find((b) => b.id === barberId) || barbersList[0];
 
-    // Calcular horário de término
-    const [h, m] = time.split(":").map(Number);
-    const endMinutes = h * 60 + m + (selectedService?.duration || 60);
-    const endH = String(Math.floor(endMinutes / 60)).padStart(2, "0");
-    const endM = String(endMinutes % 60).padStart(2, "0");
-    const endTime = `${endH}:${endM}`;
+    setSubmitting(true);
+    try {
+      const createdApt = await api.post("/appointments", {
+        client_name: clientName.trim(),
+        client_phone: clientPhone.trim() || undefined,
+        barber_id: selectedBarber?.id,
+        service_ids: selectedService ? [selectedService.id] : [],
+        service_name: selectedService?.name || "Corte Tradicional",
+        date: date,
+        time: time,
+        duration_min: selectedService?.duration_min || 45,
+        price: Number(selectedService?.price || 50),
+        notes: notes.trim() || undefined,
+        status: "confirmado",
+      });
 
-    const newApt = {
-      id: `apt-${Date.now()}`,
-      barberId: barberId || BARBERS[0].id,
-      clientName: clientName.trim(),
-      clientPhone: clientPhone || "(11) 99999-0000",
-      clientAvatar: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100",
-      serviceName: selectedService?.name || "Corte Masculino",
-      startTime: time,
-      endTime,
-      durationMinutes: selectedService?.duration || 60,
-      status: "confirmado",
-      price: selectedService?.price || 65.0,
-      notes: notes.trim(),
-    };
-
-    onAddAppointment?.(newApt);
-    toast.success(`Agendamento de ${clientName} confirmado com ${selectedBarber?.name}!`);
-    onClose();
+      toast.success(`Agendamento de ${clientName} confirmado com ${selectedBarber?.name || "barbeiro"}!`);
+      onAddAppointment?.(createdApt);
+      onClose();
+    } catch (err) {
+      console.error("Erro ao criar agendamento:", err);
+      toast.error(err?.response?.data?.detail || "Erro ao criar agendamento no servidor.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -74,7 +147,7 @@ export default function NewAppointmentModal({
               <Calendar className="w-4 h-4" />
             </div>
             <div>
-              <h2 className="text-base sm:text-lg font-bold text-white tracking-tight">
+              <h2 className="text-base sm:text-lg font-bold text-white tracking-tight font-['Outfit',sans-serif]">
                 Novo Agendamento
               </h2>
               <p className="text-xs text-slate-400">
@@ -120,7 +193,7 @@ export default function NewAppointmentModal({
               type="text"
               value={clientPhone}
               onChange={(e) => setClientPhone(e.target.value)}
-              placeholder="(11) 98888-7777"
+              placeholder="(67) 98888-7777"
               className="w-full h-10 px-3.5 rounded-xl bg-[#0D121B] border border-[#161E2C] focus:border-[#D4AF37] focus:outline-none text-xs text-white placeholder-slate-500"
             />
           </div>
@@ -136,9 +209,9 @@ export default function NewAppointmentModal({
                 onChange={(e) => setBarberId(e.target.value)}
                 className="w-full h-10 px-3 rounded-xl bg-[#0D121B] border border-[#161E2C] focus:border-[#D4AF37] focus:outline-none text-xs text-white cursor-pointer"
               >
-                {BARBERS.map((b) => (
+                {barbersList.map((b) => (
                   <option key={b.id} value={b.id} className="bg-[#0A0E15]">
-                    {b.name} ({b.role})
+                    {b.name} ({b.role || "Barbeiro"})
                   </option>
                 ))}
               </select>
@@ -153,9 +226,9 @@ export default function NewAppointmentModal({
                 onChange={(e) => setServiceId(e.target.value)}
                 className="w-full h-10 px-3 rounded-xl bg-[#0D121B] border border-[#161E2C] focus:border-[#D4AF37] focus:outline-none text-xs text-white cursor-pointer"
               >
-                {SERVICES.map((s) => (
+                {servicesList.map((s) => (
                   <option key={s.id} value={s.id} className="bg-[#0A0E15]">
-                    {s.name} • R$ {s.price.toFixed(2)}
+                    {s.name} • R$ {Number(s.price || 0).toFixed(2).replace(".", ",")}
                   </option>
                 ))}
               </select>
@@ -186,7 +259,7 @@ export default function NewAppointmentModal({
                 onChange={(e) => setTime(e.target.value)}
                 className="w-full h-10 px-3 rounded-xl bg-[#0D121B] border border-[#161E2C] focus:border-[#D4AF37] focus:outline-none text-xs text-white cursor-pointer"
               >
-                {TIME_SLOTS.map((slot) => (
+                {DEFAULT_TIME_SLOTS.map((slot) => (
                   <option key={slot} value={slot} className="bg-[#0A0E15]">
                     {slot}
                   </option>
@@ -214,16 +287,27 @@ export default function NewAppointmentModal({
             <button
               type="button"
               onClick={onClose}
+              disabled={submitting}
               className="px-4 py-2.5 rounded-xl text-xs font-semibold text-slate-300 hover:text-white hover:bg-white/5 transition-colors cursor-pointer"
             >
               Cancelar
             </button>
             <button
               type="submit"
-              className="px-5 py-2.5 rounded-xl text-xs font-bold text-[#070A0F] bg-[#D4AF37] hover:bg-[#E5C365] transition-all shadow-md active:scale-95 cursor-pointer flex items-center gap-1.5"
+              disabled={submitting}
+              className="px-5 py-2.5 rounded-xl text-xs font-bold text-[#070A0F] bg-[#D4AF37] hover:bg-[#E5C365] transition-all shadow-md active:scale-95 cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
             >
-              <Check className="w-4 h-4" />
-              <span>Confirmar agendamento</span>
+              {submitting ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>Salvando...</span>
+                </>
+              ) : (
+                <>
+                  <Check className="w-4 h-4 stroke-[3]" />
+                  <span>Confirmar agendamento</span>
+                </>
+              )}
             </button>
           </div>
         </form>

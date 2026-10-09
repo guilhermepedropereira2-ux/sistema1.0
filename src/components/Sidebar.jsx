@@ -52,6 +52,7 @@ export const MENU_ITEMS = [
   { id: "produtos", to: "/produtos", label: "Produtos", icon: Package, testId: "nav-produtos" },
   { id: "pagamentos", to: "/maquininhas", label: "Formas de Pagamento", icon: CreditCard, testId: "nav-pagamentos" },
   { id: "relatorios", to: "/relatorios", label: "Relatórios", icon: BarChart3, testId: "nav-relatorios" },
+  { id: "planos", to: "/planos", label: "Planos e Assinatura", icon: Crown, testId: "nav-planos" },
   { id: "configuracoes", to: "/configuracoes", label: "Configurações", icon: Settings, testId: "nav-configuracoes" },
 ];
 
@@ -153,7 +154,7 @@ export default function Sidebar({
                   <span className="block text-xs font-semibold text-slate-200 truncate group-hover:text-white leading-tight">
                     {activeUnitId === "all"
                       ? "Todas as Unidades (Rede)"
-                      : activeUnit?.name || units[0]?.name || "Unidade Centro (Matriz)"}
+                      : activeUnit?.name || units[0]?.name || "Matriz"}
                   </span>
                 </div>
               </div>
@@ -259,50 +260,40 @@ export default function Sidebar({
       {/* 4. RODAPÉ FIXO (PERMANECE ACESSÍVEL E FIXO NO RODAPÉ)     */}
       {/* ======================================================== */}
       <div className="shrink-0 border-t border-[#121824] bg-[#070A0F] flex flex-col z-10">
-        {/* Card do Plano */}
+        {/* Status Compacto do Plano */}
         <div className="px-3 pt-2.5 pb-1">
-          <div className="p-3 rounded-xl bg-[#0D121B] border border-[#D4AF37]/30 shadow-md">
-            <div className="flex items-center justify-between gap-2 mb-2">
-              <div className="flex items-center gap-2.5 min-w-0">
-                <div className="w-7 h-7 rounded-lg bg-[#D4AF37]/15 border border-[#D4AF37]/35 flex items-center justify-center shrink-0">
-                  <Crown className="w-4 h-4 text-[#E5C365]" />
+          <button
+            type="button"
+            onClick={() => {
+              if (isMobile && onCloseMobile) onCloseMobile();
+              navigate("/planos");
+            }}
+            className="w-full p-2.5 rounded-xl bg-[#0D121B] hover:bg-[#121824] border border-[#D4AF37]/30 hover:border-[#D4AF37] flex items-center justify-between text-left transition-all cursor-pointer group"
+            data-testid="sidebar-plan-btn"
+          >
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="w-7 h-7 rounded-lg bg-[#D4AF37]/15 text-[#E5C365] flex items-center justify-center shrink-0 border border-[#D4AF37]/25">
+                <Crown className="w-3.5 h-3.5" />
+              </div>
+              <div className="min-w-0">
+                <div className="flex items-center gap-1.5 leading-none">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase">PLANO</span>
+                  <span className="text-[11px] font-black text-[#E5C365] uppercase truncate">
+                    {plan?.name?.toUpperCase() || "PRO"}
+                  </span>
                 </div>
-                <div>
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-xs font-black text-white uppercase tracking-wider">
-                      PLANO
-                    </span>
-                    <span className="text-xs font-black text-[#E5C365] uppercase tracking-wider">
-                      {plan?.name?.toUpperCase() || "PREMIUM"}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-1.5 text-[10px] mt-0.5">
-                    <span className={`w-1.5 h-1.5 rounded-full ${isSubscriptionExpired ? "bg-rose-400" : "bg-[#20C997]"}`} />
-                    <span className={`font-semibold ${isSubscriptionExpired ? "text-rose-400" : "text-[#20C997]"}`}>
-                      {isSubscriptionExpired ? "Expirado" : "Ativo"}
-                    </span>
-                  </div>
+                <div className="flex items-center gap-1.5 text-[9.5px] mt-1 text-slate-400">
+                  <span className={`w-1.5 h-1.5 rounded-full ${isSubscriptionExpired ? "bg-rose-400" : "bg-[#20C997]"}`} />
+                  <span className={isSubscriptionExpired ? "text-rose-400 font-semibold" : "text-emerald-400 font-semibold"}>
+                    {isSubscriptionExpired ? "Expirado" : "Ativo"}
+                  </span>
+                  <span className="text-slate-600">•</span>
+                  <span>{plan?.max_barbers || 4} barb.</span>
                 </div>
               </div>
             </div>
-
-            <div className="flex items-center gap-1.5 text-[11px] text-slate-400 mb-2.5">
-              <span className="text-[10px] font-bold text-[#D4AF37] px-1 py-0.2 rounded bg-[#D4AF37]/10">R$</span>
-              <span>Renova em {renewalDateFormatted}</span>
-            </div>
-
-            <button
-              type="button"
-              onClick={() => {
-                if (isMobile && onCloseMobile) onCloseMobile();
-                openUpgradeModal?.({ title: "Planos & Assinatura" });
-              }}
-              className="w-full py-1.5 px-3 rounded-lg bg-[#0A0E15] hover:bg-[#121824] border border-[#D4AF37]/40 hover:border-[#D4AF37] text-xs font-semibold text-[#E5C365] hover:text-white flex items-center justify-center gap-1.5 transition-all cursor-pointer"
-            >
-              <span>Gerenciar plano</span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </button>
-          </div>
+            <ArrowRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-[#E5C365] group-hover:translate-x-0.5 transition-all shrink-0" />
+          </button>
         </div>
 
         {/* Ajuda e Suporte */}

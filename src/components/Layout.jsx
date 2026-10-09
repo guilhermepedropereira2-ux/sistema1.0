@@ -360,7 +360,7 @@ function UserAvatarMenu({ variant = "header", collapsed = false }) {
                       {userRole}
                     </span>
                     <span className="text-[10px] text-slate-400 truncate max-w-[95px]">
-                      {user?.email || "dono@teste.com"}
+                      {user?.email || (user?.username ? `@${user.username}` : "")}
                     </span>
                   </div>
                 </div>
@@ -376,7 +376,7 @@ function UserAvatarMenu({ variant = "header", collapsed = false }) {
             aria-label="Menu do usuário"
           >
             <div className="h-8 w-8 rounded-full bg-[#0A0E15] border border-[#D4AF37] text-[#D4AF37] flex items-center justify-center font-bold text-xs shrink-0 shadow-sm">
-              {displayName.split(" ").map(n => n[0]).slice(0, 2).join("").toUpperCase() || "GP"}
+              {displayName.split(" ").filter(Boolean).map(n => n[0]).slice(0, 2).join("").toUpperCase() || "US"}
             </div>
             <div className="hidden lg:flex flex-col text-left leading-tight">
               <span className="text-xs font-bold text-white tracking-tight">{displayName}</span>
@@ -537,14 +537,14 @@ export default function Layout() {
       </div>
     );
   }
-  if (!user) return <Navigate to="/login" replace />;
+  if (!user) return <Navigate to="/" replace />;
   if (!isAdmin(user)) return <Navigate to="/barbeiro" replace />;
 
   const allItems = NAV_SECTIONS.flatMap((s) => s.items).filter((i) => i.to);
   const current = allItems.find((i) => (i.end ? location.pathname === "/" : i.to !== "/" && location.pathname.startsWith(i.to)));
   const pageTitle = current?.label || (location.pathname.startsWith("/equipe/") ? "Relatório do Barbeiro" : "Visão Geral");
 
-  const displayName = user?.name || "Guilherme Pereira";
+  const displayName = user?.name || "Administrador";
   const userRole = user?.role === "dono" ? "Dono" : rolesLabel(user) || "Dono";
 
   const renderNavSection = (section, isDrawer = false, isCollapsed = false) => {

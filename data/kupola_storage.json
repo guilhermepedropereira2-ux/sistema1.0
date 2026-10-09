@@ -1,0 +1,186 @@
+{
+  "organizations": [
+    [
+      "org_vintage",
+      {
+        "id": "org_vintage",
+        "name": "Barbearia Vintage Club",
+        "slug": "barbearia-vintage",
+        "document": "12.345.678/0001-90",
+        "plan": "pro",
+        "status": "active",
+        "subscription_status": "active",
+        "trial_started_at": null,
+        "trial_ends_at": null,
+        "trial_already_used": true,
+        "subscription_expires_at": "2026-11-06T18:48:46.664Z",
+        "created_at": "2026-10-07T18:48:46.664Z"
+      }
+    ],
+    [
+      "org_1791398932614_n47u",
+      {
+        "id": "org_1791398932614_n47u",
+        "name": "Barbearia Alfa Persistente",
+        "slug": "barbearia-alfa-persistente-2614",
+        "document": "98.765.432/0001-11",
+        "plan": "pro",
+        "status": "active",
+        "subscription_status": "trial",
+        "trial_started_at": "2026-10-07T18:48:52.614Z",
+        "trial_ends_at": "2026-10-14T18:48:52.614Z",
+        "trial_already_used": true,
+        "subscription_expires_at": "2026-10-14T18:48:52.614Z",
+        "created_at": "2026-10-07T18:48:52.614Z"
+      }
+    ]
+  ],
+  "users": [
+    [
+      "usr_owner",
+      {
+        "id": "usr_owner",
+        "organization_id": "org_vintage",
+        "name": "Carlos Eduardo (Dono)",
+        "email": "admin@barbearia.com",
+        "role": "owner",
+        "commission_rate": "0.00",
+        "password": "admin",
+        "created_at": "2026-10-07T18:48:46.664Z"
+      }
+    ],
+    [
+      "barber_gabriel",
+      {
+        "id": "barber_gabriel",
+        "organization_id": "org_vintage",
+        "name": "Gabriel Santos",
+        "email": "gabriel@barbearia.com",
+        "role": "barber",
+        "commission_rate": "50.00",
+        "password": "123",
+        "created_at": "2026-10-07T18:48:46.664Z"
+      }
+    ],
+    [
+      "barber_rafael",
+      {
+        "id": "barber_rafael",
+        "organization_id": "org_vintage",
+        "name": "Rafael Lima",
+        "email": "rafael@barbearia.com",
+        "role": "barber",
+        "commission_rate": "50.00",
+        "password": "123",
+        "created_at": "2026-10-07T18:48:46.664Z"
+      }
+    ],
+    [
+      "barber_andre",
+      {
+        "id": "barber_andre",
+        "organization_id": "org_vintage",
+        "name": "André Costa",
+        "email": "andre@barbearia.com",
+        "role": "barber",
+        "commission_rate": "45.00",
+        "password": "123",
+        "created_at": "2026-10-07T18:48:46.664Z"
+      }
+    ],
+    [
+      "usr_1791398932614_qa4g",
+      {
+        "id": "usr_1791398932614_qa4g",
+        "organization_id": "org_1791398932614_n47u",
+        "name": "Dono Teste Persistencia",
+        "email": "teste_persistencia_01@barbearia.com",
+        "role": "owner",
+        "commission_rate": "0.00",
+        "password": "$2b$10$QIG5aAr3pYXs3hs0rVbu/eIC9HHAxb3Ut02VnrnkH0bGbxnZuwxge",
+        "created_at": "2026-10-07T18:48:52.702Z"
+      }
+    ]
+  ],
+  "clients": [
+    [
+      "cli_1",
+      {
+        "id": "cli_1",
+        "organization_id": "org_vintage",
+        "name": "Marcos Silva",
+        "phone": "(11) 98765-4321",
+        "created_at": "2026-10-07T18:48:46.664Z"
+      }
+    ],
+    [
+      "cli_2",
+      {
+        "id": "cli_2",
+        "organization_id": "org_vintage",
+        "name": "Bruno Almeida",
+        "phone": "(11) 99876-5432",
+        "created_at": "2026-10-07T18:48:46.664Z"
+      }
+    ]
+  ],
+  "servicesProducts": [
+    [
+      "svc_corte",
+      {
+        "id": "svc_corte",
+        "organization_id": "org_vintage",
+        "name": "Corte Tradicional",
+        "price": "50.00",
+        "type": "service",
+        "created_at": "2026-10-07T18:48:46.664Z"
+      }
+    ],
+    [
+      "svc_barba",
+      {
+        "id": "svc_barba",
+        "organization_id": "org_vintage",
+        "name": "Barba Terapia",
+        "price": "40.00",
+        "type": "service",
+        "created_at": "2026-10-07T18:48:46.664Z"
+      }
+    ],
+    [
+      "svc_combo",
+      {
+        "id": "svc_combo",
+        "organization_id": "org_vintage",
+        "name": "Combo Cabelo + Barba",
+        "price": "85.00",
+        "type": "service",
+        "created_at": "2026-10-07T18:48:46.664Z"
+      }
+    ],
+    [
+      "prd_pomada",
+      {
+        "id": "prd_pomada",
+        "organization_id": "org_vintage",
+        "name": "Pomada Modeladora Matte",
+        "price": "45.00",
+        "type": "product",
+        "created_at": "2026-10-07T18:48:46.664Z"
+      }
+    ],
+    [
+      "prd_oleo",
+      {
+        "id": "prd_oleo",
+        "organization_id": "org_vintage",
+        "name": "Óleo para Barba Premium",
+        "price": "38.00",
+        "type": "product",
+        "created_at": "2026-10-07T18:48:46.664Z"
+      }
+    ]
+  ],
+  "appointments": [],
+  "subscriptionTransactions": []
+}

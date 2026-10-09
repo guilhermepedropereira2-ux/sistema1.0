@@ -7,11 +7,9 @@ export const isSuperAdmin = (u) => {
   const email = (u.email || "").toLowerCase().trim();
   const username = (u.username || "").toLowerCase().trim();
   return (
-    email === "guilhermepedropereira2@gmail.com" ||
     email === "admin@kupola.app" ||
     email === "superadmin@kupola.app" ||
-    username === "superadmin" ||
-    email === "dono@barbearia.com"
+    username === "superadmin"
   );
 };
 export const isDono = (u) => hasRole(u, "dono") || hasRole(u, "admin") || hasRole(u, "owner");

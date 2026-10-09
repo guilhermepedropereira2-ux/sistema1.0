@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useUnit } from "@/context/UnitContext";
-import { PLANS } from "@/lib/plans";
+import { useAuth } from "@/context/AuthContext";
+import { PLANS, getPlan } from "@/lib/plans";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -15,220 +16,272 @@ import {
   Building2,
   Users2,
   ArrowLeft,
-  Clock,
+  Calendar,
+  Sparkles,
   Zap,
-  CreditCard,
-  QrCode,
+  Check,
+  AlertCircle,
+  HelpCircle,
 } from "lucide-react";
 
 export default function Planos() {
   const navigate = useNavigate();
-  const location = useLocation();
-  const { changePlan, plan: currentPlan, refreshUnits } = useUnit();
-  const [selectedPlan, setSelectedPlan] = useState("pro");
-  const [loading, setLoading] = useState(false);
+  const { user } = useAuth();
+  const {
+    subscription,
+    plan: currentPlan,
+    changePlan,
+    units,
+    refreshUnits,
+    isSubscriptionExpired,
+  } = useUnit();
 
-  const isFromRegister = location.state?.fromRegister || false;
+  const [switching, setSwitching] = useState(false);
 
-  const handleSelectPlan = async (planKey) => {
-    setSelectedPlan(planKey);
-    setLoading(true);
+  const planId = (subscription?.plan_id || "pro").toLowerCase();
+  const activeBarbersCount = subscription?.current_barbers ?? 0;
+  const currentUnitsCount = units?.length || 1;
+
+  const renewalDateFormatted = (() => {
+    const d = subscription?.subscriptionExpiresAt || subscription?.trial_ends_at || user?.subscriptionExpiresAt;
+    if (!d) return "Em 7 dias";
     try {
-      await changePlan(planKey);
-      toast.success(`Plano ${PLANS[planKey]?.name || planKey} selecionado com sucesso!`, {
-        description: isFromRegister
-          ? "Seu período de 7 dias grátis de acesso liberado está ativo. Aproveite todas as funcionalidades!"
-          : "Seu plano foi atualizado com sucesso.",
-      });
-      navigate("/");
+      return new Date(d).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" });
     } catch {
-      toast.error("Erro ao ativar plano. Tente novamente.");
+      return "Em 7 dias";
+    }
+  })();
+
+  const isTrial = subscription?.status === "trialing" || subscription?.subscription_status === "trial" || subscription?.subscriptionStatus === "trialing";
+
+  const handleSelectPlan = async (targetKey) => {
+    if (targetKey === planId) {
+      toast.info(`Você já está utilizando o Plano ${PLANS[targetKey]?.name || targetKey}.`);
+      return;
+    }
+
+    setSwitching(true);
+    try {
+      await changePlan(targetKey);
+      await refreshUnits?.();
+      toast.success(`Plano alterado para ${PLANS[targetKey]?.name} com sucesso!`);
+    } catch {
+      toast.error("Não foi possível alterar o plano. Tente novamente.");
     } finally {
-      setLoading(false);
+      setSwitching(false);
     }
   };
 
-  const plansList = [
+  const plansArray = [
     { key: "starter", ...PLANS.starter },
     { key: "pro", ...PLANS.pro },
     { key: "premium", ...PLANS.premium },
   ];
 
   return (
-    <div className="min-h-screen bg-[#0A0D14] text-white flex flex-col justify-between p-4 sm:p-8">
-      <div className="max-w-5xl mx-auto w-full py-6">
-        {/* Top Header */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-8 pb-6 border-b border-white/10">
-          <div className="flex items-center gap-3">
-            <img 
-              src="/logo.png" 
-              alt="Kupola" 
-              className="h-11 w-11 rounded-full object-cover border border-[#D4AF37]/40 shadow-md shadow-[#D4AF37]/15 shrink-0" 
-            />
-            <div>
-              <h1 className="font-display text-xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-[#D4AF37] to-amber-500 tracking-tight">Kupola</h1>
-              <p className="text-xs text-slate-400">Automação financeira & gestão para barbearias</p>
+    <div className="w-full max-w-6xl mx-auto space-y-6 pb-16 antialiased" data-testid="planos-page">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-white/10">
+        <div>
+          <div className="flex items-center gap-2.5">
+            <div className="p-2 rounded-xl bg-[#D4AF37]/15 text-[#E5C365] border border-[#D4AF37]/30">
+              <Crown className="w-5 h-5" />
             </div>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <a
-              href="/landing"
-              target="_blank"
-              rel="noreferrer"
-              className="text-xs text-slate-400 hover:text-white transition-colors"
-            >
-              Conhecer recursos detalhados →
-            </a>
-            {!isFromRegister && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => navigate(-1)}
-                className="text-xs text-slate-400 hover:text-white rounded-[4px] gap-1"
-              >
-                <ArrowLeft className="h-3.5 w-3.5" /> Voltar
-              </Button>
-            )}
+            <div>
+              <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight">
+                Planos e Assinatura
+              </h1>
+              <p className="text-xs sm:text-sm text-slate-400 mt-0.5">
+                Gerencie sua assinatura, limites operacionais e recursos da sua barbearia.
+              </p>
+            </div>
           </div>
         </div>
 
-        {/* Boas-vindas pós-cadastro ou upgrade */}
-        <div className="text-center max-w-2xl mx-auto mb-10">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#D4AF37]/10 border border-[#D4AF37]/30 text-[#D4AF37] text-xs font-semibold mb-3">
-            <ShieldCheck className="h-3.5 w-3.5" /> Comece com 7 dias de acesso liberado
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => navigate("/")}
+            className="text-xs text-slate-300 border-white/10 hover:bg-white/5 rounded-lg gap-1.5"
+          >
+            <ArrowLeft className="w-3.5 h-3.5" />
+            <span>Voltar ao Início</span>
+          </Button>
+        </div>
+      </div>
+
+      {/* Card da Assinatura Atual */}
+      <Card className="p-5 sm:p-6 bg-[#0D121B] border border-[#D4AF37]/40 rounded-2xl shadow-xl">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5">
+          <div className="space-y-2">
+            <div className="flex items-center gap-2.5 flex-wrap">
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                Seu Plano Atual:
+              </span>
+              <span className="text-lg sm:text-xl font-black text-[#E5C365] uppercase">
+                {currentPlan?.name}
+              </span>
+              <Badge
+                className={`text-[10px] font-bold uppercase px-2.5 py-0.5 rounded-full ${
+                  isSubscriptionExpired
+                    ? "bg-rose-500/20 text-rose-300 border-rose-500/40"
+                    : isTrial
+                    ? "bg-[#D4AF37]/20 text-[#E5C365] border-[#D4AF37]/40"
+                    : "bg-emerald-500/20 text-emerald-300 border-emerald-500/40"
+                }`}
+              >
+                {isSubscriptionExpired ? "Assinatura Expirada" : isTrial ? "Teste Grátis Ativo (7 dias)" : "Assinatura Ativa"}
+              </Badge>
+            </div>
+
+            <p className="text-xs text-slate-300 max-w-2xl leading-relaxed">
+              {currentPlan?.tagline}
+            </p>
           </div>
-          <h2 className="text-2xl sm:text-3xl font-display font-extrabold text-white">
-            Selecione o plano da sua barbearia
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 p-3 rounded-xl bg-[#080B10] border border-white/10 text-center">
+            <div className="p-2">
+              <span className="text-[10px] uppercase font-bold text-slate-400 block">
+                Barbeiros Ativos
+              </span>
+              <span className="text-sm sm:text-base font-black text-white mt-0.5 block font-mono">
+                {activeBarbersCount} de {currentPlan?.max_barbers}
+              </span>
+            </div>
+
+            <div className="p-2 border-l border-white/10">
+              <span className="text-[10px] uppercase font-bold text-slate-400 block">
+                Unidades
+              </span>
+              <span className="text-sm sm:text-base font-black text-white mt-0.5 block font-mono">
+                {currentPlan?.multi_unit ? `${currentUnitsCount} (Rede)` : "1 Unidade"}
+              </span>
+            </div>
+
+            <div className="p-2 border-l border-white/10 col-span-2 sm:col-span-1">
+              <span className="text-[10px] uppercase font-bold text-slate-400 block">
+                Renovação
+              </span>
+              <span className="text-xs sm:text-sm font-bold text-[#E5C365] mt-0.5 block">
+                {renewalDateFormatted}
+              </span>
+            </div>
+          </div>
+        </div>
+      </Card>
+
+      {/* Grid com a Matriz Oficial de 3 Planos */}
+      <div>
+        <div className="mb-4">
+          <h2 className="text-base sm:text-lg font-bold text-white">
+            Escolha ou Altere o seu Plano
           </h2>
-          <p className="text-sm text-slate-400 mt-2">
-            Ativação instantânea sem cartão de crédito no início. Você poderá alterar ou gerenciar seu plano a qualquer momento no painel.
+          <p className="text-xs text-slate-400 mt-0.5">
+            Sem fidelidade ou multa rescisória. Alterne de plano conforme o crescimento da sua equipe.
           </p>
         </div>
 
-        {/* Grid dos 3 Planos Oficiais da Landing Page */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch">
-          {plansList.map((p) => {
-            const isSelected = selectedPlan === p.key;
-            const isRecommended = p.key === "pro";
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-5">
+          {plansArray.map((p) => {
+            const isCurrent = planId === p.key || (p.key === "starter" && planId === "basic");
 
             return (
               <div
                 key={p.key}
-                onClick={() => setSelectedPlan(p.key)}
-                className={`relative flex flex-col justify-between p-6 rounded-[6px] border cursor-pointer transition-all duration-200 ${
-                  isSelected
-                    ? "bg-[#141826] border-[#D4AF37] shadow-[0_0_25px_rgba(212,175,55,0.2)] ring-1 ring-[#D4AF37]"
-                    : "bg-[#0F121C] border-white/10 hover:border-white/20 hover:bg-[#121522]"
+                className={`relative p-5 sm:p-6 rounded-2xl border transition-all flex flex-col justify-between ${
+                  isCurrent
+                    ? "bg-[#0F1523] border-[#E5C365] shadow-[0_0_25px_rgba(229,195,101,0.18)] ring-1 ring-[#E5C365]/40"
+                    : p.key === "pro"
+                    ? "bg-[#0D121B] border-[#D4AF37]/30 hover:border-[#D4AF37]/60"
+                    : "bg-[#0B0E14] border-white/10 hover:border-white/20"
                 }`}
               >
-                {isRecommended && (
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-[#D4AF37] text-[#0B0D14] text-[10px] font-black uppercase tracking-wider px-3 py-0.5 rounded-[3px] shadow">
-                    Mais Escolhido
-                  </div>
+                {p.badge && (
+                  <span className="absolute -top-3 left-1/2 -translate-x-1/2 text-[9.5px] font-black tracking-widest uppercase bg-gradient-to-r from-[#F3CE72] to-[#D4AF37] text-black px-3 py-0.5 rounded-full shadow-md whitespace-nowrap">
+                    {p.badge}
+                  </span>
                 )}
 
                 <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                      {p.category}
+                  <div className="flex items-center justify-between mb-1 mt-1">
+                    <span className="font-extrabold text-base sm:text-lg text-white tracking-wider">
+                      {p.name}
                     </span>
-                    <Crown className={`h-4 w-4 ${isSelected ? "text-[#D4AF37]" : "text-slate-500"}`} />
+                    {isCurrent && (
+                      <Badge className="bg-[#E5C365]/20 text-[#E5C365] border-[#E5C365]/40 text-[10px] font-bold uppercase">
+                        Plano Atual
+                      </Badge>
+                    )}
                   </div>
 
-                  <h3 className="font-display text-xl font-extrabold text-white">{p.name}</h3>
-                  <p className="text-xs text-slate-400 mt-1 leading-relaxed">{p.tagline}</p>
-
-                  <div className="my-4 py-2.5 px-3 rounded-md bg-white/[0.03] border border-white/10">
-                    <div className="text-base font-extrabold text-white">
-                      {p.priceText || "Valores sob consulta"}
-                    </div>
-                    <p className="text-[11px] text-slate-400 mt-0.5">
-                      {p.pricingSub || "Consulte condições especiais no lançamento"}
-                    </p>
+                  <div className="text-2xl sm:text-3xl font-black text-[#E5C365] my-2">
+                    {p.priceText}
                   </div>
 
-                  <div className="space-y-2.5 border-t border-white/10 pt-4 mb-6">
-                    {(p.highlights || []).map((h, i) => (
-                      <div key={i} className="flex items-start gap-2 text-xs text-slate-300">
-                        <CheckCircle2 className="h-4 w-4 text-[#D4AF37] shrink-0 mt-0.5" />
-                        <span>{h}</span>
+                  <p className="text-xs text-slate-400 mb-4 leading-relaxed min-h-[36px]">
+                    {p.tagline}
+                  </p>
+
+                  <div className="space-y-2 border-t border-white/10 pt-4 mb-6">
+                    {p.features.map((f, idx) => (
+                      <div key={idx} className="flex items-start gap-2 text-xs leading-tight">
+                        {f.included ? (
+                          <CheckCircle2 className="w-4 h-4 text-[#20C997] shrink-0 mt-0.5" />
+                        ) : (
+                          <div className="w-4 h-4 rounded-full border border-white/20 flex items-center justify-center shrink-0 mt-0.5 text-white/30 text-[9px]">
+                            ✕
+                          </div>
+                        )}
+                        <span className={f.included ? "text-slate-200" : "text-slate-500 line-through"}>
+                          {f.text}
+                        </span>
                       </div>
                     ))}
                   </div>
                 </div>
 
-                <div className="pt-4 border-t border-white/10 space-y-2">
+                <div className="pt-2 border-t border-white/10">
                   <Button
-                    disabled
-                    className="w-full h-11 font-black uppercase text-xs rounded-[4px] gap-2 bg-slate-800 text-slate-400 border border-white/10 cursor-not-allowed opacity-60"
-                    title="Assinatura direta em breve"
+                    type="button"
+                    disabled={switching || isCurrent}
+                    onClick={() => handleSelectPlan(p.key)}
+                    className={`w-full h-11 rounded-xl text-xs sm:text-sm font-bold uppercase tracking-wider transition-all cursor-pointer ${
+                      isCurrent
+                        ? "bg-white/10 text-white/50 border border-white/10 cursor-default"
+                        : p.key === "pro"
+                        ? "bg-gradient-to-r from-[#F3CE72] via-[#E5C365] to-[#D4AF37] text-black hover:brightness-110 shadow-md shadow-[#D4AF37]/20"
+                        : "bg-white/10 hover:bg-white/20 text-white border border-white/15"
+                    }`}
                   >
-                    Assinar Plano (Em Breve)
+                    {isCurrent ? "Plano em Uso" : `Selecionar Plano ${p.name}`}
                   </Button>
-
-                  <Button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleSelectPlan(p.key);
-                    }}
-                    disabled={loading}
-                    variant="ghost"
-                    className="w-full h-8 font-bold uppercase text-xs rounded-[4px] gap-1.5 cursor-pointer text-slate-300 hover:text-white hover:bg-white/10"
-                  >
-                    {loading && selectedPlan === p.key ? (
-                      "Ativando..."
-                    ) : (
-                      <>
-                        <span>Testar Grátis 7 Dias</span>
-                        <ArrowRight className="h-3.5 w-3.5" />
-                      </>
-                    )}
-                  </Button>
-                  <p className="text-[10px] text-center text-slate-400">
-                    7 Dias Grátis • Ativação Automática • Sem Cartão
-                  </p>
                 </div>
               </div>
             );
           })}
         </div>
-
-        {/* Garantias e segurança */}
-        <div className="mt-12 p-6 rounded-[6px] bg-[#0E111A] border border-white/5 flex flex-col sm:flex-row items-center justify-around gap-4 text-center sm:text-left">
-          <div className="flex items-center gap-3">
-            <Clock className="h-5 w-5 text-[#D4AF37]" />
-            <div>
-              <p className="text-xs font-bold text-white">7 Dias de Acesso Liberado</p>
-              <p className="text-[11px] text-slate-400">Experimente todos os recursos sem cobranças prévias</p>
-            </div>
-          </div>
-
-          <div className="h-8 w-px bg-white/10 hidden sm:block" />
-
-          <div className="flex items-center gap-3">
-            <ShieldCheck className="h-5 w-5 text-emerald-400" />
-            <div>
-              <p className="text-xs font-bold text-white">Dados 100% Seguros</p>
-              <p className="text-[11px] text-slate-400">Backups diários e proteção criptografada</p>
-            </div>
-          </div>
-
-          <div className="h-8 w-px bg-white/10 hidden sm:block" />
-
-          <div className="flex items-center gap-3">
-            <Zap className="h-5 w-5 text-[#D4AF37]" />
-            <div>
-              <p className="text-xs font-bold text-white">Ativação Imediata</p>
-              <p className="text-[11px] text-slate-400">Cadastrou, acessou o painel completo</p>
-            </div>
-          </div>
-        </div>
       </div>
 
-      <footer className="text-center text-xs text-slate-500 py-4 border-t border-white/5">
-        Kupola © {new Date().getFullYear()} - Sistema para Barbearias e Cabeleireiros. Todos os direitos reservados.
-      </footer>
+      {/* Dúvidas Frequentes */}
+      <Card className="p-5 bg-[#0D121B] border border-white/10 rounded-2xl">
+        <div className="flex items-center gap-2 mb-3">
+          <HelpCircle className="w-4 h-4 text-[#D4AF37]" />
+          <h3 className="text-sm font-bold text-white">
+            Perguntas Frequentes sobre os Planos
+          </h3>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs text-slate-300">
+          <div className="p-3 rounded-xl bg-black/20 border border-white/5 space-y-1">
+            <span className="font-bold text-white block">Posso alterar de plano a qualquer momento?</span>
+            <p className="text-slate-400">Sim! Você pode fazer upgrade ou downgrade quando desejar, com aplicação imediata dos novos limites.</p>
+          </div>
+          <div className="p-3 rounded-xl bg-black/20 border border-white/5 space-y-1">
+            <span className="font-bold text-white block">Como funciona o período de teste de 7 dias?</span>
+            <p className="text-slate-400">Você tem acesso completo aos recursos durante 7 dias sem qualquer cobrança antecipada.</p>
+          </div>
+        </div>
+      </Card>
     </div>
   );
 }

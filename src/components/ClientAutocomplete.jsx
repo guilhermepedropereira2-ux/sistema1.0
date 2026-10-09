@@ -23,7 +23,7 @@ export default function ClientAutocomplete({
   onChange,
   onSelectClient,
   clients = [],
-  placeholder = "Ex: Guilherme Pedro (ou digite um novo)",
+  placeholder = "Ex: Nome do Cliente (ou digite um novo)",
   autoFocus = false,
   required = false,
   className = "",

@@ -18,6 +18,7 @@ import financialsRoutes from "./server/routes/financials.js";
 import barberPortalRoutes from "./server/routes/barberPortal.js";
 import analyticsRoutes from "./server/routes/analytics.js";
 import superadminRoutes from "./server/routes/superadmin.js";
+import onboardingRoutes from "./server/routes/onboarding.js";
 
 dotenv.config();
 
@@ -106,6 +107,22 @@ apiRouter.use(async (req: Request, res: Response, next: NextFunction) => {
   next();
 });
 
+// Middleware de persistência automática para operações mutantes (POST, PUT, PATCH, DELETE)
+apiRouter.use((req: Request, res: Response, next: NextFunction) => {
+  if (["POST", "PUT", "PATCH", "DELETE"].includes(req.method)) {
+    res.on("finish", () => {
+      if (res.statusCode >= 200 && res.statusCode < 400) {
+        try {
+          db.saveToFile();
+        } catch (err: any) {
+          console.error("[Persistence Middleware Error]:", err.message);
+        }
+      }
+    });
+  }
+  next();
+});
+
 // Registrar submódulos de rotas
 apiRouter.use(systemRoutes);
 apiRouter.use(authRoutes);
@@ -117,6 +134,7 @@ apiRouter.use(financialsRoutes);
 apiRouter.use(barberPortalRoutes);
 apiRouter.use(analyticsRoutes);
 apiRouter.use(superadminRoutes);
+apiRouter.use(onboardingRoutes);
 
 app.use("/api", apiRouter);
 

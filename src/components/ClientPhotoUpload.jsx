@@ -214,24 +214,15 @@ export default function ClientPhotoUpload({
               JPG, PNG ou WebP • Opcional
             </span>
 
-            {/* Ações rápidas para testar o protótipo visual facilmente */}
+            {/* Botão de escolha de foto real */}
             <div className="flex items-center gap-2 mt-2">
               <button
                 type="button"
                 onClick={handleAvatarClick}
-                className="text-[11px] font-medium text-slate-300 hover:text-[#E5C365] bg-white/5 hover:bg-[#D4AF37]/10 border border-white/10 hover:border-[#D4AF37]/35 px-2.5 py-1 rounded-md flex items-center gap-1.5 cursor-pointer transition-all"
+                className="text-[11px] font-medium text-slate-300 hover:text-[#E5C365] bg-white/5 hover:bg-[#D4AF37]/10 border border-white/10 hover:border-[#D4AF37]/35 px-3 py-1.5 rounded-md flex items-center gap-1.5 cursor-pointer transition-all"
               >
-                <ImageIcon className="w-3 h-3 text-[#E5C365]" />
+                <ImageIcon className="w-3.5 h-3.5 text-[#E5C365]" />
                 Escolher arquivo
-              </button>
-              <button
-                type="button"
-                onClick={handleCycleDemoPhoto}
-                className="text-[11px] font-medium text-[#E5C365] hover:text-[#f3d98b] bg-[#D4AF37]/10 hover:bg-[#D4AF37]/20 border border-[#D4AF37]/30 px-2.5 py-1 rounded-md flex items-center gap-1.5 cursor-pointer transition-all"
-                title="Aplicar foto de demonstração para testar visualmente"
-              >
-                <RefreshCw className="w-3 h-3 text-[#E5C365]" />
-                Foto de Teste
               </button>
             </div>
           </div>

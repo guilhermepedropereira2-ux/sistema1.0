@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { toast } from "sonner";
 import { api } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
@@ -19,13 +19,12 @@ import {
 } from "@/components/ui/dialog";
 import {
   LogIn,
-  Globe,
-  ArrowUpRight,
   KeyRound,
   ShieldCheck,
-  HelpCircle,
   Mail,
   Send,
+  ArrowRight,
+  Sparkles,
 } from "lucide-react";
 
 function formatApiErrorDetail(detail) {
@@ -81,23 +80,10 @@ export default function Login() {
     }
   };
 
-  const handleQuickLogin = async (userKey) => {
-    setLoading(true);
-    try {
-      const u = await login(userKey, userKey, true);
-      toast.success(`Conectado como ${u.name}`);
-      navigate(defaultPanel(u), { replace: true });
-    } catch (err) {
-      toast.error("Falha ao entrar com perfil de teste.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleForgotPasswordSubmit = (e) => {
     e.preventDefault();
     if (!forgotEmail.trim()) {
-      return toast.error("Informe o e-mail cadastrado na sua compra.");
+      return toast.error("Informe o e-mail cadastrado na sua conta.");
     }
     setForgotLoading(true);
     setTimeout(() => {
@@ -108,44 +94,51 @@ export default function Login() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center px-4 py-8 bg-[#0A0D14] relative">
-      {/* Botão de Atalho para Landing Page / Página de Vendas */}
-      <div className="absolute top-4 right-4 sm:top-6 sm:right-6">
-        <a
-          href="/landing"
-          target="_blank"
-          rel="noreferrer"
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-300 hover:text-white bg-[#12141F] border border-white/10 hover:border-[#D4AF37]/50 rounded-[4px] transition-colors"
-          data-testid="login-landing-link"
-        >
-          <Globe className="h-3.5 w-3.5 text-[#D4AF37]" />
-          <span>Página Oficial Kupola</span>
-          <ArrowUpRight className="h-3 w-3 text-slate-500" />
-        </a>
-      </div>
+    <div className="flex min-h-screen flex-col items-center justify-center px-4 py-8 bg-[#05070B] relative select-none">
+      {/* Background Decorativo */}
+      <div
+        className="absolute inset-0 bg-cover bg-center bg-no-repeat pointer-events-none opacity-20"
+        style={{ backgroundImage: "url('/hero-barbershop-v2.jpg')" }}
+      />
+      <div className="absolute inset-0 bg-[#05070B]/85 pointer-events-none" />
 
       <Card
-        className="w-full max-w-md p-8 border border-white/10 bg-[#12141F] rounded-[4px] shadow-none"
+        className="relative z-10 w-full max-w-md p-6 sm:p-8 border border-white/10 bg-[#0A0E17]/95 rounded-2xl shadow-2xl backdrop-blur-xl"
         data-testid="login-card"
       >
         <div className="mb-6 flex flex-col items-center text-center">
-          <div className="mb-3 flex items-center justify-center gap-3">
-            <img
-              src="/logo.png"
-              alt="Kupola"
-              className="h-12 w-12 rounded-full object-cover border border-[#D4AF37]/40 shadow-lg shadow-[#D4AF37]/15"
-              data-testid="login-logo"
-            />
-            <div className="flex flex-col text-left">
-              <span className="font-display font-extrabold text-2xl tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-[#D4AF37] to-amber-500">
-                Kupola
-              </span>
-              <span className="text-[10px] text-slate-400 font-medium uppercase tracking-wider">
-                Gestão para Barbearias
-              </span>
-            </div>
+          {/* Coroa Dourada */}
+          <div className="mb-2 text-[#E5C365]">
+            <svg
+              viewBox="0 0 48 32"
+              fill="none"
+              className="w-10 h-7 drop-shadow-[0_0_10px_rgba(229,195,101,0.4)]"
+            >
+              <path
+                d="M4 26h40M4 26L9 7l15 13L39 7l5 19"
+                stroke="url(#crownGoldGradLogin)"
+                strokeWidth="2.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+              <defs>
+                <linearGradient id="crownGoldGradLogin" x1="4" y1="7" x2="44" y2="26" gradientUnits="userSpaceOnUse">
+                  <stop stopColor="#FFFDF0" />
+                  <stop offset="0.4" stopColor="#F3CE72" />
+                  <stop offset="1" stopColor="#D4AF37" />
+                </linearGradient>
+              </defs>
+            </svg>
           </div>
-          <h1 className="mt-1 font-display text-sm font-bold text-slate-200">
+
+          <span className="font-['Outfit',sans-serif] tracking-[0.25em] text-[20px] font-black uppercase bg-gradient-to-r from-[#FFFDF0] via-[#F3CE72] to-[#D4AF37] bg-clip-text text-transparent">
+            KUPOLA
+          </span>
+          <span className="text-[9px] font-bold tracking-widest text-white/50 uppercase mt-0.5 mb-3">
+            GESTÃO PARA BARBEARIAS
+          </span>
+
+          <h1 className="font-display text-sm font-bold text-slate-200">
             Acesse seu painel
           </h1>
           <p className="text-xs text-muted-foreground mt-0.5">
@@ -157,10 +150,10 @@ export default function Login() {
           <div>
             <Label className="text-xs text-slate-300">Usuário ou e-mail</Label>
             <Input
-              className="rounded-[4px] bg-[#0A0D14] border-white/10 text-white mt-1"
+              className="rounded-xl bg-[#070A10] border-white/10 text-white mt-1 h-11 focus:border-[#E5C365]"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              placeholder="seu.usuario ou email@barbearia.com"
+              placeholder="Digite seu usuário ou e-mail"
               data-testid="login-username"
               autoFocus
             />
@@ -171,7 +164,7 @@ export default function Login() {
               <Label className="text-xs text-slate-300">Senha</Label>
               <button
                 type="button"
-                className="text-[11px] text-[#D4AF37] hover:underline cursor-pointer"
+                className="text-[11px] text-[#E5C365] hover:underline cursor-pointer"
                 data-testid="forgot-password"
                 onClick={() => {
                   setForgotSent(false);
@@ -182,7 +175,7 @@ export default function Login() {
               </button>
             </div>
             <Input
-              className="rounded-[4px] bg-[#0A0D14] border-white/10 text-white mt-1"
+              className="rounded-xl bg-[#070A10] border-white/10 text-white mt-1 h-11 focus:border-[#E5C365]"
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -198,7 +191,7 @@ export default function Login() {
 
           <Button
             type="submit"
-            className="w-full gap-2 rounded-[4px] h-10 bg-[#D4AF37] hover:bg-[#C59F2E] text-slate-950 font-bold text-xs uppercase shadow-none cursor-pointer"
+            className="w-full gap-2 rounded-xl h-11 bg-gradient-to-r from-[#F3CE72] via-[#E5C365] to-[#D4AF37] hover:brightness-110 text-slate-950 font-black text-xs uppercase tracking-wider cursor-pointer shadow-md shadow-[#D4AF37]/20"
             disabled={loading}
             data-testid="login-submit"
           >
@@ -207,67 +200,27 @@ export default function Login() {
           </Button>
         </form>
 
-        {/* Informação sobre Distribuição em Plataformas Externas */}
-        <div className="mt-6 pt-5 border-t border-white/10">
-          <div className="p-3 rounded-[4px] bg-[#0B0D14] border border-white/5 space-y-2">
-            <div className="flex items-start gap-2">
-              <ShieldCheck className="h-4 w-4 text-[#D4AF37] shrink-0 mt-0.5" />
-              <div>
-                <p className="text-xs font-semibold text-white">
-                  Acesso de Novos Clientes & Assinantes
-                </p>
-                <p className="text-[11px] text-slate-400 leading-relaxed mt-0.5">
-                  Novas contas de Dono são provisionadas automaticamente após a confirmação da assinatura.
-                  Utilize o e-mail e as credenciais enviadas para a sua caixa de entrada.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Atalhos Rápidos para Demonstração / Testes */}
-        <div className="mt-4 pt-3 border-t border-white/5 text-center">
-          <p className="text-[10px] text-slate-500 uppercase tracking-wider mb-2 font-semibold">
-            Perfis de Demonstração Rápidos
+        {/* Divisor com link para Novo Cadastro / Onboarding */}
+        <div className="mt-6 pt-5 border-t border-white/10 text-center">
+          <p className="text-xs text-slate-400 mb-2">
+            Ainda não tem uma conta?
           </p>
-          <div className="grid grid-cols-3 gap-2">
-            <button
-              type="button"
-              onClick={() => handleQuickLogin("1")}
-              className="px-2 py-1.5 rounded-[4px] bg-[#0A0D14] hover:bg-white/5 border border-white/10 text-[11px] text-slate-300 hover:text-white transition-colors cursor-pointer text-center"
-              title="Entrar como Dono (usuario 1 / senha 1)"
-            >
-              <span className="font-bold block text-[#D4AF37]">Dono</span>
-              <span className="text-[9px] text-slate-500">Tecla 1</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => handleQuickLogin("2")}
-              className="px-2 py-1.5 rounded-[4px] bg-[#0A0D14] hover:bg-white/5 border border-white/10 text-[11px] text-slate-300 hover:text-white transition-colors cursor-pointer text-center"
-              title="Entrar como Gerente (usuario 2 / senha 2)"
-            >
-              <span className="font-bold block text-blue-400">Gerente</span>
-              <span className="text-[9px] text-slate-500">Tecla 2</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => handleQuickLogin("3")}
-              className="px-2 py-1.5 rounded-[4px] bg-[#0A0D14] hover:bg-white/5 border border-white/10 text-[11px] text-slate-300 hover:text-white transition-colors cursor-pointer text-center"
-              title="Entrar como Barbeiro (usuario 3 / senha 3)"
-            >
-              <span className="font-bold block text-emerald-400">Barbeiro</span>
-              <span className="text-[9px] text-slate-500">Tecla 3</span>
-            </button>
-          </div>
+          <Link
+            to="/welcome"
+            className="inline-flex items-center gap-1.5 text-xs font-bold text-[#E5C365] hover:underline cursor-pointer"
+          >
+            <span>Começar configuração da barbearia</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </Link>
         </div>
       </Card>
 
       {/* Modal de Recuperação de Senha */}
       <Dialog open={forgotOpen} onOpenChange={setForgotOpen}>
-        <DialogContent className="max-w-md bg-[#12141F] border border-white/10 text-white rounded-[4px]">
+        <DialogContent className="max-w-md bg-[#0D121B] border border-white/10 text-white rounded-2xl">
           <DialogHeader>
             <div className="flex items-center gap-2 mb-1">
-              <div className="h-8 w-8 rounded-[4px] bg-[#D4AF37]/15 text-[#D4AF37] flex items-center justify-center border border-[#D4AF37]/30">
+              <div className="h-8 w-8 rounded-lg bg-[#D4AF37]/15 text-[#D4AF37] flex items-center justify-center border border-[#D4AF37]/30">
                 <KeyRound className="h-4 w-4" />
               </div>
               <DialogTitle className="text-base font-bold">
@@ -275,7 +228,7 @@ export default function Login() {
               </DialogTitle>
             </div>
             <DialogDescription className="text-xs text-slate-400">
-              Informe o e-mail associado à sua conta ou compra na plataforma de checkout.
+              Informe o e-mail cadastrado na sua conta do KUPOLA.
             </DialogDescription>
           </DialogHeader>
 
@@ -297,29 +250,29 @@ export default function Login() {
                 <Label className="text-xs text-slate-300">E-mail de Cadastro</Label>
                 <Input
                   type="email"
-                  className="rounded-[4px] bg-[#0A0D14] border-white/10 text-white mt-1"
-                  placeholder="exemplo@gmail.com"
+                  className="rounded-xl bg-[#070A10] border-white/10 text-white mt-1 h-10"
+                  placeholder="seuemail@exemplo.com"
                   value={forgotEmail}
                   onChange={(e) => setForgotEmail(e.target.value)}
                   autoFocus
                 />
               </div>
               <p className="text-[11px] text-slate-400">
-                Se você é um barbeiro ou colaborador, também pode solicitar a redefinição direta ao Dono ou Gerente da sua barbearia no menu "Equipe & Acessos".
+                Se você é um barbeiro ou colaborador, também pode solicitar a redefinição direta ao Dono da sua barbearia no menu "Barbeiros & Equipe".
               </p>
               <DialogFooter className="pt-2">
                 <Button
                   type="button"
                   variant="ghost"
                   onClick={() => setForgotOpen(false)}
-                  className="rounded-[4px] text-xs text-slate-400"
+                  className="rounded-lg text-xs text-slate-400"
                 >
                   Cancelar
                 </Button>
                 <Button
                   type="submit"
                   disabled={forgotLoading}
-                  className="bg-[#D4AF37] hover:bg-[#C59F2E] text-slate-950 font-bold text-xs rounded-[4px] gap-1.5"
+                  className="bg-[#D4AF37] hover:bg-[#C59F2E] text-slate-950 font-bold text-xs rounded-lg gap-1.5"
                 >
                   <Send className="h-3.5 w-3.5" />
                   {forgotLoading ? "Enviando..." : "Enviar Instruções"}
@@ -333,7 +286,7 @@ export default function Login() {
               <Button
                 type="button"
                 onClick={() => setForgotOpen(false)}
-                className="w-full bg-[#D4AF37] hover:bg-[#C59F2E] text-slate-950 font-bold text-xs rounded-[4px]"
+                className="w-full bg-[#D4AF37] hover:bg-[#C59F2E] text-slate-950 font-bold text-xs rounded-lg"
               >
                 Voltar para o Login
               </Button>

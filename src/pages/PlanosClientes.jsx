@@ -40,11 +40,9 @@ const emptyPlanForm = {
   price: "",
   billing_cycle: "mensal",
   is_unlimited: false,
-  total_credits: 4,
+  total_credits: "",
   notes: "",
-  services: [
-    { service_name: "Corte de Cabelo", limit: 4 },
-  ],
+  services: [],
 };
 
 export default function PlanosClientes() {
@@ -182,14 +180,14 @@ export default function PlanosClientes() {
           <div className="flex items-center gap-2 mb-1">
             <h1 className="text-2xl font-bold font-display text-white tracking-tight flex items-center gap-2">
               <Crown className="h-6 w-6 text-[#D4AF37]" />
-              Planos & Assinaturas de Clientes
+              Planos de Clientes (Clube da Barbearia)
             </h1>
             <Badge className="bg-[#D4AF37]/15 text-[#D4AF37] border-[#D4AF37]/30 text-xs rounded-[3px]">
-              Recorrência
+              Recorrência da sua barbearia
             </Badge>
           </div>
           <p className="text-xs text-slate-400">
-            Crie clubes de assinatura mensal para fidelizar seus clientes com planos ilimitados ou pacotes com limite mensal de cortes e barbas.
+            Crie clubes e pacotes de assinatura que os seus clientes pagam para a sua barbearia (ex: VIP 4 cortes/mês). Para gerenciar sua assinatura KUPOLA, acesse <strong className="text-[#E5C365]">Planos e Assinatura</strong> no menu lateral.
           </p>
         </div>
 

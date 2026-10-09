@@ -148,28 +148,62 @@ export default function AtendimentoDetailsModal({ attendance, isOpen, onClose })
               Itens Realizados
             </span>
             <div className="divide-y divide-[#161E2C] rounded-xl bg-[#0D121B] border border-[#161E2C] overflow-hidden">
-              {attendance.services?.map((srv, idx) => (
-                <div key={idx} className="p-3 flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Scissors className="w-3.5 h-3.5 text-[#E5C365]" />
-                    <span className="font-medium text-white">{srv}</span>
-                  </div>
-                  <span className="text-slate-300 font-medium">Serviço</span>
-                </div>
-              ))}
-              {attendance.products?.map((prod, idx) => (
-                <div key={idx} className="p-3 flex items-center justify-between bg-white/[0.02]">
-                  <div className="flex items-center gap-2">
-                    <Tag className="w-3.5 h-3.5 text-[#38BDF8]" />
-                    <span className="font-medium text-white">{prod}</span>
-                  </div>
-                  <span className="text-[#38BDF8] text-[11px] font-semibold">Produto</span>
-                </div>
-              ))}
+              {attendance.items?.length > 0 ? (
+                attendance.items.map((item, idx) => {
+                  const isProd = item.kind === "produto" || item.item_kind === "produto";
+                  const itemPaid = item.paid_amount ?? item.gross_amount ?? item.paid ?? 0;
+                  return (
+                    <div
+                      key={idx}
+                      className={`p-3 flex items-center justify-between ${isProd ? "bg-white/[0.02]" : ""}`}
+                    >
+                      <div className="flex items-center gap-2">
+                        {isProd ? (
+                          <Tag className="w-3.5 h-3.5 text-[#38BDF8]" />
+                        ) : (
+                          <Scissors className="w-3.5 h-3.5 text-[#E5C365]" />
+                        )}
+                        <span className="font-medium text-white">
+                          • {item.name}{item.quantity > 1 ? ` (${item.quantity}x)` : ""}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2.5">
+                        <span className="font-mono font-bold text-white text-xs">
+                          R$ {Number(itemPaid).toFixed(2).replace(".", ",")}
+                        </span>
+                        <span className={`text-[10px] font-semibold uppercase px-1.5 py-0.5 rounded ${isProd ? "text-[#38BDF8] bg-[#38BDF8]/10" : "text-[#E5C365] bg-[#D4AF37]/10"}`}>
+                          {isProd ? "Produto" : "Serviço"}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })
+              ) : (
+                <>
+                  {attendance.services?.map((srv, idx) => (
+                    <div key={`srv-${idx}`} className="p-3 flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Scissors className="w-3.5 h-3.5 text-[#E5C365]" />
+                        <span className="font-medium text-white">• {srv}</span>
+                      </div>
+                      <span className="text-[#E5C365] text-[10px] font-semibold uppercase bg-[#D4AF37]/10 px-1.5 py-0.5 rounded">Serviço</span>
+                    </div>
+                  ))}
+                  {attendance.products?.map((prod, idx) => (
+                    <div key={`prd-${idx}`} className="p-3 flex items-center justify-between bg-white/[0.02]">
+                      <div className="flex items-center gap-2">
+                        <Tag className="w-3.5 h-3.5 text-[#38BDF8]" />
+                        <span className="font-medium text-white">• {prod}</span>
+                      </div>
+                      <span className="text-[#38BDF8] text-[10px] font-semibold uppercase bg-[#38BDF8]/10 px-1.5 py-0.5 rounded">Produto</span>
+                    </div>
+                  ))}
+                </>
+              )}
             </div>
           </div>
 
-          {/* Resumo de Valores */}
+          {/* Resumo de Valores e Comissão */}
           <div className="p-3.5 rounded-xl bg-[#0D121B] border border-[#161E2C] space-y-2">
             <div className="flex items-center justify-between text-slate-400">
               <span>Subtotal Bruto</span>
@@ -194,6 +228,20 @@ export default function AtendimentoDetailsModal({ attendance, isOpen, onClose })
               <span className="text-sm font-bold text-white">Total Pago</span>
               <span className="text-xl font-black text-[#E5C365]">
                 R$ {Number(attendance.value).toFixed(2).replace(".", ",")}
+              </span>
+            </div>
+
+            {/* Comissão e Status */}
+            <div className="pt-2 border-t border-[#161E2C] flex items-center justify-between">
+              <span className="text-slate-400">Comissão do Profissional</span>
+              <span className="font-bold text-[#10B981] text-sm">
+                R$ {Number(attendance.commissionAmount ?? (attendance.value * 0.4)).toFixed(2).replace(".", ",")}
+              </span>
+            </div>
+            <div className="flex items-center justify-between text-slate-400 text-xs">
+              <span>Status da Comissão</span>
+              <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-[#10B981]/15 text-[#10B981] border border-[#10B981]/30">
+                Paga
               </span>
             </div>
           </div>

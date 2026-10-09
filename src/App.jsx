@@ -44,6 +44,41 @@ import Termos from "@/pages/Termos";
 import Privacidade from "@/pages/Privacidade";
 import SuperAdmin from "@/pages/SuperAdmin";
 import PreviewIndex from "@/pages/preview";
+import Welcome from "@/pages/Welcome";
+import Onboarding from "@/pages/Onboarding";
+import { useAuth } from "@/context/AuthContext";
+import { isAdmin } from "@/lib/roles";
+import { Scissors } from "lucide-react";
+
+function RootRoute() {
+  const { user, ready } = useAuth();
+
+  if (!ready) {
+    return (
+      <div className="min-h-screen bg-[#05070B] flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-[#E5C365] flex items-center justify-center text-[#080B10] font-black animate-pulse">
+            <Scissors className="w-5 h-5" />
+          </div>
+          <p className="text-xs text-white/50 animate-pulse">Carregando KUPOLA...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Se não está autenticado, exibe a Tela de Boas-vindas Oficial KUPOLA
+  if (!user) {
+    return <Welcome />;
+  }
+
+  // Se for barbeiro, direciona para o painel do barbeiro
+  if (!isAdmin(user)) {
+    return <Navigate to="/barbeiro" replace />;
+  }
+
+  // Se for administrador/dono, exibe o layout completo com Dashboard
+  return <Layout />;
+}
 
 function App() {
   return (
@@ -54,6 +89,11 @@ function App() {
             <BalcaoProvider>
               <BrowserRouter>
               <Routes>
+                {/* Tela Oficial de Boas-Vindas e Onboarding */}
+                <Route path="/welcome" element={<Welcome />} />
+                <Route path="/onboarding" element={<Onboarding />} />
+                <Route path="/onboarding/:stepName" element={<Onboarding />} />
+
                 {/* Rotas Públicas de Agendamento (Multi-Tenant por Slug) */}
                 <Route path="/agendar/:barbeariaSlug" element={<AgendamentoPublico />} />
                 <Route path="/agendar" element={<AgendamentoPublico />} />
@@ -78,7 +118,7 @@ function App() {
                   <Route path="comissao" element={<Navigate to="/barbeiro/desempenho?tab=comissao" replace />} />
                   <Route path="perfil" element={<MeuPerfil />} />
                 </Route>
-                <Route path="/" element={<Layout />}>
+                <Route path="/" element={<RootRoute />}>
                   <Route index element={<Dashboard />} />
                   <Route path="atendimentos" element={<Atendimentos />} />
                   <Route path="operacional" element={<Operacional />} />

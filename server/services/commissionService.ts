@@ -29,6 +29,7 @@ export interface CommissionResult {
   commissionBase: number;
   commissionType: string;
   commissionRate: number;
+  effectivePercent?: number;
   commissionAmount: number;
   shopAmount: number;
 }
@@ -111,6 +112,7 @@ export function calculateCommission({
     commissionBase,
     commissionType: commType,
     commissionRate: commRate,
+    effectivePercent: commRate,
     commissionAmount,
     shopAmount,
   };

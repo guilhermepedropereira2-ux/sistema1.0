@@ -1,8 +1,9 @@
 import express from "express";
-import { db, authUser, getUnitFilter } from "../db.js";
+import { db, authUser, getUnitFilter, getTenantId } from "../db.js";
 import { newId, nowIso, todayStr, Unit } from "../types.js";
 import { storage } from "../storage.js";
 import { getPgHealth, loadFromPg, persistSubscription } from "../../src/db/sync.js";
+import { requireAuth, requireDono, requireSuperAdmin, requirePermission } from "../auth.js";
 
 const router = express.Router();
 
@@ -15,7 +16,7 @@ router.get("/db/status", (_req, res) => {
   res.json(getPgHealth());
 });
 
-router.post("/db/sync", async (_req, res) => {
+router.post("/db/sync", requireAuth, requireDono, async (_req, res) => {
   try {
     await loadFromPg(db);
     res.json({ ok: true, message: "Dados sincronizados com o PostgreSQL", status: getPgHealth() });
@@ -33,120 +34,115 @@ router.get("/storage/status", async (_req, res) => {
   });
 });
 
-router.get("/organizations", async (_req, res) => {
+router.get("/organizations", requireSuperAdmin, async (_req, res) => {
   const orgs = await storage.getAllOrganizations();
   res.json(orgs);
 });
 
-router.get("/organizations/:id", async (req, res) => {
+router.get("/organizations/:id", requireSuperAdmin, async (req, res) => {
   const org = await storage.getOrganization(req.params.id);
   if (!org) return res.status(404).json({ error: "Organização não encontrada" });
   res.json(org);
 });
 
-router.get("/organizations/:id/appointments", async (req, res) => {
+router.get("/organizations/:id/appointments", requireSuperAdmin, async (req, res) => {
   const apts = await storage.getAppointmentsByOrg(req.params.id);
   res.json(apts);
 });
 
-router.get("/organizations/:id/subscription-transactions", async (req, res) => {
+router.get("/organizations/:id/subscription-transactions", requireSuperAdmin, async (req, res) => {
   const txs = await storage.getSubscriptionTransactionsByOrg(req.params.id);
   res.json(txs);
 });
 
 // Subscription & Plans
-router.get("/subscription", async (req, res) => {
-  const user = authUser(req);
-  const activeBarbers = db.barbers.filter((b) => b.active !== false).length;
-  const orgId = user?.barbershop_id || "org_vintage";
-  const org = await storage.getOrganization(orgId);
+router.get("/subscription", requireAuth, async (req, res) => {
+  const user = (req as any).user || authUser(req);
+  const tenantId = getTenantId(req);
+  const sub = db.getSubscription(tenantId);
+  const activeBarbers = db.barbers.filter((b) => b.barbershop_id === tenantId && b.active !== false).length;
+  const tenantUnits = db.units.filter((u) => u.barbershop_id === tenantId);
 
-  const now = new Date();
-  if (org && org.subscription_status === "trial" && org.trial_ends_at && new Date(org.trial_ends_at) < now) {
-    await storage.updateOrganizationTrialStatus(org.id, "expired");
-    org.subscription_status = "expired";
-    if (user) user.subscriptionStatus = "expired";
-  }
-
-  const status = org?.subscription_status || user?.subscriptionStatus || db.subscription.status || "trial";
-  const expiresAt =
-    org?.subscription_expires_at ||
-    org?.trial_ends_at ||
-    user?.subscriptionExpiresAt ||
-    db.subscription.subscriptionExpiresAt;
+  const status = user?.subscriptionStatus || sub.status || "trialing";
+  const expiresAt = user?.subscriptionExpiresAt || sub.subscriptionExpiresAt;
 
   res.json({
-    ...db.subscription,
+    ...sub,
     status,
     subscriptionStatus: status,
     subscription_status: status,
     subscriptionExpiresAt: expiresAt,
-    trial_started_at: org?.trial_started_at,
-    trial_ends_at: org?.trial_ends_at,
-    trial_already_used: org?.trial_already_used ?? true,
     current_barbers: activeBarbers,
-    current_units: db.units.length,
-    organization: org,
+    current_units: tenantUnits.length || 1,
   });
 });
 
-router.put("/subscription", async (req, res) => {
-  const user = authUser(req);
+router.put("/subscription", requireAuth, requireDono, async (req, res) => {
+  const user = (req as any).user || authUser(req);
+  const tenantId = getTenantId(req);
   const { plan_id, status } = req.body || {};
-  if (plan_id && ["starter", "pro", "premium"].includes(plan_id)) {
+  if (plan_id && ["starter", "pro", "premium", "basic"].includes(plan_id)) {
+    const canonicalPlan = plan_id === "basic" ? "starter" : plan_id;
     const finalStatus = status || "active";
     const expiresAt = new Date(Date.now() + 30 * 86400000).toISOString();
+    const maxBarbers = canonicalPlan === "starter" ? 1 : canonicalPlan === "pro" ? 4 : 10;
+    const multiUnit = canonicalPlan === "premium";
 
-    db.subscription.plan_id = plan_id;
-    db.subscription.status = finalStatus;
-    db.subscription.subscriptionStatus = finalStatus;
-    db.subscription.subscriptionExpiresAt = expiresAt;
-    db.subscription.max_barbers = plan_id === "starter" ? 1 : plan_id === "pro" ? 4 : 10;
-    db.subscription.multi_unit = plan_id === "premium";
-    db.subscription.updated_at = nowIso();
-    persistSubscription(db.subscription);
+    const updatedSub = db.setSubscription(tenantId, {
+      plan_id: canonicalPlan,
+      status: finalStatus,
+      subscriptionStatus: finalStatus,
+      subscriptionExpiresAt: expiresAt,
+      max_barbers: maxBarbers,
+      multi_unit: multiUnit,
+    });
 
     if (user) {
       user.subscriptionStatus = finalStatus;
       user.subscriptionExpiresAt = expiresAt;
     }
 
-    const orgId = user?.barbershop_id || "org_vintage";
-    try {
-      await storage.updateOrganizationSubscription(orgId, {
-        plan: plan_id,
-        status: finalStatus,
-        subscription_status: finalStatus,
-        subscription_expires_at: expiresAt,
-      });
-    } catch (e: any) {
-      console.error("[Storage] Erro ao sincronizar alteração de plano:", e.message);
-    }
+    db.logChange(`Alterou plano de assinatura para '${canonicalPlan.toUpperCase()}'`, "subscription");
+    const activeBarbers = db.barbers.filter((b) => b.barbershop_id === tenantId && b.active !== false).length;
+    const tenantUnits = db.units.filter((u) => u.barbershop_id === tenantId);
 
-    db.logChange(`Alterou plano de assinatura para '${plan_id.toUpperCase()}'`, "subscription");
+    return res.json({
+      ...updatedSub,
+      current_barbers: activeBarbers,
+      current_units: tenantUnits.length || 1,
+    });
   }
+
+  const currentSub = db.getSubscription(tenantId);
+  const activeBarbers = db.barbers.filter((b) => b.barbershop_id === tenantId && b.active !== false).length;
+  const tenantUnits = db.units.filter((u) => u.barbershop_id === tenantId);
   res.json({
-    ...db.subscription,
-    current_barbers: db.barbers.filter((b) => b.active !== false).length,
-    current_units: db.units.length,
+    ...currentSub,
+    current_barbers: activeBarbers,
+    current_units: tenantUnits.length || 1,
   });
 });
 
 // Units (Rede / Multi-unidades)
-router.get("/units", (_req, res) => {
+router.get("/units", requireAuth, (req, res) => {
+  const tenantId = getTenantId(req);
   const currentMonth = todayStr().slice(0, 7);
 
-  const unitsWithMetrics = db.units.map((u) => {
-    const isMain = u.is_main || u.id === "unit_centro";
+  const tenantUnits = db.units.filter((u) => u.barbershop_id === tenantId);
+
+  const unitsWithMetrics = tenantUnits.map((u) => {
+    const isMain = u.is_main;
     const revs = db.revenues.filter(
       (r) =>
-        (r.barbershop_id === u.id || (isMain && r.barbershop_id === "profile")) &&
+        r.barbershop_id === tenantId &&
+        (r.unit_id === u.id || (!r.unit_id && isMain)) &&
         r.date.startsWith(currentMonth) &&
         r.status === "ativo"
     );
     const exps = db.expenses.filter(
       (e) =>
-        (e.barbershop_id === u.id || (isMain && e.barbershop_id === "profile")) &&
+        e.barbershop_id === tenantId &&
+        (e.unit_id === u.id || (!e.unit_id && isMain)) &&
         e.due_date.startsWith(currentMonth)
     );
 
@@ -157,16 +153,18 @@ router.get("/units", (_req, res) => {
     const profit = Number((shop - expenses_total).toFixed(2));
 
     const barbers = db.barbers.filter(
-      (b) => b.active !== false && (b.barbershop_id === u.id || (isMain && b.barbershop_id === "profile"))
+      (b) =>
+        b.active !== false &&
+        b.barbershop_id === tenantId &&
+        (b.unit_ids?.includes(u.id) || b.unit_id === u.id || (!b.unit_id && !b.unit_ids?.length && isMain))
     );
-    const queue_waiting = db.queue.filter(
-      (q) => q.status === "espera" && (q.barbershop_id === u.id || (isMain && q.barbershop_id === "profile"))
-    ).length;
+    const queue_waiting = 0;
     const appointments_today = db.appointments.filter(
       (a) =>
         a.date === todayStr() &&
         a.status !== "cancelado" &&
-        (a.barbershop_id === u.id || (isMain && a.barbershop_id === "profile"))
+        a.barbershop_id === tenantId &&
+        (a.unit_id === u.id || (!a.unit_id && isMain))
     ).length;
 
     return {
@@ -183,7 +181,7 @@ router.get("/units", (_req, res) => {
 
   const totalGross = Number(unitsWithMetrics.reduce((acc, u) => acc + u.gross, 0).toFixed(2));
   const totalProfit = Number(unitsWithMetrics.reduce((acc, u) => acc + u.profit, 0).toFixed(2));
-  const totalBarbers = unitsWithMetrics.reduce((acc, u) => acc + u.barbers_count, 0);
+  const totalBarbers = db.barbers.filter((b) => b.barbershop_id === tenantId && b.active !== false).length;
 
   res.json({
     units: unitsWithMetrics,
@@ -196,8 +194,10 @@ router.get("/units", (_req, res) => {
   });
 });
 
-router.post("/units", (req, res) => {
-  if (db.subscription.plan_id !== "premium") {
+router.post("/units", requireAuth, requireDono, (req, res) => {
+  const tenantId = getTenantId(req);
+  const sub = db.getSubscription(tenantId);
+  if (!sub.multi_unit) {
     return res.status(403).json({
       detail: "O gerenciamento de Múltiplas Unidades (Rede) está disponível exclusivamente no Plano Premium.",
       code: "PLAN_FEATURE_LOCKED",
@@ -210,7 +210,8 @@ router.post("/units", (req, res) => {
     return res.status(400).json({ detail: "Nome da unidade é obrigatório." });
   }
 
-  if (db.units.length >= 5) {
+  const tenantUnitsCount = db.units.filter((u) => u.barbershop_id === tenantId).length;
+  if (tenantUnitsCount >= 5) {
     return res.status(403).json({
       detail: "Limite máximo de 5 unidades atingido para a sua rede no Plano Premium.",
     });
@@ -225,11 +226,12 @@ router.post("/units", (req, res) => {
 
   const newUnit: Unit = {
     id: `unit_${newId()}`,
+    barbershop_id: tenantId,
     name: body.name.trim(),
     short_name: body.short_name || body.name.split(" ")[0],
     slug: slug || `unit-${Date.now()}`,
-    address: body.address || "Endereço não informado",
-    phone: body.phone || "(11) 99999-0000",
+    address: body.address || "",
+    phone: body.phone || "",
     city: body.city || "São Paulo",
     state: body.state || "SP",
     is_main: false,
@@ -242,43 +244,48 @@ router.post("/units", (req, res) => {
   res.json(newUnit);
 });
 
-router.put("/units/:id", (req, res) => {
-  const idx = db.units.findIndex((u) => u.id === req.params.id);
+router.put("/units/:id", requireAuth, requireDono, (req, res) => {
+  const tenantId = getTenantId(req);
+  const idx = db.units.findIndex((u) => u.id === req.params.id && u.barbershop_id === tenantId);
   if (idx === -1) return res.status(404).json({ detail: "Unidade não encontrada." });
 
-  db.units[idx] = { ...db.units[idx], ...req.body };
+  db.units[idx] = { ...db.units[idx], ...req.body, barbershop_id: tenantId };
   db.logChange(`Atualizou unidade '${db.units[idx].name}'`, "unit", null, db.units[idx]);
   res.json(db.units[idx]);
 });
 
-router.delete("/units/:id", (req, res) => {
-  const unit = db.units.find((u) => u.id === req.params.id);
+router.delete("/units/:id", requireAuth, requireDono, (req, res) => {
+  const tenantId = getTenantId(req);
+  const unit = db.units.find((u) => u.id === req.params.id && u.barbershop_id === tenantId);
   if (!unit) return res.status(404).json({ detail: "Unidade não encontrada." });
   if (unit.is_main) {
     return res.status(400).json({ detail: "A Unidade Matriz não pode ser excluída." });
   }
-  db.units = db.units.filter((u) => u.id !== req.params.id);
+  db.units = db.units.filter((u) => !(u.id === req.params.id && u.barbershop_id === tenantId));
   db.logChange(`Excluiu unidade '${unit.name}'`, "unit", unit, null);
   res.json({ ok: true });
 });
 
 // Settings
-router.get("/settings", (_req, res) => {
+router.get("/settings", requireAuth, (req, res) => {
+  const tenantId = getTenantId(req);
+  const shop = db.barbershops.find((b) => b.id === tenantId) || db.barbershop;
   if (!db.settings.commission_base) {
     db.settings.commission_base = db.settings.commission_on === "original" ? "gross" : "net";
   }
   if (db.settings.discount_affects_commission === undefined) {
     db.settings.discount_affects_commission = true;
   }
-  res.json(db.settings);
+  res.json({
+    ...db.settings,
+    shop_name: shop.name,
+    public_slug: shop.slug,
+    operational_mode: shop.operational_mode,
+  });
 });
 
-router.put("/settings", (req, res) => {
-  const user = authUser(req);
-  if (user && (user.role === "barbeiro" || user.role === "barber")) {
-    return res.status(403).json({ detail: "Barbeiros não possuem permissão para alterar as configurações do sistema." });
-  }
-
+router.put("/settings", requireAuth, requirePermission("alterar_configuracoes"), (req, res) => {
+  const tenantId = getTenantId(req);
   const body = req.body || {};
   let slug = body.public_slug || body.slug;
   if (slug) {
@@ -290,7 +297,7 @@ router.put("/settings", (req, res) => {
       .replace(/[^a-z0-9_-]/g, "-")
       .replace(/-+/g, "-")
       .replace(/^-|-$/g, "");
-    body.public_slug = slug || "barbearia-vintage";
+    body.public_slug = slug || "minha-barbearia";
     db.barbershop.slug = body.public_slug;
   }
 
@@ -303,20 +310,23 @@ router.put("/settings", (req, res) => {
     body.discount_affects_commission = Boolean(body.discount_affects_commission);
   }
 
-  db.settings = { ...db.settings, ...body };
-  if (body.shop_name) {
-    db.barbershop.name = body.shop_name;
+  db.settings = { ...db.settings, ...body, barbershop_id: tenantId };
+  const shop = db.barbershops.find((b) => b.id === tenantId);
+  if (shop && body.shop_name) {
+    shop.name = body.shop_name;
   }
   db.logChange("Atualizou configurações gerais", "settings", null, db.settings);
   res.json(db.settings);
 });
 
-// Barbershop
-router.get("/barbershop", (_req, res) => {
-  res.json(db.barbershop);
+// Barbershop profile (Informações públicas ou administrativas)
+router.get("/barbershop", (req, res) => {
+  const tenantId = getTenantId(req);
+  const shop = db.barbershops.find((b) => b.id === tenantId) || db.barbershop;
+  res.json(shop);
 });
 
-router.put("/barbershop", (req, res) => {
+router.put("/barbershop", requireAuth, requireDono, (req, res) => {
   const body = req.body || {};
   let slug = body.slug || body.public_slug;
   if (slug) {
@@ -340,7 +350,7 @@ router.put("/barbershop", (req, res) => {
 });
 
 // Calendar
-router.get("/calendar", (req, res) => {
+router.get("/calendar", requireAuth, (req, res) => {
   const m = (req.query.month as string) || todayStr().slice(0, 7);
   const unitFilter = getUnitFilter(req);
   let exps = db.expenses.filter((e) => e.due_date.startsWith(m));
@@ -359,18 +369,18 @@ router.get("/calendar", (req, res) => {
 });
 
 // History
-router.get("/history", (req, res) => {
+router.get("/history", requireAuth, (req, res) => {
   const limit = Number(req.query.limit || 100);
   res.json(db.history.slice(0, limit));
 });
 
-// Admin Demo Actions
-router.post("/admin/seed", (_req, res) => {
+// Admin Demo Actions (Protegidas por SuperAdmin ou Dono)
+router.post("/admin/seed", requireSuperAdmin, (_req, res) => {
   db.seed();
   res.json({ ok: true, message: "Dados de demonstração recriados" });
 });
 
-router.post("/admin/clear", (_req, res) => {
+router.post("/admin/clear", requireSuperAdmin, (_req, res) => {
   db.revenues = [];
   db.expenses = [];
   db.withdrawals = [];

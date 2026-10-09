@@ -1,4 +1,8 @@
 import { Request } from "express";
+import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
+import fs from "fs";
+import path from "path";
 import {
   User,
   Barber,
@@ -19,6 +23,7 @@ import {
   Unit,
   Subscription,
   BarbershopInfo,
+  OnboardingState,
   PERMISSIONS_CATALOG,
   defaultManagerPermissions,
   newId,
@@ -26,9 +31,30 @@ import {
   todayStr,
 } from "./types.js";
 
+export const DEMO_TENANT_ID = "demo_vintage";
+
+const DB_DIR = path.join(process.cwd(), "data");
+const DB_FILE = path.join(DB_DIR, "kupola_db.json");
+
 export class Database {
   users: User[] = [];
   barbers: Barber[] = [];
+  barbershops: BarbershopInfo[] = [
+    {
+      id: DEMO_TENANT_ID,
+      name: "Barbearia Vintage Club",
+      slug: "barbearia-vintage",
+      document: "12.345.678/0001-90",
+      phone: "(11) 99999-8888",
+      address: "Rua Augusta, 1200 - Consolação, São Paulo - SP",
+      logo_url: "",
+      opening_hours: "Segunda a Sábado das 09h às 20h",
+      city: "São Paulo",
+      state: "SP",
+      shop_phone: "(11) 99999-8888",
+      operational_mode: "hibrido",
+    },
+  ];
   paymentMethods: PaymentMethod[] = [];
   services: Service[] = [];
   products: Product[] = [];
@@ -46,6 +72,7 @@ export class Database {
   units: Unit[] = [
     {
       id: "unit_centro",
+      barbershop_id: DEMO_TENANT_ID,
       name: "Unidade Centro (Matriz)",
       short_name: "Centro",
       slug: "barbearia-vintage-centro",
@@ -59,6 +86,7 @@ export class Database {
     },
     {
       id: "unit_shopping",
+      barbershop_id: DEMO_TENANT_ID,
       name: "Unidade Shopping (Filial)",
       short_name: "Shopping",
       slug: "barbearia-vintage-shopping",
@@ -71,6 +99,16 @@ export class Database {
       created_at: nowIso(),
     },
   ];
+  subscriptions: Record<string, Subscription> = {
+    [DEMO_TENANT_ID]: {
+      plan_id: "premium",
+      status: "active",
+      subscriptionStatus: "active",
+      max_barbers: 10,
+      multi_unit: true,
+      updated_at: nowIso(),
+    },
+  };
   subscription: Subscription = {
     plan_id: "premium",
     status: "active",
@@ -78,9 +116,14 @@ export class Database {
     multi_unit: true,
     updated_at: nowIso(),
   };
+  onboarding: OnboardingState = {
+    completed: false,
+    currentStep: 1,
+    data: {},
+  };
   settings = {
-    id: "settings",
-    barbershop_id: "profile",
+    id: "settings_demo",
+    barbershop_id: DEMO_TENANT_ID,
     commission_base: "gross", // "gross" | "net"
     discount_affects_commission: true, // boolean
     commission_on: "pago",
@@ -90,7 +133,7 @@ export class Database {
     public_slug: "barbearia-vintage",
   };
   barbershop = {
-    id: "profile",
+    id: DEMO_TENANT_ID,
     name: "Barbearia Vintage Club",
     slug: "barbearia-vintage",
     document: "12.345.678/0001-90",
@@ -104,10 +147,37 @@ export class Database {
     operational_mode: "hibrido",
   };
 
+  getSubscription(tenantId: string): Subscription {
+    if (this.subscriptions[tenantId]) {
+      return this.subscriptions[tenantId];
+    }
+    if (tenantId === DEMO_TENANT_ID) {
+      return this.subscription;
+    }
+    return {
+      plan_id: "pro",
+      status: "trialing",
+      subscriptionStatus: "trialing",
+      max_barbers: 4,
+      multi_unit: false,
+      updated_at: nowIso(),
+    };
+  }
+
+  setSubscription(tenantId: string, sub: Partial<Subscription>): Subscription {
+    const existing = this.getSubscription(tenantId);
+    const updated = { ...existing, ...sub, updated_at: nowIso() };
+    this.subscriptions[tenantId] = updated as Subscription;
+    if (tenantId === DEMO_TENANT_ID) {
+      this.subscription = updated as Subscription;
+    }
+    return updated as Subscription;
+  }
+
   logChange(action: string, entity: string, before: any = null, after: any = null, user = "Administrador") {
     this.history.unshift({
       id: newId(),
-      barbershop_id: "profile",
+      barbershop_id: DEMO_TENANT_ID,
       user,
       timestamp: nowIso(),
       action,
@@ -135,8 +205,8 @@ export class Database {
 
     // Settings
     this.settings = {
-      id: "settings",
-      barbershop_id: "profile",
+      id: "settings_demo",
+      barbershop_id: DEMO_TENANT_ID,
       commission_base: "gross",
       discount_affects_commission: true,
       commission_on: "pago",
@@ -148,37 +218,39 @@ export class Database {
 
     // Payment Methods
     const pms: PaymentMethod[] = [
-      { id: "pm_dinheiro", barbershop_id: "profile", name: "Dinheiro", kind: "dinheiro", fees: { dinheiro: 0 }, settlement_days: { dinheiro: 0 }, active: true, created_at: nowIso() },
-      { id: "pm_pix", barbershop_id: "profile", name: "PIX", kind: "pix", fees: { pix: 0 }, settlement_days: { pix: 0 }, active: true, created_at: nowIso() },
-      { id: "pm_ton", barbershop_id: "profile", name: "Ton", kind: "maquininha", fees: { debito: 1.99, credito_vista: 3.15, credito_parcelado: 4.60, pix: 0.99 }, settlement_days: { debito: 1, credito_vista: 1, credito_parcelado: 30, pix: 0 }, active: true, created_at: nowIso() },
-      { id: "pm_stone", barbershop_id: "profile", name: "Stone", kind: "maquininha", fees: { debito: 1.49, credito_vista: 2.99, credito_parcelado: 4.20, pix: 0.79 }, settlement_days: { debito: 1, credito_vista: 30, credito_parcelado: 30, pix: 0 }, active: true, created_at: nowIso() },
-      { id: "pm_infinitepay", barbershop_id: "profile", name: "InfinitePay", kind: "maquininha", fees: { debito: 1.37, credito_vista: 3.05, credito_parcelado: 4.35, pix: 0 }, settlement_days: { debito: 1, credito_vista: 1, credito_parcelado: 30, pix: 0 }, active: true, created_at: nowIso() },
+      { id: "pm_dinheiro", barbershop_id: DEMO_TENANT_ID, name: "Dinheiro", kind: "dinheiro", fees: { dinheiro: 0 }, settlement_days: { dinheiro: 0 }, active: true, created_at: nowIso() },
+      { id: "pm_pix", barbershop_id: DEMO_TENANT_ID, name: "PIX", kind: "pix", fees: { pix: 0 }, settlement_days: { pix: 0 }, active: true, created_at: nowIso() },
+      { id: "pm_ton", barbershop_id: DEMO_TENANT_ID, name: "Ton", kind: "maquininha", fees: { debito: 1.99, credito_vista: 3.15, credito_parcelado: 4.60, pix: 0.99 }, settlement_days: { debito: 1, credito_vista: 1, credito_parcelado: 30, pix: 0 }, active: true, created_at: nowIso() },
+      { id: "pm_stone", barbershop_id: DEMO_TENANT_ID, name: "Stone", kind: "maquininha", fees: { debito: 1.49, credito_vista: 2.99, credito_parcelado: 4.20, pix: 0.79 }, settlement_days: { debito: 1, credito_vista: 30, credito_parcelado: 30, pix: 0 }, active: true, created_at: nowIso() },
+      { id: "pm_infinitepay", barbershop_id: DEMO_TENANT_ID, name: "InfinitePay", kind: "maquininha", fees: { debito: 1.37, credito_vista: 3.05, credito_parcelado: 4.35, pix: 0 }, settlement_days: { debito: 1, credito_vista: 1, credito_parcelado: 30, pix: 0 }, active: true, created_at: nowIso() },
     ];
     this.paymentMethods = pms;
 
     // Services
     const svcs: Service[] = [
-      { id: "svc_corte", barbershop_id: "profile", name: "Corte Tradicional", price: 50, duration_min: 30, icon: "corte_tradicional", active: true, created_at: nowIso() },
-      { id: "svc_barba", barbershop_id: "profile", name: "Barba Terapia", price: 35, duration_min: 30, icon: "corte_barba", active: true, created_at: nowIso() },
-      { id: "svc_combo", barbershop_id: "profile", name: "Corte + Barba", price: 75, duration_min: 60, icon: "barba_corte", active: true, created_at: nowIso() },
-      { id: "svc_degrade", barbershop_id: "profile", name: "Corte Degradê", price: 60, duration_min: 40, icon: "degrade", active: true, created_at: nowIso() },
-      { id: "svc_sobrancelha", barbershop_id: "profile", name: "Sobrancelha", price: 20, duration_min: 15, icon: "corte_sobrancelha", active: true, created_at: nowIso() },
+      { id: "svc_corte", barbershop_id: DEMO_TENANT_ID, name: "Corte Tradicional", price: 50, duration_min: 30, icon: "corte_tradicional", active: true, created_at: nowIso() },
+      { id: "svc_barba", barbershop_id: DEMO_TENANT_ID, name: "Barba Terapia", price: 35, duration_min: 30, icon: "corte_barba", active: true, created_at: nowIso() },
+      { id: "svc_combo", barbershop_id: DEMO_TENANT_ID, name: "Corte + Barba", price: 75, duration_min: 60, icon: "barba_corte", active: true, created_at: nowIso() },
+      { id: "svc_degrade", barbershop_id: DEMO_TENANT_ID, name: "Corte Degradê", price: 60, duration_min: 40, icon: "degrade", active: true, created_at: nowIso() },
+      { id: "svc_sobrancelha", barbershop_id: DEMO_TENANT_ID, name: "Sobrancelha", price: 20, duration_min: 15, icon: "corte_sobrancelha", active: true, created_at: nowIso() },
     ];
     this.services = svcs;
 
     // Products
     const prods: Product[] = [
-      { id: "prod_pomada", barbershop_id: "profile", name: "Pomada Matte 100g", price: 45, cost: 20, stock: 28, icon: "pomada", active: true, created_at: nowIso() },
-      { id: "prod_shampoo", barbershop_id: "profile", name: "Shampoo Refrescante", price: 35, cost: 15, stock: 19, icon: "shampoo", active: true, created_at: nowIso() },
-      { id: "prod_oleo", barbershop_id: "profile", name: "Óleo para Barba 30ml", price: 50, cost: 22, stock: 15, icon: "oleo_barba", active: true, created_at: nowIso() },
-      { id: "prod_cera", barbershop_id: "profile", name: "Cera Modeladora Forte", price: 40, cost: 18, stock: 22, icon: "cera", active: true, created_at: nowIso() },
+      { id: "prod_pomada", barbershop_id: DEMO_TENANT_ID, name: "Pomada Matte 100g", price: 45, cost: 20, stock: 28, icon: "pomada", active: true, created_at: nowIso() },
+      { id: "prod_shampoo", barbershop_id: DEMO_TENANT_ID, name: "Shampoo Refrescante", price: 35, cost: 15, stock: 19, icon: "shampoo", active: true, created_at: nowIso() },
+      { id: "prod_oleo", barbershop_id: DEMO_TENANT_ID, name: "Óleo para Barba 30ml", price: 50, cost: 22, stock: 15, icon: "oleo_barba", active: true, created_at: nowIso() },
+      { id: "prod_cera", barbershop_id: DEMO_TENANT_ID, name: "Cera Modeladora Forte", price: 40, cost: 18, stock: 22, icon: "cera", active: true, created_at: nowIso() },
     ];
     this.products = prods;
 
     // Barbers
     const b1: Barber = {
       id: "barber_carlos",
-      barbershop_id: "unit_centro",
+      barbershop_id: DEMO_TENANT_ID,
+      unit_id: "unit_centro",
+      unit_ids: ["unit_centro"],
       name: "Carlos Souza",
       commission_percent: 40,
       commission_type: "percentual",
@@ -194,7 +266,9 @@ export class Database {
     };
     const b2: Barber = {
       id: "barber_rafael",
-      barbershop_id: "unit_centro",
+      barbershop_id: DEMO_TENANT_ID,
+      unit_id: "unit_centro",
+      unit_ids: ["unit_centro"],
       name: "Rafael Lima",
       commission_percent: 45,
       commission_type: "percentual",
@@ -210,7 +284,9 @@ export class Database {
     };
     const b3: Barber = {
       id: "barber_andre",
-      barbershop_id: "unit_shopping",
+      barbershop_id: DEMO_TENANT_ID,
+      unit_id: "unit_shopping",
+      unit_ids: ["unit_shopping"],
       name: "André Costa",
       commission_percent: 0,
       commission_type: "fixo",
@@ -233,13 +309,13 @@ export class Database {
     this.users = [
       {
         id: "usr_superadmin",
-        name: "Guilherme Pereira (Master)",
+        name: "Super Administrador",
         username: "superadmin",
-        password: "superadmin123",
-        email: "guilhermepedropereira2@gmail.com",
+        password: bcrypt.hashSync("superadmin123", 10),
+        email: "superadmin@kupola.app",
         role: "superadmin",
         roles: ["superadmin", "dono"],
-        barbershop_id: "profile",
+        barbershop_id: "demo_vintage",
         permissions: allPerms,
         active: true,
         is_superadmin: true,
@@ -251,29 +327,14 @@ export class Database {
         id: "usr_dono",
         name: "Administrador / Dono",
         username: "dono",
-        password: "dono123",
+        password: bcrypt.hashSync("dono123", 10),
         email: "dono@barbearia.com",
         role: "dono",
         roles: ["dono"],
-        barbershop_id: "profile",
+        barbershop_id: DEMO_TENANT_ID,
         permissions: allPerms,
         active: true,
-        is_superadmin: true,
-        subscriptionStatus: "active",
-        subscriptionExpiresAt: new Date(Date.now() + 30 * 86400000).toISOString(),
-        created_at: nowIso(),
-      },
-      {
-        id: "usr_dono_quick",
-        name: "Dono Teste (1)",
-        username: "1",
-        password: "1",
-        email: "dono@teste.com",
-        role: "dono",
-        roles: ["dono"],
-        barbershop_id: "profile",
-        permissions: allPerms,
-        active: true,
+        is_superadmin: false,
         subscriptionStatus: "active",
         subscriptionExpiresAt: new Date(Date.now() + 30 * 86400000).toISOString(),
         created_at: nowIso(),
@@ -282,26 +343,11 @@ export class Database {
         id: "usr_gerente",
         name: "Gerente Geral",
         username: "gerente",
-        password: "gerente123",
+        password: bcrypt.hashSync("gerente123", 10),
         email: "gerente@barbearia.com",
         role: "gerente",
         roles: ["gerente"],
-        barbershop_id: "profile",
-        permissions: defaultManagerPermissions(),
-        active: true,
-        subscriptionStatus: "active",
-        subscriptionExpiresAt: new Date(Date.now() + 30 * 86400000).toISOString(),
-        created_at: nowIso(),
-      },
-      {
-        id: "usr_gerente_quick",
-        name: "Gerente Teste (2)",
-        username: "2",
-        password: "2",
-        email: "gerente@teste.com",
-        role: "gerente",
-        roles: ["gerente"],
-        barbershop_id: "profile",
+        barbershop_id: DEMO_TENANT_ID,
         permissions: defaultManagerPermissions(),
         active: true,
         subscriptionStatus: "active",
@@ -312,27 +358,11 @@ export class Database {
         id: "usr_carlos",
         name: "Carlos Souza",
         username: "carlos",
-        password: "barbeiro123",
+        password: bcrypt.hashSync("barbeiro123", 10),
         email: "carlos@barbearia.com",
         role: "barbeiro",
         roles: ["barbeiro"],
-        barbershop_id: "profile",
-        barber_id: b1.id,
-        permissions: {},
-        active: true,
-        subscriptionStatus: "active",
-        subscriptionExpiresAt: new Date(Date.now() + 30 * 86400000).toISOString(),
-        created_at: nowIso(),
-      },
-      {
-        id: "usr_barbeiro_quick",
-        name: "Barbeiro Teste (3)",
-        username: "3",
-        password: "3",
-        email: "barbeiro@teste.com",
-        role: "barbeiro",
-        roles: ["barbeiro"],
-        barbershop_id: "profile",
+        barbershop_id: DEMO_TENANT_ID,
         barber_id: b1.id,
         permissions: {},
         active: true,
@@ -344,14 +374,14 @@ export class Database {
 
     // Categories
     const cats: Category[] = [
-      { id: "cat_aluguel", barbershop_id: "profile", name: "Aluguel", group: "Estrutura", type: "despesa", color: "#c9a227", created_at: nowIso() },
-      { id: "cat_energia", barbershop_id: "profile", name: "Energia Elétrica", group: "Estrutura", type: "despesa", color: "#eab308", created_at: nowIso() },
-      { id: "cat_agua", barbershop_id: "profile", name: "Água & Esgoto", group: "Estrutura", type: "despesa", color: "#0ea5e9", created_at: nowIso() },
-      { id: "cat_internet", barbershop_id: "profile", name: "Internet Fibra", group: "Estrutura", type: "despesa", color: "#6366f1", created_at: nowIso() },
-      { id: "cat_produtos", barbershop_id: "profile", name: "Insumos & Lâminas", group: "Operação", type: "despesa", color: "#10b981", created_at: nowIso() },
-      { id: "cat_marketing", barbershop_id: "profile", name: "Anúncios Meta/Google", group: "Marketing", type: "despesa", color: "#f43f5e", created_at: nowIso() },
-      { id: "cat_manutencao", barbershop_id: "profile", name: "Manutenção Máquinas", group: "Manutenção", type: "despesa", color: "#8b5cf6", created_at: nowIso() },
-      { id: "cat_comissoes", barbershop_id: "profile", name: "Comissões dos Barbeiros", group: "Pessoal", type: "despesa", color: "#10b981", created_at: nowIso() },
+      { id: "cat_aluguel", barbershop_id: DEMO_TENANT_ID, name: "Aluguel", group: "Estrutura", type: "despesa", color: "#c9a227", created_at: nowIso() },
+      { id: "cat_energia", barbershop_id: DEMO_TENANT_ID, name: "Energia Elétrica", group: "Estrutura", type: "despesa", color: "#eab308", created_at: nowIso() },
+      { id: "cat_agua", barbershop_id: DEMO_TENANT_ID, name: "Água & Esgoto", group: "Estrutura", type: "despesa", color: "#0ea5e9", created_at: nowIso() },
+      { id: "cat_internet", barbershop_id: DEMO_TENANT_ID, name: "Internet Fibra", group: "Estrutura", type: "despesa", color: "#6366f1", created_at: nowIso() },
+      { id: "cat_produtos", barbershop_id: DEMO_TENANT_ID, name: "Insumos & Lâminas", group: "Operação", type: "despesa", color: "#10b981", created_at: nowIso() },
+      { id: "cat_marketing", barbershop_id: DEMO_TENANT_ID, name: "Anúncios Meta/Google", group: "Marketing", type: "despesa", color: "#f43f5e", created_at: nowIso() },
+      { id: "cat_manutencao", barbershop_id: DEMO_TENANT_ID, name: "Manutenção Máquinas", group: "Manutenção", type: "despesa", color: "#8b5cf6", created_at: nowIso() },
+      { id: "cat_comissoes", barbershop_id: DEMO_TENANT_ID, name: "Comissões dos Barbeiros", group: "Pessoal", type: "despesa", color: "#10b981", created_at: nowIso() },
     ];
     this.categories = cats;
 
@@ -359,7 +389,7 @@ export class Database {
     this.customerPlans = [
       {
         id: "cplan_1",
-        barbershop_id: "profile",
+        barbershop_id: DEMO_TENANT_ID,
         name: "Corte Livre (Uso Ilimitado)",
         price: 99.90,
         billing_cycle: "mensal",
@@ -372,7 +402,7 @@ export class Database {
       },
       {
         id: "cplan_2",
-        barbershop_id: "profile",
+        barbershop_id: DEMO_TENANT_ID,
         name: "VIP Mensal (4 Cortes + 2 Barbas)",
         price: 149.00,
         billing_cycle: "mensal",
@@ -388,7 +418,7 @@ export class Database {
       },
       {
         id: "cplan_3",
-        barbershop_id: "profile",
+        barbershop_id: DEMO_TENANT_ID,
         name: "Clube da Barba",
         price: 79.90,
         billing_cycle: "mensal",
@@ -405,7 +435,7 @@ export class Database {
     this.clients = [
       {
         id: "cli_1",
-        barbershop_id: "profile",
+        barbershop_id: DEMO_TENANT_ID,
         name: "João Pedro Silva",
         phone: "(11) 98765-4321",
         photo: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&auto=format&fit=crop&q=80",
@@ -427,7 +457,7 @@ export class Database {
       },
       {
         id: "cli_2",
-        barbershop_id: "profile",
+        barbershop_id: DEMO_TENANT_ID,
         name: "Lucas Fernandes",
         phone: "(11) 97777-6666",
         notes: "Corte tradicional tesoura",
@@ -436,7 +466,7 @@ export class Database {
       },
       {
         id: "cli_3",
-        barbershop_id: "profile",
+        barbershop_id: DEMO_TENANT_ID,
         name: "Marcos Vinicius",
         phone: "(11) 96666-5555",
         photo: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&auto=format&fit=crop&q=80",
@@ -458,7 +488,7 @@ export class Database {
       },
       {
         id: "cli_4",
-        barbershop_id: "profile",
+        barbershop_id: DEMO_TENANT_ID,
         name: "Bruno Henrique",
         phone: "(11) 95555-4444",
         notes: "",
@@ -467,7 +497,7 @@ export class Database {
       },
       {
         id: "cli_5",
-        barbershop_id: "profile",
+        barbershop_id: DEMO_TENANT_ID,
         name: "Lucas Mendes",
         phone: "(11) 94444-3333",
         notes: "Cliente VIP Mensal",
@@ -576,12 +606,12 @@ export class Database {
     // Seed Expenses for current month
     const ym = `${currentYear}-${String(currentMonth + 1).padStart(2, "0")}`;
     this.expenses = [
-      { id: "exp_1", barbershop_id: "profile", name: "Aluguel Salão", value: 2500, category_id: "cat_aluguel", category_name: "Aluguel", type: "fixa", due_date: `${ym}-05`, recurrence: "mensal", payment_date: `${ym}-05`, status: "pago", created_at: nowIso() },
-      { id: "exp_2", barbershop_id: "profile", name: "Conta de Energia", value: 480, category_id: "cat_energia", category_name: "Energia Elétrica", type: "variavel", due_date: `${ym}-10`, recurrence: "nenhuma", payment_date: `${ym}-10`, status: "pago", created_at: nowIso() },
-      { id: "exp_3", barbershop_id: "profile", name: "Conta de Água", value: 160, category_id: "cat_agua", category_name: "Água & Esgoto", type: "variavel", due_date: `${ym}-15`, recurrence: "nenhuma", payment_date: `${ym}-14`, status: "pago", created_at: nowIso() },
-      { id: "exp_4", barbershop_id: "profile", name: "Internet Fibra Óptica", value: 199.9, category_id: "cat_internet", category_name: "Internet Fibra", type: "fixa", due_date: `${ym}-20`, recurrence: "mensal", payment_date: undefined, status: "pendente", created_at: nowIso() },
-      { id: "exp_5", barbershop_id: "profile", name: "Compra Lâminas e Toalhas", value: 350, category_id: "cat_produtos", category_name: "Insumos & Lâminas", type: "variavel", due_date: `${ym}-22`, recurrence: "nenhuma", payment_date: undefined, status: "pendente", created_at: nowIso() },
-      { id: "exp_6", barbershop_id: "profile", name: "Anúncios Instagram/Facebook", value: 400, category_id: "cat_marketing", category_name: "Anúncios Meta/Google", type: "variavel", due_date: `${ym}-25`, recurrence: "nenhuma", payment_date: undefined, status: "pendente", created_at: nowIso() },
+      { id: "exp_1", barbershop_id: DEMO_TENANT_ID, name: "Aluguel Salão", value: 2500, category_id: "cat_aluguel", category_name: "Aluguel", type: "fixa", due_date: `${ym}-05`, recurrence: "mensal", payment_date: `${ym}-05`, status: "pago", created_at: nowIso() },
+      { id: "exp_2", barbershop_id: DEMO_TENANT_ID, name: "Conta de Energia", value: 480, category_id: "cat_energia", category_name: "Energia Elétrica", type: "variavel", due_date: `${ym}-10`, recurrence: "nenhuma", payment_date: `${ym}-10`, status: "pago", created_at: nowIso() },
+      { id: "exp_3", barbershop_id: DEMO_TENANT_ID, name: "Conta de Água", value: 160, category_id: "cat_agua", category_name: "Água & Esgoto", type: "variavel", due_date: `${ym}-15`, recurrence: "nenhuma", payment_date: `${ym}-14`, status: "pago", created_at: nowIso() },
+      { id: "exp_4", barbershop_id: DEMO_TENANT_ID, name: "Internet Fibra Óptica", value: 199.9, category_id: "cat_internet", category_name: "Internet Fibra", type: "fixa", due_date: `${ym}-20`, recurrence: "mensal", payment_date: undefined, status: "pendente", created_at: nowIso() },
+      { id: "exp_5", barbershop_id: DEMO_TENANT_ID, name: "Compra Lâminas e Toalhas", value: 350, category_id: "cat_produtos", category_name: "Insumos & Lâminas", type: "variavel", due_date: `${ym}-22`, recurrence: "nenhuma", payment_date: undefined, status: "pendente", created_at: nowIso() },
+      { id: "exp_6", barbershop_id: DEMO_TENANT_ID, name: "Anúncios Instagram/Facebook", value: 400, category_id: "cat_marketing", category_name: "Anúncios Meta/Google", type: "variavel", due_date: `${ym}-25`, recurrence: "nenhuma", payment_date: undefined, status: "pendente", created_at: nowIso() },
       { id: "exp_shop_1", barbershop_id: "unit_shopping", name: "Aluguel Shopping Iguatemi", value: 3800, category_id: "cat_aluguel", category_name: "Aluguel", type: "fixa", due_date: `${ym}-05`, recurrence: "mensal", payment_date: `${ym}-05`, status: "pago", created_at: nowIso() },
       { id: "exp_shop_2", barbershop_id: "unit_shopping", name: "Energia Elétrica Shopping", value: 620, category_id: "cat_energia", category_name: "Energia Elétrica", type: "variavel", due_date: `${ym}-10`, recurrence: "nenhuma", payment_date: `${ym}-10`, status: "pago", created_at: nowIso() },
       { id: "exp_shop_3", barbershop_id: "unit_shopping", name: "Internet Fibra Shopping", value: 199.9, category_id: "cat_internet", category_name: "Internet Fibra", type: "fixa", due_date: `${ym}-20`, recurrence: "mensal", payment_date: undefined, status: "pendente", created_at: nowIso() },
@@ -590,13 +620,13 @@ export class Database {
 
     // Seed Withdrawals
     this.withdrawals = [
-      { id: "w_1", barbershop_id: "profile", date: `${ym}-10`, value: 1200, reason: "Pró-labore proprietário Matriz", source: "dinheiro", created_at: nowIso() },
+      { id: "w_1", barbershop_id: DEMO_TENANT_ID, date: `${ym}-10`, value: 1200, reason: "Pró-labore proprietário Matriz", source: "dinheiro", created_at: nowIso() },
       { id: "w_2", barbershop_id: "unit_shopping", date: `${ym}-15`, value: 800, reason: "Pró-labore Filial Shopping", source: "pix", created_at: nowIso() },
     ];
 
     // Seed Cash Closings
     this.cashClosings = [
-      { id: "cc_1", barbershop_id: "profile", date: todayStr(), expected: { Dinheiro: 380, PIX: 620, Cartão: 940 }, counted: { Dinheiro: 380, PIX: 620, Cartão: 940 }, difference: 0, note: "Fechamento conferido sem divergências", created_at: nowIso() },
+      { id: "cc_1", barbershop_id: DEMO_TENANT_ID, date: todayStr(), expected: { Dinheiro: 380, PIX: 620, Cartão: 940 }, counted: { Dinheiro: 380, PIX: 620, Cartão: 940 }, difference: 0, note: "Fechamento conferido sem divergências", created_at: nowIso() },
     ];
 
     // Seed Queue (Ordem de Chegada)
@@ -604,7 +634,7 @@ export class Database {
     this.queue = [
       {
         id: "queue_1",
-        barbershop_id: "profile",
+        barbershop_id: DEMO_TENANT_ID,
         client_name: "Lucas Mendes",
         client_phone: "(11) 98765-4321",
         barber_id: "",
@@ -620,7 +650,7 @@ export class Database {
       },
       {
         id: "queue_2",
-        barbershop_id: "profile",
+        barbershop_id: DEMO_TENANT_ID,
         client_name: "Matheus Oliveira",
         client_phone: "(11) 97777-8899",
         barber_id: "barber_carlos",
@@ -636,7 +666,7 @@ export class Database {
       },
       {
         id: "queue_3",
-        barbershop_id: "profile",
+        barbershop_id: DEMO_TENANT_ID,
         client_name: "Felipe Rocha",
         client_phone: "(11) 99123-4567",
         barber_id: "barber_rafael",
@@ -653,7 +683,7 @@ export class Database {
       },
       {
         id: "queue_4",
-        barbershop_id: "profile",
+        barbershop_id: DEMO_TENANT_ID,
         client_name: "Gabriel Costa",
         client_phone: "(11) 98222-3344",
         barber_id: "barber_andre",
@@ -669,7 +699,7 @@ export class Database {
       },
       {
         id: "queue_5",
-        barbershop_id: "profile",
+        barbershop_id: DEMO_TENANT_ID,
         client_name: "Renato Silva",
         client_phone: "(11) 98111-2233",
         barber_id: "barber_carlos",
@@ -690,7 +720,7 @@ export class Database {
     this.appointments = [
       {
         id: "apt_1",
-        barbershop_id: "profile",
+        barbershop_id: DEMO_TENANT_ID,
         client_name: "Eduardo Camargo",
         client_phone: "(11) 99345-6789",
         barber_id: "barber_carlos",
@@ -707,7 +737,7 @@ export class Database {
       },
       {
         id: "apt_2",
-        barbershop_id: "profile",
+        barbershop_id: DEMO_TENANT_ID,
         client_name: "Bruno Albuquerque",
         client_phone: "(11) 99456-7890",
         barber_id: "barber_carlos",
@@ -723,7 +753,7 @@ export class Database {
       },
       {
         id: "apt_3",
-        barbershop_id: "profile",
+        barbershop_id: DEMO_TENANT_ID,
         client_name: "Felipe Rocha",
         client_phone: "(11) 99123-4567",
         barber_id: "barber_rafael",
@@ -740,7 +770,7 @@ export class Database {
       },
       {
         id: "apt_4",
-        barbershop_id: "profile",
+        barbershop_id: DEMO_TENANT_ID,
         client_name: "Thiago Moreira",
         client_phone: "(11) 99567-8901",
         barber_id: "barber_carlos",
@@ -757,7 +787,7 @@ export class Database {
       },
       {
         id: "apt_5",
-        barbershop_id: "profile",
+        barbershop_id: DEMO_TENANT_ID,
         client_name: "Leonardo Vieira",
         client_phone: "(11) 99678-9012",
         barber_id: "barber_rafael",
@@ -773,7 +803,7 @@ export class Database {
       },
       {
         id: "apt_6",
-        barbershop_id: "profile",
+        barbershop_id: DEMO_TENANT_ID,
         client_name: "Guilherme Santos",
         client_phone: "(11) 99789-0123",
         barber_id: "barber_andre",
@@ -792,32 +822,154 @@ export class Database {
 
     this.logChange("Dados de demonstração gerados com sucesso", "admin", null, null, "Sistema");
   }
+
+  saveToFile() {
+    try {
+      if (!fs.existsSync(DB_DIR)) {
+        fs.mkdirSync(DB_DIR, { recursive: true });
+      }
+      const state = {
+        users: this.users,
+        barbers: this.barbers,
+        barbershops: this.barbershops,
+        paymentMethods: this.paymentMethods,
+        services: this.services,
+        products: this.products,
+        categories: this.categories,
+        revenues: this.revenues,
+        expenses: this.expenses,
+        withdrawals: this.withdrawals,
+        cashClosings: this.cashClosings,
+        clients: this.clients,
+        customerPlans: this.customerPlans,
+        commissionPayments: this.commissionPayments,
+        queue: this.queue,
+        appointments: this.appointments,
+        history: this.history,
+        units: this.units,
+        subscriptions: this.subscriptions,
+        subscription: this.subscription,
+        onboarding: this.onboarding,
+        settings: this.settings,
+        barbershop: this.barbershop,
+      };
+      const tmpFile = `${DB_FILE}.tmp.${Date.now()}`;
+      fs.writeFileSync(tmpFile, JSON.stringify(state, null, 2), "utf-8");
+      fs.renameSync(tmpFile, DB_FILE);
+    } catch (err: any) {
+      console.error("[Database Persistence Error]:", err.message);
+    }
+  }
+
+  loadFromFile(): boolean {
+    try {
+      if (fs.existsSync(DB_FILE)) {
+        const raw = fs.readFileSync(DB_FILE, "utf-8");
+        if (raw && raw.trim().length > 0) {
+          const state = JSON.parse(raw);
+          if (state && typeof state === "object") {
+            if (Array.isArray(state.users)) this.users = state.users;
+            if (Array.isArray(state.barbers)) this.barbers = state.barbers;
+            if (Array.isArray(state.barbershops)) this.barbershops = state.barbershops;
+            if (Array.isArray(state.paymentMethods)) this.paymentMethods = state.paymentMethods;
+            if (Array.isArray(state.services)) this.services = state.services;
+            if (Array.isArray(state.products)) this.products = state.products;
+            if (Array.isArray(state.categories)) this.categories = state.categories;
+            if (Array.isArray(state.revenues)) this.revenues = state.revenues;
+            if (Array.isArray(state.expenses)) this.expenses = state.expenses;
+            if (Array.isArray(state.withdrawals)) this.withdrawals = state.withdrawals;
+            if (Array.isArray(state.cashClosings)) this.cashClosings = state.cashClosings;
+            if (Array.isArray(state.clients)) this.clients = state.clients;
+            if (Array.isArray(state.customerPlans)) this.customerPlans = state.customerPlans;
+            if (Array.isArray(state.commissionPayments)) this.commissionPayments = state.commissionPayments;
+            if (Array.isArray(state.queue)) this.queue = state.queue;
+            if (Array.isArray(state.appointments)) this.appointments = state.appointments;
+            if (Array.isArray(state.history)) this.history = state.history;
+            if (Array.isArray(state.units)) this.units = state.units;
+            if (state.subscriptions && typeof state.subscriptions === "object") this.subscriptions = state.subscriptions;
+            if (state.subscription && typeof state.subscription === "object") this.subscription = state.subscription;
+            if (state.onboarding && typeof state.onboarding === "object") this.onboarding = state.onboarding;
+            if (state.settings && typeof state.settings === "object") this.settings = state.settings;
+            if (state.barbershop && typeof state.barbershop === "object") this.barbershop = state.barbershop;
+
+            console.log(
+              `[Database Persistence] Base de dados carregada de ${DB_FILE}: ${this.users.length} usuários, ${this.barbershops.length} barbearias, ${this.services.length} serviços, ${this.revenues.length} receitas.`
+            );
+            return true;
+          }
+        }
+      }
+    } catch (err: any) {
+      console.error("[Database Persistence Read Error]:", err.message);
+    }
+    return false;
+  }
 }
 
 const db = new Database();
-db.seed();
+const loadedSuccessfully = db.loadFromFile();
+if (!loadedSuccessfully) {
+  console.log("[Database Persistence] Inicializando dados padrão e criando arquivo de persistência...");
+  db.seed();
+  db.saveToFile();
+}
+
+// Salvar no término do processo
+process.on("SIGINT", () => {
+  try {
+    db.saveToFile();
+  } catch {}
+});
+process.on("SIGTERM", () => {
+  try {
+    db.saveToFile();
+  } catch {}
+});
+
+const JWT_SECRET = process.env.JWT_SECRET || "kupola-secure-production-jwt-secret-key-2026-auth";
 
 // Helper auth middleware
 const authUser = (req: Request): User | null => {
   const auth = req.headers.authorization;
   if (!auth || !auth.startsWith("Bearer ")) return null;
   const token = auth.replace("Bearer ", "").trim();
-  const user = db.users.find((u) => u.id === token || u.username === token || token === "fake-token-" + u.id);
-  if (user) return user;
-  return db.users.find((u) => u.role === "dono") || db.users[0];
+  if (!token) return null;
+
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET) as any;
+    if (decoded && decoded.userId) {
+      const user = db.users.find((u) => u.id === decoded.userId);
+      if (user && user.active !== false) return user;
+    }
+  } catch {
+    // JWT verification failed
+  }
+
+  // Strictly check legacy fake-token format if user exists and is active
+  if (token.startsWith("fake-token-")) {
+    const id = token.replace("fake-token-", "");
+    const user = db.users.find((u) => u.id === id);
+    if (user && user.active !== false) return user;
+  }
+
+  return null;
 };
 // Helper to enrich client with real-time stats, history and plan progress
 function enrichClient(c: Client): any {
   const clientRevenues = db.revenues.filter(
     (r) =>
-      (r.client_id && r.client_id === c.id) ||
-      (r.client_name && r.client_name.toLowerCase() === c.name.toLowerCase())
+      r.status === "ativo" &&
+      r.barbershop_id === c.barbershop_id &&
+      ((r.client_id && r.client_id === c.id) ||
+      (r.client_name && r.client_name.toLowerCase() === c.name.toLowerCase()))
   );
-  const visits = clientRevenues.length;
+  const uniqueAttendanceGroups = new Set(clientRevenues.map((r) => r.sale_group_id || r.id));
+  const visits = uniqueAttendanceGroups.size;
   const total_spent = Number(
     clientRevenues.reduce((acc, r) => acc + (r.paid_amount || 0), 0).toFixed(2)
   );
-  const last_visit = clientRevenues[0]?.date || null;
+  const sortedRevs = [...clientRevenues].sort((a, b) => (b.date + (b.time || "")).localeCompare(a.date + (a.time || "")));
+  const last_visit = sortedRevs[0]?.date || null;
 
   let enrichedPlan = undefined;
   if (c.has_plan && c.plan) {
@@ -870,6 +1022,14 @@ export const getUnitFilter = (req: Request): string | null => {
   return h;
 };
 
+export const getTenantId = (req: Request): string => {
+  const user = (req as any).user || authUser(req);
+  if (user?.barbershop_id) return user.barbershop_id;
+  const headerTenant = req.headers["x-organization-id"] as string;
+  if (headerTenant && headerTenant !== "undefined" && headerTenant !== "null") return headerTenant;
+  return DEMO_TENANT_ID;
+};
+
 export const isUserSuperAdmin = (u: any): boolean => {
   if (!u) return false;
   if (u.is_superadmin === true) return true;
@@ -877,11 +1037,9 @@ export const isUserSuperAdmin = (u: any): boolean => {
   const email = (u.email || "").toLowerCase().trim();
   const username = (u.username || "").toLowerCase().trim();
   return (
-    email === "guilhermepedropereira2@gmail.com" ||
     email === "admin@kupola.app" ||
     email === "superadmin@kupola.app" ||
-    username === "superadmin" ||
-    email === "dono@barbearia.com"
+    username === "superadmin"
   );
 };
 

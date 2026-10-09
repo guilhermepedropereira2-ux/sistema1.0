@@ -1,20 +1,23 @@
-import express from "express";
-import { db, getUnitFilter } from "../db.js";
+import express, { Request, Response } from "express";
+import { db, getUnitFilter, getTenantId } from "../db.js";
 import { todayStr, parseDateStr, formatBRL } from "../types.js";
+import { requireAuth, requirePermission } from "../auth.js";
 
 const router = express.Router();
 
-router.get("/dashboard/summary", (req, res) => {
+router.get("/dashboard/summary", requireAuth, requirePermission("ver_dashboard"), (req: Request, res: Response) => {
   const m = (req.query.month as string) || todayStr().slice(0, 7);
+  const tenantId = getTenantId(req);
   const unitFilter = getUnitFilter(req);
-  let revs = db.revenues.filter((r) => r.date.startsWith(m) && r.status === "ativo");
-  let exps = db.expenses.filter((e) => e.due_date.startsWith(m));
-  let wds = db.withdrawals.filter((w) => w.date.startsWith(m));
+
+  let revs = db.revenues.filter((r) => r.barbershop_id === tenantId && r.date.startsWith(m) && r.status === "ativo");
+  let exps = db.expenses.filter((e) => e.barbershop_id === tenantId && e.due_date.startsWith(m));
+  let wds = db.withdrawals.filter((w) => w.barbershop_id === tenantId && w.date.startsWith(m));
 
   if (unitFilter) {
-    revs = revs.filter((r) => r.barbershop_id === unitFilter || (unitFilter === "unit_centro" && r.barbershop_id === "profile"));
-    exps = exps.filter((e) => e.barbershop_id === unitFilter || (unitFilter === "unit_centro" && e.barbershop_id === "profile"));
-    wds = wds.filter((w) => w.barbershop_id === unitFilter || (unitFilter === "unit_centro" && w.barbershop_id === "profile"));
+    revs = revs.filter((r) => r.unit_id === unitFilter || r.barbershop_id === unitFilter);
+    exps = exps.filter((e) => e.unit_id === unitFilter || e.barbershop_id === unitFilter);
+    wds = wds.filter((w) => w.unit_id === unitFilter || w.barbershop_id === unitFilter);
   }
 
   const gross = Number(revs.reduce((acc, r) => acc + (r.paid_amount || 0), 0).toFixed(2));
@@ -28,15 +31,45 @@ router.get("/dashboard/summary", (req, res) => {
   const expenses_paid = Number(exps.filter((e) => e.payment_date).reduce((acc, e) => acc + (e.value || 0), 0).toFixed(2));
   const withdrawals_total = Number(wds.reduce((acc, w) => acc + (w.value || 0), 0).toFixed(2));
   const profit = Number((shop - expenses_total).toFixed(2));
+  const contribution_margin = Number((net - commissions).toFixed(2));
 
   const available_now = Number(revs.filter((r) => r.settlement_date <= todayStr()).reduce((acc, r) => acc + (r.net_amount || 0), 0).toFixed(2));
   const to_receive = Number(revs.filter((r) => r.settlement_date > todayStr()).reduce((acc, r) => acc + (r.net_amount || 0), 0).toFixed(2));
-  const cash_balance = Number((db.settings.initial_balance + available_now - expenses_paid - withdrawals_total).toFixed(2));
+  
+  const initialBalance = db.settings.barbershop_id === tenantId ? db.settings.initial_balance : 0;
+  const cash_balance = Number((initialBalance + available_now - expenses_paid - withdrawals_total).toFixed(2));
 
   const t = todayStr();
   const revsToday = revs.filter((r) => r.date === t);
   const faturamento_diario = Number(revsToday.reduce((acc, r) => acc + (r.paid_amount || 0), 0).toFixed(2));
-  const atendimentos_hoje = revsToday.length;
+  const uniqueRevsToday = new Set(revsToday.map((r) => r.sale_group_id || r.id));
+  const uniqueRevsMonth = new Set(revs.map((r) => r.sale_group_id || r.id));
+  const atendimentos_hoje = uniqueRevsToday.size;
+
+  // Cálculo do Mês Anterior para comparação real
+  const [currY, currM] = m.split("-").map(Number);
+  let prevY = currY;
+  let prevM = currM - 1;
+  if (prevM <= 0) {
+    prevM = 12;
+    prevY -= 1;
+  }
+  const prevMonthStr = `${prevY}-${String(prevM).padStart(2, "0")}`;
+
+  let prevRevs = db.revenues.filter((r) => r.barbershop_id === tenantId && r.date.startsWith(prevMonthStr) && r.status === "ativo");
+  let prevExps = db.expenses.filter((e) => e.barbershop_id === tenantId && e.due_date.startsWith(prevMonthStr));
+  if (unitFilter) {
+    prevRevs = prevRevs.filter((r) => r.unit_id === unitFilter || r.barbershop_id === unitFilter);
+    prevExps = prevExps.filter((e) => e.unit_id === unitFilter || e.barbershop_id === unitFilter);
+  }
+
+  const prev_gross = Number(prevRevs.reduce((acc, r) => acc + (r.paid_amount || 0), 0).toFixed(2));
+  const prev_fees = Number(prevRevs.reduce((acc, r) => acc + (r.fee_amount || 0), 0).toFixed(2));
+  const prev_commissions = Number(prevRevs.reduce((acc, r) => acc + (r.commission_amount || 0), 0).toFixed(2));
+  const prev_net = Math.max(0, prev_gross - prev_fees);
+  const prev_contribution_margin = Number((prev_net - prev_commissions).toFixed(2));
+  const prev_expenses_total = Number(prevExps.reduce((acc, e) => acc + (e.value || 0), 0).toFixed(2));
+  const prev_profit = Number((prev_contribution_margin - prev_expenses_total).toFixed(2));
 
   res.json({
     month: m,
@@ -47,6 +80,7 @@ router.get("/dashboard/summary", (req, res) => {
     net,
     commissions,
     shop,
+    contribution_margin,
     expenses_total,
     expenses_paid,
     withdrawals: withdrawals_total,
@@ -54,28 +88,102 @@ router.get("/dashboard/summary", (req, res) => {
     available_now,
     to_receive,
     cash_balance,
-    revenue_count: revs.length,
+    revenue_count: uniqueRevsMonth.size,
     faturamento_diario,
     atendimentos_hoje,
     faturamento_hoje: faturamento_diario,
     total_atendimentos: atendimentos_hoje,
+    prev_month: prevMonthStr,
+    prev_gross,
+    prev_contribution_margin,
+    prev_expenses_total,
+    prev_profit,
+    has_prev_data: prevRevs.length > 0 || prevExps.length > 0,
   });
 });
 
-router.get("/financial/metrics-polling", (req, res) => {
+router.get("/dashboard/evolution", requireAuth, requirePermission("ver_dashboard"), (req: Request, res: Response) => {
+  const count = Math.min(24, Math.max(1, Number(req.query.months || 6)));
+  const endMonth = (req.query.month as string) || todayStr().slice(0, 7);
+  const tenantId = getTenantId(req);
+  const unitFilter = getUnitFilter(req);
+  const [endY, endM] = endMonth.split("-").map(Number);
+  const monthNames = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
+
+  const series: Array<{
+    month: string;
+    monthKey: string;
+    Receita: number;
+    Despesas: number;
+    Lucro: number;
+    Margem: number;
+    atendimentos: number;
+  }> = [];
+
+  for (let i = count - 1; i >= 0; i--) {
+    let m = endM - i;
+    let y = endY;
+    while (m <= 0) {
+      m += 12;
+      y -= 1;
+    }
+    const monthStr = `${y}-${String(m).padStart(2, "0")}`;
+    const label = `${monthNames[m - 1]}/${String(y).slice(2)}`;
+
+    let mRevs = db.revenues.filter((r) => r.barbershop_id === tenantId && r.date.startsWith(monthStr) && r.status === "ativo");
+    let mExps = db.expenses.filter((e) => e.barbershop_id === tenantId && e.due_date.startsWith(monthStr));
+
+    if (unitFilter) {
+      mRevs = mRevs.filter((r) => r.unit_id === unitFilter || r.barbershop_id === unitFilter);
+      mExps = mExps.filter((e) => e.unit_id === unitFilter || e.barbershop_id === unitFilter);
+    }
+
+    const mGross = Number(mRevs.reduce((acc, r) => acc + (r.paid_amount || 0), 0).toFixed(2));
+    const mFees = Number(mRevs.reduce((acc, r) => acc + (r.fee_amount || 0), 0).toFixed(2));
+    const mCommissions = Number(mRevs.reduce((acc, r) => acc + (r.commission_amount || 0), 0).toFixed(2));
+    const mNetRevenue = Math.max(0, mGross - mFees);
+    const mContributionMargin = Number((mNetRevenue - mCommissions).toFixed(2));
+    const mTotalExpenses = Number(mExps.reduce((acc, e) => acc + (e.value || 0), 0).toFixed(2));
+    const mProfit = Number((mContributionMargin - mTotalExpenses).toFixed(2));
+    const mUniqueAttendances = new Set(mRevs.map((r) => r.sale_group_id || r.id)).size;
+
+    series.push({
+      month: label,
+      monthKey: monthStr,
+      Receita: mGross,
+      Despesas: mTotalExpenses,
+      Lucro: mProfit,
+      Margem: mContributionMargin,
+      atendimentos: mUniqueAttendances,
+    });
+  }
+
+  const hasData = series.some((s) => s.Receita > 0 || s.Despesas > 0 || s.atendimentos > 0);
+
+  res.json({
+    series,
+    hasData,
+  });
+});
+
+router.get("/financial/metrics-polling", requireAuth, requirePermission("ver_dashboard"), (req: Request, res: Response) => {
   const t = todayStr();
   const m = (req.query.month as string) || t.slice(0, 7);
+  const tenantId = getTenantId(req);
   const unitFilter = getUnitFilter(req);
-  let revsMonth = db.revenues.filter((r) => r.date.startsWith(m) && r.status === "ativo");
-  let revsToday = db.revenues.filter((r) => r.date === t && r.status === "ativo");
+
+  let revsMonth = db.revenues.filter((r) => r.barbershop_id === tenantId && r.date.startsWith(m) && r.status === "ativo");
+  let revsToday = db.revenues.filter((r) => r.barbershop_id === tenantId && r.date === t && r.status === "ativo");
+
   if (unitFilter) {
-    revsMonth = revsMonth.filter((r) => r.barbershop_id === unitFilter || (unitFilter === "unit_centro" && r.barbershop_id === "profile"));
-    revsToday = revsToday.filter((r) => r.barbershop_id === unitFilter || (unitFilter === "unit_centro" && r.barbershop_id === "profile"));
+    revsMonth = revsMonth.filter((r) => r.unit_id === unitFilter || r.barbershop_id === unitFilter);
+    revsToday = revsToday.filter((r) => r.unit_id === unitFilter || r.barbershop_id === unitFilter);
   }
+
   const faturamento_diario = Number(revsToday.reduce((acc, r) => acc + (r.paid_amount || 0), 0).toFixed(2));
-  const total_atendimentos_hoje = revsToday.length;
+  const total_atendimentos_hoje = new Set(revsToday.map((r) => r.sale_group_id || r.id)).size;
   const faturamento_mes = Number(revsMonth.reduce((acc, r) => acc + (r.paid_amount || 0), 0).toFixed(2));
-  const total_atendimentos_mes = revsMonth.length;
+  const total_atendimentos_mes = new Set(revsMonth.map((r) => r.sale_group_id || r.id)).size;
   const comissao_hoje = Number(revsToday.reduce((acc, r) => acc + (r.commission_amount || 0), 0).toFixed(2));
 
   res.json({
@@ -85,6 +193,7 @@ router.get("/financial/metrics-polling", (req, res) => {
     faturamento: faturamento_diario,
     faturamento_hoje: faturamento_diario,
     total_atendimentos: total_atendimentos_hoje,
+    total_atendimentos_hoje: total_atendimentos_hoje,
     atendimentos: total_atendimentos_hoje,
     atendimentos_hoje: total_atendimentos_hoje,
     comissao_hoje,
@@ -95,13 +204,16 @@ router.get("/financial/metrics-polling", (req, res) => {
   });
 });
 
-router.get("/dashboard/money-by-origin", (req, res) => {
+router.get("/dashboard/money-by-origin", requireAuth, requirePermission("ver_dashboard"), (req: Request, res: Response) => {
   const m = (req.query.month as string) || todayStr().slice(0, 7);
+  const tenantId = getTenantId(req);
   const unitFilter = getUnitFilter(req);
-  let revs = db.revenues.filter((r) => r.date.startsWith(m) && r.status === "ativo");
+
+  let revs = db.revenues.filter((r) => r.barbershop_id === tenantId && r.date.startsWith(m) && r.status === "ativo");
   if (unitFilter) {
-    revs = revs.filter((r) => r.barbershop_id === unitFilter || (unitFilter === "unit_centro" && r.barbershop_id === "profile"));
+    revs = revs.filter((r) => r.unit_id === unitFilter || r.barbershop_id === unitFilter);
   }
+
   const origins: Record<string, { name: string; available: number; to_receive: number; total: number }> = {};
 
   revs.forEach((r) => {
@@ -123,16 +235,19 @@ router.get("/dashboard/money-by-origin", (req, res) => {
   res.json(result);
 });
 
-router.get("/dashboard/forecast", (req, res) => {
+router.get("/dashboard/forecast", requireAuth, requirePermission("ver_dashboard"), (req: Request, res: Response) => {
   const days = Number(req.query.days || 45);
   const limitDate = new Date();
   limitDate.setDate(limitDate.getDate() + days);
   const limitStr = limitDate.toISOString().split("T")[0];
+  const tenantId = getTenantId(req);
   const unitFilter = getUnitFilter(req);
 
-  let revs = db.revenues.filter((r) => r.status === "ativo" && r.settlement_date > todayStr() && r.settlement_date <= limitStr);
+  let revs = db.revenues.filter(
+    (r) => r.barbershop_id === tenantId && r.status === "ativo" && r.settlement_date > todayStr() && r.settlement_date <= limitStr
+  );
   if (unitFilter) {
-    revs = revs.filter((r) => r.barbershop_id === unitFilter || (unitFilter === "unit_centro" && r.barbershop_id === "profile"));
+    revs = revs.filter((r) => r.unit_id === unitFilter || r.barbershop_id === unitFilter);
   }
 
   const buckets: Record<string, number> = {};
@@ -147,15 +262,17 @@ router.get("/dashboard/forecast", (req, res) => {
   res.json({ items, total });
 });
 
-router.get("/dashboard/breakeven", (req, res) => {
+router.get("/dashboard/breakeven", requireAuth, requirePermission("ver_dashboard"), (req: Request, res: Response) => {
   const m = (req.query.month as string) || todayStr().slice(0, 7);
+  const tenantId = getTenantId(req);
   const unitFilter = getUnitFilter(req);
-  let exps = db.expenses.filter((e) => e.due_date.startsWith(m));
-  let revs = db.revenues.filter((r) => r.date.startsWith(m) && r.status === "ativo");
+
+  let exps = db.expenses.filter((e) => e.barbershop_id === tenantId && e.due_date.startsWith(m));
+  let revs = db.revenues.filter((r) => r.barbershop_id === tenantId && r.date.startsWith(m) && r.status === "ativo");
 
   if (unitFilter) {
-    revs = revs.filter((r) => r.barbershop_id === unitFilter || (unitFilter === "unit_centro" && r.barbershop_id === "profile"));
-    exps = exps.filter((e) => e.barbershop_id === unitFilter || (unitFilter === "unit_centro" && e.barbershop_id === "profile"));
+    revs = revs.filter((r) => r.unit_id === unitFilter || r.barbershop_id === unitFilter);
+    exps = exps.filter((e) => e.unit_id === unitFilter || e.barbershop_id === unitFilter);
   }
 
   const expTotal = exps.reduce((acc, e) => acc + e.value, 0);
@@ -174,22 +291,24 @@ router.get("/dashboard/breakeven", (req, res) => {
   });
 });
 
-router.get("/dashboard/cashflow", (req, res) => {
+router.get("/dashboard/cashflow", requireAuth, requirePermission("ver_dashboard"), (req: Request, res: Response) => {
   const m = (req.query.month as string) || todayStr().slice(0, 7);
+  const tenantId = getTenantId(req);
   const unitFilter = getUnitFilter(req);
-  let revs = db.revenues.filter((r) => r.date.startsWith(m) && r.status === "ativo");
-  let exps = db.expenses.filter((e) => e.due_date.startsWith(m));
-  let wds = db.withdrawals.filter((w) => w.date.startsWith(m));
+
+  let revs = db.revenues.filter((r) => r.barbershop_id === tenantId && r.date.startsWith(m) && r.status === "ativo");
+  let exps = db.expenses.filter((e) => e.barbershop_id === tenantId && e.due_date.startsWith(m));
+  let wds = db.withdrawals.filter((w) => w.barbershop_id === tenantId && w.date.startsWith(m));
 
   if (unitFilter) {
-    revs = revs.filter((r) => r.barbershop_id === unitFilter || (unitFilter === "unit_centro" && r.barbershop_id === "profile"));
-    exps = exps.filter((e) => e.barbershop_id === unitFilter || (unitFilter === "unit_centro" && e.barbershop_id === "profile"));
-    wds = wds.filter((w) => w.barbershop_id === unitFilter || (unitFilter === "unit_centro" && w.barbershop_id === "profile"));
+    revs = revs.filter((r) => r.unit_id === unitFilter || r.barbershop_id === unitFilter);
+    exps = exps.filter((e) => e.unit_id === unitFilter || e.barbershop_id === unitFilter);
+    wds = wds.filter((w) => w.unit_id === unitFilter || w.barbershop_id === unitFilter);
   }
 
   const inflow = Number(revs.reduce((acc, r) => acc + r.net_amount, 0).toFixed(2));
   const outflow = Number((exps.reduce((acc, e) => acc + e.value, 0) + wds.reduce((acc, w) => acc + w.value, 0)).toFixed(2));
-  const initial = db.settings.initial_balance;
+  const initial = db.settings.barbershop_id === tenantId ? db.settings.initial_balance : 0;
 
   const days: Record<string, { date: string; in: number; out: number }> = {};
   revs.forEach((r) => {
@@ -225,13 +344,16 @@ router.get("/dashboard/cashflow", (req, res) => {
   });
 });
 
-router.get("/dashboard/machine-comparison", (req, res) => {
+router.get("/dashboard/machine-comparison", requireAuth, requirePermission("ver_dashboard"), (req: Request, res: Response) => {
   const m = (req.query.month as string) || todayStr().slice(0, 7);
+  const tenantId = getTenantId(req);
   const unitFilter = getUnitFilter(req);
-  let revs = db.revenues.filter((r) => r.date.startsWith(m) && r.status === "ativo");
+
+  let revs = db.revenues.filter((r) => r.barbershop_id === tenantId && r.date.startsWith(m) && r.status === "ativo");
   if (unitFilter) {
-    revs = revs.filter((r) => r.barbershop_id === unitFilter || (unitFilter === "unit_centro" && r.barbershop_id === "profile"));
+    revs = revs.filter((r) => r.unit_id === unitFilter || r.barbershop_id === unitFilter);
   }
+
   const map: Record<string, { name: string; sold: number; fees: number; net: number; count: number; to_receive: number }> = {};
 
   revs.forEach((r) => {
@@ -258,17 +380,18 @@ router.get("/dashboard/machine-comparison", (req, res) => {
   res.json(list);
 });
 
-router.get("/dashboard/alerts", (req, res) => {
+router.get("/dashboard/alerts", requireAuth, requirePermission("ver_dashboard"), (req: Request, res: Response) => {
   const out: Array<{ id: string; type: string; title: string; message: string; target: string }> = [];
   const now = new Date(todayStr());
   const in7Days = new Date(now.getTime() + 7 * 86400000);
+  const tenantId = getTenantId(req);
   const unitFilter = getUnitFilter(req);
 
-  let exps = db.expenses;
-  let revs = db.revenues;
+  let exps = db.expenses.filter((e) => e.barbershop_id === tenantId);
+  let revs = db.revenues.filter((r) => r.barbershop_id === tenantId);
   if (unitFilter) {
-    exps = exps.filter((e) => e.barbershop_id === unitFilter || (unitFilter === "unit_centro" && e.barbershop_id === "profile"));
-    revs = revs.filter((r) => r.barbershop_id === unitFilter || (unitFilter === "unit_centro" && r.barbershop_id === "profile"));
+    exps = exps.filter((e) => e.unit_id === unitFilter || e.barbershop_id === unitFilter);
+    revs = revs.filter((r) => r.unit_id === unitFilter || r.barbershop_id === unitFilter);
   }
 
   let soon = 0;

@@ -6,6 +6,8 @@ const AuthContext = createContext(null);
 const clearTokens = () => {
   localStorage.removeItem("token");
   sessionStorage.removeItem("token");
+  localStorage.removeItem("active_unit_id");
+  localStorage.removeItem("filter_unit_id");
 };
 const storeToken = (token, keep) => {
   clearTokens();
@@ -39,13 +41,28 @@ export function AuthProvider({ children }) {
     return res.user;
   };
 
+  const setSession = (token, userData) => {
+    storeToken(token, true);
+    setUser(userData);
+  };
+
+  const refreshUser = async () => {
+    try {
+      const u = await api.get("/auth/me");
+      setUser(u);
+      return u;
+    } catch {
+      return null;
+    }
+  };
+
   const logout = () => {
     clearTokens();
     setUser(null);
   };
 
   return (
-    <AuthContext.Provider value={{ user, ready, login, register, logout }}>
+    <AuthContext.Provider value={{ user, ready, login, register, logout, setSession, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );

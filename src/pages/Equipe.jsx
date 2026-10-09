@@ -23,18 +23,33 @@ import { useBalcao } from "@/context/BalcaoContext";
 
 function BarberDialog({ existing, services, products, onDone, isAtLimit, openUpgradeModal, plan, maxBarbers }) {
   const [open, setOpen] = useState(false);
+  const { units = [], activeUnit } = useUnit();
+  const defaultUnitId = activeUnit?.id && activeUnit?.id !== "all" ? activeUnit.id : (units[0]?.id || "");
   const blank = {
     name: "", phone: "", email: "", join_date: "", photo_url: "",
+    unit_ids: defaultUnitId ? [defaultUnitId] : [],
     commission_type: "percentual", commission_percent: 40, commission_value: 0,
     authorized_services: services.map((s) => s.id), authorized_products: products.map((p) => p.id),
     commission_overrides: {}, active: true, username: "", password: "",
   };
-  const [form, setForm] = useState(existing ? { ...blank, ...existing } : blank);
+  const [form, setForm] = useState(existing ? {
+    ...blank,
+    ...existing,
+    unit_ids: existing.unit_ids || (existing.unit_id ? [existing.unit_id] : (defaultUnitId ? [defaultUnitId] : [])),
+  } : blank);
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
 
   const toggle = (key, id) => setForm((f) => {
     const arr = f[key].includes(id) ? f[key].filter((x) => x !== id) : [...f[key], id];
     return { ...f, [key]: arr };
+  });
+
+  const toggleUnit = (unitId) => setForm((f) => {
+    const current = f.unit_ids || [];
+    const next = current.includes(unitId)
+      ? current.filter((id) => id !== unitId)
+      : [...current, unitId];
+    return { ...f, unit_ids: next.length ? next : [unitId] };
   });
 
   const authorizedItems = useMemo(() => [
@@ -54,24 +69,36 @@ function BarberDialog({ existing, services, products, onDone, isAtLimit, openUpg
   });
 
   const submit = async () => {
-    if (!form.name) return toast.error("Informe o nome");
+    if (!form.name?.trim()) return toast.error("Informe o nome do barbeiro");
+    const assignedUnits = form.unit_ids && form.unit_ids.length
+      ? form.unit_ids
+      : (defaultUnitId ? [defaultUnitId] : []);
     const payload = {
-      name: form.name, phone: form.phone || null, email: form.email || null,
-      join_date: form.join_date || null, photo_url: form.photo_url || null,
-      commission_type: form.commission_type,
+      name: form.name.trim(),
+      phone: form.phone || null,
+      email: form.email || null,
+      join_date: form.join_date || null,
+      photo_url: form.photo_url || null,
+      unit_ids: assignedUnits,
+      unit_id: assignedUnits[0] || null,
+      commission_type: form.commission_type || "percentual",
       commission_percent: parseFloat(form.commission_percent) || 0,
       commission_value: parseFloat(form.commission_value) || 0,
       commission_overrides: form.commission_overrides || {},
-      authorized_services: form.authorized_services, authorized_products: form.authorized_products,
+      authorized_services: form.authorized_services,
+      authorized_products: form.authorized_products,
       active: form.active,
-      username: form.username || null, password: form.password || null,
+      username: form.username?.trim() || null,
+      password: form.password || null,
     };
     try {
       if (existing) await api.put(`/barbers/${existing.id}`, payload);
       else await api.post("/barbers", payload);
-      toast.success("Salvo"); setOpen(false); onDone();
+      toast.success("Barbeiro salvo com sucesso!");
+      setOpen(false);
+      if (onDone) onDone();
     } catch (e) {
-      const errDetail = e.response?.data?.detail || "Erro ao salvar";
+      const errDetail = e.response?.data?.detail || "Erro ao salvar barbeiro";
       toast.error(errDetail);
       if (e.response?.status === 403 && openUpgradeModal) {
         openUpgradeModal({
@@ -137,6 +164,27 @@ function BarberDialog({ existing, services, products, onDone, isAtLimit, openUpg
           <div><Label>Data de entrada</Label><Input type="date" value={form.join_date || ""} onChange={(e) => set("join_date", e.target.value)} data-testid="barber-joindate" /></div>
           <div><Label>Telefone</Label><Input value={form.phone || ""} onChange={(e) => set("phone", e.target.value)} data-testid="barber-phone" /></div>
           <div><Label>E-mail</Label><Input value={form.email || ""} onChange={(e) => set("email", e.target.value)} data-testid="barber-email" /></div>
+
+          {units && units.length > 0 && (
+            <div className="sm:col-span-2 rounded-[4px] border border-white/10 bg-[#0A0D14] p-3.5 space-y-2">
+              <p className="text-xs font-semibold uppercase text-muted-foreground">Onde este barbeiro atende? (Unidades)</p>
+              <div className="grid gap-2 sm:grid-cols-2">
+                {units.map((u) => {
+                  const isChecked = (form.unit_ids || []).includes(u.id);
+                  return (
+                    <label key={u.id} className="flex items-center gap-2 text-xs text-slate-300 p-1.5 rounded hover:bg-white/5 cursor-pointer">
+                      <Checkbox
+                        checked={isChecked}
+                        onCheckedChange={() => toggleUnit(u.id)}
+                        data-testid={`barber-unit-${u.id}`}
+                      />
+                      <span className="font-medium text-white">{u.name}</span>
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Commission */}
@@ -283,12 +331,25 @@ export default function Equipe() {
   const { refresh } = useMonth();
   const { isBalcaoMode } = useBalcao();
   const navigate = useNavigate();
-  const { plan, openUpgradeModal } = useUnit();
-  const { data: barbers, loading } = useApi((api) => api.get("/barbers"));
+  const { plan, openUpgradeModal, activeUnit } = useUnit();
+  const { data: barbers, loading, mutate: refreshBarbers } = useApi((api) => api.get("/barbers"), [activeUnit?.id]);
   const { data: services } = useApi((api) => api.get("/services"));
   const { data: products } = useApi((api) => api.get("/products"));
 
-  const act = async (fn, msg) => { try { await fn(); toast.success(msg); refresh(); } catch { toast.error("Erro"); } };
+  const handleRefresh = async () => {
+    refresh();
+    if (refreshBarbers) refreshBarbers();
+  };
+
+  const act = async (fn, msg) => {
+    try {
+      await fn();
+      toast.success(msg);
+      handleRefresh();
+    } catch {
+      toast.error("Erro ao realizar ação");
+    }
+  };
   if (loading || !services || !products) return <Loading />;
 
   const activeBarbers = (barbers || []).filter((b) => b.active !== false);
@@ -377,7 +438,7 @@ export default function Equipe() {
             <BarberDialog
               services={services}
               products={products}
-              onDone={refresh}
+              onDone={handleRefresh}
               isAtLimit={isAtLimit}
               openUpgradeModal={openUpgradeModal}
               plan={plan}
@@ -394,7 +455,7 @@ export default function Equipe() {
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-3">
                       <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-full bg-primary/15 text-primary border border-white/10">
-                        {b.photo_url ? <img src={b.photo_url} alt="" className="h-full w-full object-cover" /> : <Scissors className="h-5 w-5" />}
+                        {b?.photo_url ? <img src={b.photo_url} alt="" className="h-full w-full object-cover" /> : <Scissors className="h-5 w-5" />}
                       </div>
                       <div>
                         <p className="font-display font-bold">{b.name}</p>
@@ -414,7 +475,7 @@ export default function Equipe() {
                     <Button size="sm" variant="secondary" className="gap-1.5 rounded-[4px]" onClick={() => navigate(`/equipe/${b.id}`)} data-testid={`report-barber-${b.id}`}>
                       <FileBarChart className="h-3.5 w-3.5" /> Relatório
                     </Button>
-                    <BarberDialog existing={b} services={services} products={products} onDone={refresh} />
+                    <BarberDialog existing={b} services={services} products={products} onDone={handleRefresh} />
                     <Button size="sm" variant="ghost" className="rounded-[4px]" onClick={() => act(() => api.put(`/barbers/${b.id}`, { ...b, active: !b.active }), b.active ? "Desativado" : "Ativado")} data-testid={`toggle-barber-${b.id}`}>
                       {b.active ? "Desativar" : "Ativar"}
                     </Button>

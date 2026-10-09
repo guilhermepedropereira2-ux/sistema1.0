@@ -51,19 +51,18 @@ const BarberStatsGrid = memo(function BarberStatsGrid({ faturamento, comissao, a
 // Linha de atendimento individual memoizada para lista ultra rápida
 const BarberAtendimentoRow = memo(function BarberAtendimentoRow({ atendimento, onSelect, testId }) {
   const serviceNames = Array.isArray(atendimento?.items) && atendimento.items.length
-    ? atendimento.items.map((i) => i?.name || "Serviço").join(", ")
+    ? atendimento.items.map((i) => (i?.quantity > 1 ? `${i.quantity}x ${i?.name}` : i?.name || "Serviço")).join(" + ")
     : atendimento?.service_name || "Atendimento";
 
   const paidVal = atendimento?.paid ?? atendimento?.paid_amount ?? 0;
   const commissionVal = atendimento?.commission ?? atendimento?.commission_amount ?? 0;
   const isPaid = Boolean(atendimento?.commission_paid);
 
-  const isProduct =
+  const hasProduct =
     atendimento?.item_kind === "produto" ||
     atendimento?.service_type === "produto" ||
     (Array.isArray(atendimento?.items) &&
-      atendimento.items.some((i) => i?.item_kind === "produto")) ||
-    /pomada|óleo|shampoo|cera|minoxidil|balm|produto|creme|gel/i.test(serviceNames);
+      atendimento.items.some((i) => i?.kind === "produto" || i?.item_kind === "produto"));
 
   return (
     <div
@@ -75,12 +74,12 @@ const BarberAtendimentoRow = memo(function BarberAtendimentoRow({ atendimento, o
         {/* Miniatura / Ícone estilizado à esquerda */}
         <div
           className={`h-10 w-10 rounded-xl flex items-center justify-center shrink-0 border ${
-            isProduct
+            hasProduct
               ? "bg-emerald-500/10 border-emerald-500/25 text-emerald-400"
               : "bg-[#D4AF37]/10 border-[#D4AF37]/25 text-[#D4AF37]"
           }`}
         >
-          {isProduct ? (
+          {hasProduct ? (
             <Package className="h-5 w-5" />
           ) : (
             <Scissors className="h-5 w-5" />
@@ -92,7 +91,7 @@ const BarberAtendimentoRow = memo(function BarberAtendimentoRow({ atendimento, o
             {serviceNames}
           </p>
           <p className="text-[11px] text-muted-foreground mt-0.5 truncate">
-            {fmtDate(atendimento?.date)} às {atendimento?.time || "12:00"} · {atendimento?.client_name || "Sem cliente"} · {atendimento?.payment_method_name || "Dinheiro"}
+            {fmtDate(atendimento?.date)} às {atendimento?.time || "12:00"} · {atendimento?.client_name || "Cliente sem cadastro"} · {atendimento?.payment_method_name || "Dinheiro"}
           </p>
         </div>
       </div>
@@ -450,62 +449,126 @@ export default function BarberHome() {
 
       {/* Modal de Detalhes do Atendimento */}
       <Dialog open={!!selectedAtendimento} onOpenChange={(o) => !o && setSelectedAtendimento(null)}>
-        <DialogContent className="w-[95vw] sm:max-w-md max-h-[85vh] overflow-y-auto bg-[#12141F] border-white/10 text-white p-5 sm:p-6 rounded-[4px] shadow-none" data-testid="atend-detail">
+        <DialogContent className="w-[95vw] sm:max-w-md max-h-[85vh] overflow-y-auto bg-[#12141F] border-white/10 text-white p-5 sm:p-6 rounded-2xl shadow-2xl" data-testid="atend-detail">
           <DialogHeader className="shrink-0">
             <DialogTitle className="font-display text-base font-bold text-white flex items-center gap-2">
               <Scissors className="h-4 w-4 text-[#D4AF37]" />
               Detalhes do Atendimento
             </DialogTitle>
           </DialogHeader>
-          {selectedAtendimento && (
-            <div className="space-y-3 text-sm pt-2">
-              <div className="p-3 rounded-[3px] bg-[#0A0D14] border border-white/10">
-                <p className="text-xs text-muted-foreground">Cliente</p>
-                <p className="font-bold text-sm text-white">{selectedAtendimento.client_name || "Cliente sem cadastro"}</p>
-                <p className="text-[11px] text-muted-foreground mt-0.5">
-                  {fmtDate(selectedAtendimento.date)} às {selectedAtendimento.time || "12:00"}
-                </p>
-              </div>
+          {selectedAtendimento && (() => {
+            const rawItems = Array.isArray(selectedAtendimento.items) && selectedAtendimento.items.length > 0
+              ? selectedAtendimento.items
+              : [{
+                  name: selectedAtendimento.service_name || "Atendimento",
+                  kind: selectedAtendimento.item_kind || "servico",
+                  quantity: 1,
+                  paid: selectedAtendimento.paid ?? selectedAtendimento.paid_amount ?? 0,
+                }];
 
-              <div className="space-y-1.5">
-                <p className="text-xs font-semibold uppercase text-muted-foreground">Itens Realizados</p>
-                {(selectedAtendimento.items || []).map((i, idx) => (
-                  <div key={idx} className="flex justify-between text-xs py-1 border-b border-white/5">
-                    <span className="text-white">
-                      {i.name}{i.quantity > 1 ? ` x${i.quantity}` : ""}
-                    </span>
-                    <span className="font-medium text-white">{brl(i.paid)}</span>
+            const services = rawItems.filter((i) => i.kind !== "produto" && i.item_kind !== "produto");
+            const products = rawItems.filter((i) => i.kind === "produto" || i.item_kind === "produto");
+            const totalPaid = selectedAtendimento.paid ?? selectedAtendimento.paid_amount ?? 0;
+            const commVal = selectedAtendimento.commission ?? selectedAtendimento.commission_amount ?? 0;
+            const isCommPaid = Boolean(selectedAtendimento.commission_paid);
+
+            return (
+              <div className="space-y-3.5 text-sm pt-2">
+                {/* CLIENTE & BARBEIRO */}
+                <div className="grid grid-cols-2 gap-2.5">
+                  <div className="p-3 rounded-xl bg-[#0A0D14] border border-white/10">
+                    <p className="text-[10px] uppercase font-bold text-muted-foreground">Cliente</p>
+                    <p className="font-bold text-sm text-white truncate mt-0.5">
+                      {selectedAtendimento.client_name || "Cliente sem cadastro"}
+                    </p>
                   </div>
-                ))}
-              </div>
+                  <div className="p-3 rounded-xl bg-[#0A0D14] border border-white/10">
+                    <p className="text-[10px] uppercase font-bold text-muted-foreground">Barbeiro</p>
+                    <p className="font-bold text-sm text-white truncate mt-0.5">
+                      {selectedAtendimento.barber_name || barberName || "Barbeiro"}
+                    </p>
+                  </div>
+                </div>
 
-              <div className="space-y-1.5 border-t border-white/10 pt-2 text-xs">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Valor pago</span>
-                  <span className="font-bold text-white">{brl(selectedAtendimento.paid)}</span>
+                {/* DATA E HORA */}
+                <div className="p-3 rounded-xl bg-[#0A0D14] border border-white/10 flex items-center justify-between">
+                  <span className="text-xs text-muted-foreground">Data e Hora</span>
+                  <span className="font-semibold text-xs text-white">
+                    {fmtDate(selectedAtendimento.date)} às {selectedAtendimento.time || "12:00"}
+                  </span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Forma de pagamento</span>
-                  <span className="text-white">{selectedAtendimento.payment_method_name}</span>
+
+                {/* ITENS REALIZADOS */}
+                <div className="space-y-2.5 rounded-xl bg-[#0A0D14] border border-white/10 p-3.5">
+                  <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">
+                    Itens Realizados
+                  </p>
+
+                  {/* SERVIÇOS */}
+                  {services.length > 0 && (
+                    <div className="space-y-1.5">
+                      <p className="text-[11px] font-bold text-[#D4AF37] uppercase flex items-center gap-1">
+                        <Scissors className="w-3 h-3" /> Serviços
+                      </p>
+                      {services.map((srv, idx) => (
+                        <div key={idx} className="flex justify-between items-center text-xs py-1 px-2 rounded-lg bg-white/[0.02]">
+                          <span className="text-slate-200">
+                            • {srv.name}{srv.quantity > 1 ? ` (${srv.quantity}x)` : ""}
+                          </span>
+                          <span className="font-semibold text-white">{brl(srv.paid)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* PRODUTOS */}
+                  {products.length > 0 && (
+                    <div className="space-y-1.5 pt-1">
+                      <p className="text-[11px] font-bold text-emerald-400 uppercase flex items-center gap-1">
+                        <Package className="w-3 h-3" /> Produtos
+                      </p>
+                      {products.map((prd, idx) => (
+                        <div key={idx} className="flex justify-between items-center text-xs py-1 px-2 rounded-lg bg-white/[0.02]">
+                          <span className="text-slate-200">
+                            • {prd.name}{prd.quantity > 1 ? ` (${prd.quantity}x)` : ""}
+                          </span>
+                          <span className="font-semibold text-white">{brl(prd.paid)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
-                <div className="flex justify-between items-center pt-1">
-                  <span className="text-muted-foreground">Sua comissão</span>
-                  <div className="flex items-center gap-2">
-                    <span className="font-bold text-[#10B981] text-sm">{brl(selectedAtendimento.commission)}</span>
+
+                {/* TOTAL, FORMA DE PAGAMENTO, COMISSÃO E STATUS */}
+                <div className="space-y-2 rounded-xl bg-[#0A0D14] border border-white/10 p-3.5 text-xs">
+                  <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground">Total</span>
+                    <span className="font-black text-sm text-white">{brl(totalPaid)}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground">Forma de Pagamento</span>
+                    <span className="font-medium text-white">{selectedAtendimento.payment_method_name || "Dinheiro / Pix"}</span>
+                  </div>
+                  <div className="flex justify-between items-center pt-1.5 border-t border-white/10">
+                    <span className="text-muted-foreground">Comissão</span>
+                    <span className="font-black text-emerald-400 text-sm">{brl(commVal)}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground">Status da Comissão</span>
                     <Badge
-                      className={`text-[9px] font-bold uppercase px-1.5 py-0 rounded-[2px] ${
-                        selectedAtendimento.commission_paid
+                      className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-[3px] ${
+                        isCommPaid
                           ? "bg-[#10B981]/15 text-[#10B981] border-[#10B981]/30"
                           : "bg-[#F59E0B]/15 text-[#F59E0B] border-[#F59E0B]/30"
                       }`}
                     >
-                      {selectedAtendimento.commission_paid ? "Paga" : "Pendente"}
+                      {isCommPaid ? "Paga" : "Pendente"}
                     </Badge>
                   </div>
                 </div>
               </div>
-            </div>
-          )}
+            );
+          })()}
         </DialogContent>
       </Dialog>
 

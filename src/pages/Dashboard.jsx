@@ -219,7 +219,8 @@ export default function Dashboard() {
         .toFixed(2)
     );
 
-    const count = revs.length;
+    const uniqueAttendanceGroups = new Set(revs.map((r) => r.sale_group_id || r.id));
+    const count = uniqueAttendanceGroups.size;
     const ticketMedio = count > 0 ? Number((faturamento / count).toFixed(2)) : 0;
     const margemLucro = faturamento > 0 ? Math.round((lucroReal / faturamento) * 100) : 0;
 
@@ -255,7 +256,7 @@ export default function Dashboard() {
     const barbers = Array.isArray(barbersList) ? barbersList.filter((b) => b.active) : [];
 
     return {
-      barbersActiveCount: barbers.length || 3,
+      barbersActiveCount: barbers.length,
       waitingCount: waiting.length,
       inServiceCount: inService.length,
       upcomingAptsCount: upcomingApts.length,
@@ -389,21 +390,14 @@ export default function Dashboard() {
     });
 
     let list = Object.values(map).sort((a, b) => b.revenue - a.revenue);
-    if (list.length === 0 && Array.isArray(servicesList) && servicesList.length > 0) {
-      list = servicesList.slice(0, 4).map((s) => ({
-        name: s.name,
-        count: 0,
-        revenue: 0,
-        icon: s.icon,
-      }));
-    }
+    if (list.length === 0) return [];
 
     const maxRev = Math.max(...list.map((i) => i.revenue), 1);
     return list.slice(0, 4).map((item) => ({
       ...item,
       percentage: Math.round((item.revenue / maxRev) * 100),
     }));
-  }, [periodRevenues, productsList, servicesList]);
+  }, [periodRevenues]);
 
   // 2. Produtos Mais Vendidos
   const topProducts = useMemo(() => {
@@ -423,23 +417,7 @@ export default function Dashboard() {
     });
 
     let list = Object.values(map).sort((a, b) => b.revenue - a.revenue);
-
-    if (list.length === 0 && prods.length > 0) {
-      list = prods.slice(0, 4).map((p) => ({
-        name: p.name,
-        count: 0,
-        revenue: 0,
-        stock: p.stock ?? 18,
-      }));
-    } else {
-      list = list.map((item) => {
-        const p = prods.find((x) => x.name.toLowerCase() === item.name.toLowerCase());
-        return {
-          ...item,
-          stock: p?.stock ?? 15,
-        };
-      });
-    }
+    if (list.length === 0) return [];
 
     const maxRev = Math.max(...list.map((i) => i.revenue), 1);
     return list.slice(0, 4).map((item) => ({
@@ -484,25 +462,25 @@ export default function Dashboard() {
       id: "faturamento",
       title: "Faturamento Bruto",
       value: brl(periodMetrics.faturamento),
-      trend: "+12.4% vs anterior",
+      trend: periodMetrics.faturamento > 0 ? "Período selecionado" : "Sem dados anteriores",
     },
     {
       id: "servicos",
       title: "Vendas de Serviços",
       value: brl(totalServiceSales),
-      trend: `${serviceCount} atendimentos`,
+      trend: serviceCount > 0 ? `${serviceCount} ${serviceCount === 1 ? "serviço vendido" : "serviços vendidos"}` : "Sem vendas",
     },
     {
       id: "produtos",
       title: "Vendas de Produtos",
       value: brl(totalProductSales),
-      trend: `${productCount} un vendidas`,
+      trend: productCount > 0 ? `${productCount} ${productCount === 1 ? "un vendida" : "un vendidas"}` : "Sem vendas",
     },
     {
       id: "atendimentos",
       title: "Total de Atendimentos",
       value: String(periodMetrics.count),
-      trend: `Ticket: ${brl(periodMetrics.ticketMedio)}`,
+      trend: periodMetrics.count > 0 ? `Ticket médio: ${brl(periodMetrics.ticketMedio)}` : "Sem atendimentos",
     },
   ], [periodMetrics, totalServiceSales, totalProductSales, serviceCount, productCount]);
 

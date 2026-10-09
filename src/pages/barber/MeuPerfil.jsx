@@ -14,8 +14,19 @@ export default function MeuPerfil() {
   const [copied, setCopied] = useState(false);
 
   if (loading || !data) return <Loading />;
-  const b = data.barber;
-  const u = data.user;
+  const u = data.user || {};
+  const b = data.barber || {
+    id: u.id || "b1",
+    name: u.name || "Meu Perfil",
+    email: u.email || "",
+    phone: "",
+    active: true,
+    photo_url: "",
+    commission_type: "percentual",
+    commission_percent: 50,
+    commission_value: 0,
+    join_date: "",
+  };
 
   const shopSlug = shop?.slug || "barbearia-vintage";
   const myBookingUrl = `${window.location.origin}/agendar/${shopSlug}?barber=${b?.id || "b1"}`;
@@ -33,19 +44,19 @@ export default function MeuPerfil() {
       <Card className="p-6">
         <div className="flex items-center gap-4">
           <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-full bg-primary/15 text-primary">
-            {b.photo_url ? <img src={b.photo_url} alt="" className="h-full w-full object-cover" /> : <Scissors className="h-7 w-7" />}
+            {b?.photo_url ? <img src={b.photo_url} alt="" className="h-full w-full object-cover" /> : <Scissors className="h-7 w-7" />}
           </div>
           <div>
-            <p className="font-display text-lg font-extrabold">{b.name}</p>
-            <Badge className={b.active ? "bg-success text-success-foreground" : ""} variant={b.active ? "default" : "secondary"}>{b.active ? "Ativo" : "Inativo"}</Badge>
+            <p className="font-display text-lg font-extrabold">{b?.name || u?.name || "Meu Perfil"}</p>
+            <Badge className={b?.active ? "bg-success text-success-foreground" : ""} variant={b?.active ? "default" : "secondary"}>{b?.active ? "Ativo" : "Inativo"}</Badge>
           </div>
         </div>
         <div className="mt-5 space-y-3 text-sm">
-          <div className="flex items-center gap-2"><Phone className="h-4 w-4 text-muted-foreground" /> {b.phone || "—"}</div>
-          <div className="flex items-center gap-2"><Mail className="h-4 w-4 text-muted-foreground" /> {b.email || u.email || "—"}</div>
-          <div className="flex items-center gap-2"><CalendarDays className="h-4 w-4 text-muted-foreground" /> Entrada: {b.join_date ? fmtDate(b.join_date) : "—"}</div>
-          <div className="flex items-center gap-2"><Percent className="h-4 w-4 text-muted-foreground" /> Comissão: {b.commission_type === "fixo" ? `fixo ${brl(b.commission_value)}` : pct(b.commission_percent)}</div>
-          <div className="flex items-center gap-2"><Info className="h-4 w-4 text-muted-foreground" /> Usuário: @{u.username}</div>
+          <div className="flex items-center gap-2"><Phone className="h-4 w-4 text-muted-foreground" /> {b?.phone || "—"}</div>
+          <div className="flex items-center gap-2"><Mail className="h-4 w-4 text-muted-foreground" /> {b?.email || u?.email || "—"}</div>
+          <div className="flex items-center gap-2"><CalendarDays className="h-4 w-4 text-muted-foreground" /> Entrada: {b?.join_date ? fmtDate(b.join_date) : "—"}</div>
+          <div className="flex items-center gap-2"><Percent className="h-4 w-4 text-muted-foreground" /> Comissão: {b?.commission_type === "fixo" ? `fixo ${brl(b?.commission_value || 0)}` : pct(b?.commission_percent || 0)}</div>
+          <div className="flex items-center gap-2"><Info className="h-4 w-4 text-muted-foreground" /> Usuário: @{u?.username || "usuario"}</div>
         </div>
       </Card>
 

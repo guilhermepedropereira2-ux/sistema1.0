@@ -1,4 +1,6 @@
 import pg from "pg";
+import fs from "fs";
+import path from "path";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { eq, and, desc, gte, lte } from "drizzle-orm";
 import * as schema from "../src/db/schema";
@@ -17,6 +19,9 @@ import type {
   InsertSubscriptionTransaction,
 } from "../src/db/schema";
 import { getDbPool } from "../src/db/client";
+
+const STORAGE_DIR = path.join(process.cwd(), "data");
+const STORAGE_FILE = path.join(STORAGE_DIR, "kupola_storage.json");
 
 /**
  * Helper para normalizar organization_id compatível com legado ("profile" -> "org_vintage")
@@ -107,10 +112,105 @@ export class MemStorage implements IStorage {
   private subscriptionTransactions = new Map<string, SubscriptionTransaction>();
 
   constructor() {
-    this.seedDemoData();
+    if (!this.loadFromFile()) {
+      this.seedDemoData();
+      this.saveToFile();
+    }
   }
 
   public isDatabaseConnected(): boolean {
+    return false;
+  }
+
+  public saveToFile() {
+    try {
+      if (!fs.existsSync(STORAGE_DIR)) {
+        fs.mkdirSync(STORAGE_DIR, { recursive: true });
+      }
+      const data = {
+        organizations: Array.from(this.organizations.entries()),
+        users: Array.from(this.users.entries()),
+        clients: Array.from(this.clients.entries()),
+        servicesProducts: Array.from(this.servicesProducts.entries()),
+        appointments: Array.from(this.appointments.entries()),
+        subscriptionTransactions: Array.from(this.subscriptionTransactions.entries()),
+      };
+      const tmp = `${STORAGE_FILE}.tmp.${Date.now()}`;
+      fs.writeFileSync(tmp, JSON.stringify(data, null, 2), "utf-8");
+      fs.renameSync(tmp, STORAGE_FILE);
+    } catch (e: any) {
+      console.error("[Storage Persistence Error]:", e.message);
+    }
+  }
+
+  public loadFromFile(): boolean {
+    try {
+      if (fs.existsSync(STORAGE_FILE)) {
+        const raw = fs.readFileSync(STORAGE_FILE, "utf-8");
+        if (raw && raw.trim().length > 0) {
+          const data = JSON.parse(raw);
+          if (data && typeof data === "object") {
+            if (Array.isArray(data.organizations)) {
+              this.organizations = new Map(
+                data.organizations.map(([k, v]: [string, any]) => [
+                  k,
+                  {
+                    ...v,
+                    created_at: v.created_at ? new Date(v.created_at) : new Date(),
+                    trial_started_at: v.trial_started_at ? new Date(v.trial_started_at) : null,
+                    trial_ends_at: v.trial_ends_at ? new Date(v.trial_ends_at) : null,
+                    subscription_expires_at: v.subscription_expires_at ? new Date(v.subscription_expires_at) : null,
+                  },
+                ])
+              );
+            }
+            if (Array.isArray(data.users)) {
+              this.users = new Map(
+                data.users.map(([k, v]: [string, any]) => [
+                  k,
+                  { ...v, created_at: v.created_at ? new Date(v.created_at) : new Date() },
+                ])
+              );
+            }
+            if (Array.isArray(data.clients)) {
+              this.clients = new Map(
+                data.clients.map(([k, v]: [string, any]) => [
+                  k,
+                  { ...v, created_at: v.created_at ? new Date(v.created_at) : new Date() },
+                ])
+              );
+            }
+            if (Array.isArray(data.servicesProducts)) {
+              this.servicesProducts = new Map(
+                data.servicesProducts.map(([k, v]: [string, any]) => [
+                  k,
+                  { ...v, created_at: v.created_at ? new Date(v.created_at) : new Date() },
+                ])
+              );
+            }
+            if (Array.isArray(data.appointments)) {
+              this.appointments = new Map(
+                data.appointments.map(([k, v]: [string, any]) => [
+                  k,
+                  { ...v, created_at: v.created_at ? new Date(v.created_at) : new Date() },
+                ])
+              );
+            }
+            if (Array.isArray(data.subscriptionTransactions)) {
+              this.subscriptionTransactions = new Map(
+                data.subscriptionTransactions.map(([k, v]: [string, any]) => [
+                  k,
+                  { ...v, created_at: v.created_at ? new Date(v.created_at) : new Date() },
+                ])
+              );
+            }
+            return true;
+          }
+        }
+      }
+    } catch (e: any) {
+      console.error("[Storage Persistence Read Error]:", e.message);
+    }
     return false;
   }
 
@@ -284,6 +384,7 @@ export class MemStorage implements IStorage {
       created_at: data.created_at ? new Date(data.created_at) : new Date(),
     };
     this.organizations.set(org.id, org);
+    this.saveToFile();
     return org;
   }
 
@@ -318,6 +419,7 @@ export class MemStorage implements IStorage {
         : org.trial_ends_at,
     };
     this.organizations.set(updated.id, updated);
+    this.saveToFile();
     return updated;
   }
 
@@ -337,6 +439,7 @@ export class MemStorage implements IStorage {
       status: subscription_status === "expired" ? "expired" : "active",
     };
     this.organizations.set(updated.id, updated);
+    this.saveToFile();
     return updated;
   }
 
@@ -372,6 +475,7 @@ export class MemStorage implements IStorage {
       created_at: data.created_at ? new Date(data.created_at) : new Date(),
     };
     this.users.set(user.id, user);
+    this.saveToFile();
     return user;
   }
 
@@ -387,10 +491,11 @@ export class MemStorage implements IStorage {
           : user.commission_rate,
     };
     this.users.set(id, updated);
+    this.saveToFile();
     return updated;
   }
 
-  // Clients
+  // Clientes
   async getClientsByOrg(orgId: string): Promise<Client[]> {
     const target = normalizeOrgId(orgId);
     return Array.from(this.clients.values()).filter(
@@ -411,6 +516,7 @@ export class MemStorage implements IStorage {
       created_at: data.created_at ? new Date(data.created_at) : new Date(),
     };
     this.clients.set(client.id, client);
+    this.saveToFile();
     return client;
   }
 
@@ -436,6 +542,7 @@ export class MemStorage implements IStorage {
       created_at: data.created_at ? new Date(data.created_at) : new Date(),
     };
     this.servicesProducts.set(item.id, item);
+    this.saveToFile();
     return item;
   }
 
@@ -457,6 +564,7 @@ export class MemStorage implements IStorage {
       created_at: data.created_at ? new Date(data.created_at) : new Date(),
     };
     this.appointments.set(apt.id, apt);
+    this.saveToFile();
     return apt;
   }
 
@@ -495,6 +603,7 @@ export class MemStorage implements IStorage {
       created_at: data.created_at ? new Date(data.created_at) : new Date(),
     };
     this.subscriptionTransactions.set(tx.id, tx);
+    this.saveToFile();
     return tx;
   }
 

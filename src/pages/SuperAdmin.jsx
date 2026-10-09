@@ -418,7 +418,7 @@ export default function SuperAdmin() {
               <div className="flex items-center justify-between text-xs">
                 <span className="font-semibold text-slate-300 flex items-center gap-2">
                   <span className="h-2 w-2 rounded-full bg-[#D4AF37]" />
-                  Plano Pro / Profissional (R$ 169,90/mês)
+                  Plano PRO (R$ 79,90/mês)
                 </span>
                 <span className="font-bold text-white">
                   {planDist.pro} ({totalOrgs > 0 ? Math.round((planDist.pro / totalOrgs) * 100) : 0}%)
@@ -854,9 +854,9 @@ export default function SuperAdmin() {
 
           <div className="space-y-3 py-3">
             {[
-              { id: "basic", label: "Basic / Starter", price: "R$ 79,90/mês", desc: "Até 2 barbeiros, controle básico de caixa e agenda" },
-              { id: "pro", label: "Pro / Profissional", price: "R$ 169,90/mês", desc: "Barbeiros ilimitados, fluxo DRE, relatórios e agendamento online" },
-              { id: "premium", label: "Premium / Rede", price: "R$ 299,90/mês", desc: "Multiunidades, suporte prioritário e taxa zero de gateway" },
+              { id: "basic", label: "BASIC", price: "R$ 39,90/mês", desc: "1 barbeiro, 1 unidade, agenda inteligente e controle essencial" },
+              { id: "pro", label: "PRO", price: "R$ 79,90/mês", desc: "Até 4 barbeiros, 1 unidade, comissões automáticas e DRE" },
+              { id: "premium", label: "PREMIUM", price: "R$ 129,90/mês", desc: "Até 10 barbeiros por unidade, multiunidades e suporte prioritário" },
             ].map((p) => (
               <div
                 key={p.id}

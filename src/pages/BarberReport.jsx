@@ -108,7 +108,9 @@ export default function BarberReport() {
   };
 
   if (loading || !report) return <Loading />;
-  const r = report;
+  const r = report || {};
+  const barberName = r?.barber?.name || "Profissional";
+  const paymentMethodsList = Array.isArray(methods) ? methods : [];
 
   return (
     <div className="space-y-6" data-testid="barber-report-page">
@@ -116,7 +118,7 @@ export default function BarberReport() {
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="icon" onClick={() => navigate("/equipe")} data-testid="back-to-equipe"><ArrowLeft className="h-5 w-5" /></Button>
           <div>
-            <p className="font-display text-xl font-extrabold">{r.barber.name}</p>
+            <p className="font-display text-xl font-extrabold">{barberName}</p>
             <p className="text-sm text-muted-foreground">Relatório individual · {fmtDate(start)} a {fmtDate(end)}</p>
           </div>
         </div>
@@ -131,7 +133,7 @@ export default function BarberReport() {
             <FileSpreadsheet className="h-4 w-4 text-[#D4AF37]" />
             <span>Exportar para Excel (.csv)</span>
           </Button>
-          <Button onClick={payCommissions} className="gap-2" data-testid="pay-commissions-btn" disabled={r.comissao_pendente <= 0}>
+          <Button onClick={payCommissions} className="gap-2" data-testid="pay-commissions-btn" disabled={(r.comissao_pendente ?? 0) <= 0}>
             <HandCoins className="h-4 w-4" /> Pagar comissão pendente
           </Button>
         </div>
@@ -152,7 +154,9 @@ export default function BarberReport() {
             <SelectTrigger data-testid="filter-payment"><SelectValue placeholder="Forma de pagamento" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="todos">Todas as formas</SelectItem>
-              {(methods || []).map((m) => <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>)}
+              {paymentMethodsList.filter(Boolean).map((m) => (
+                m?.id ? <SelectItem key={m.id} value={m.id}>{m.name || m.id}</SelectItem> : null
+              ))}
             </SelectContent>
           </Select>
           <Select value={status} onValueChange={setStatus}>

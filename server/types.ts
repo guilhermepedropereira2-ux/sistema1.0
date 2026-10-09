@@ -14,6 +14,35 @@ export const formatBRL = (val: number) => {
 };
 
 // Types & Interfaces
+export interface OnboardingState {
+  completed: boolean;
+  currentStep: number;
+  data: {
+    barbershop?: {
+      name: string;
+      phone: string;
+      city: string;
+      state: string;
+      address: string;
+    };
+    profile?: {
+      name: string;
+      phone: string;
+      email: string;
+      password?: string;
+    };
+    operation?: {
+      type: "solo" | "equipe" | "multiunidade";
+    };
+    plan?: {
+      id: "starter" | "pro" | "premium";
+      name: string;
+      price: number;
+    };
+  };
+  completed_at?: string;
+}
+
 export interface User {
   id: string;
   name: string;
@@ -36,6 +65,7 @@ export interface Barber {
   id: string;
   barbershop_id: string;
   unit_id?: string;
+  unit_ids?: string[];
   name: string;
   commission_percent: number;
   commission_type: string;
@@ -99,6 +129,7 @@ export interface Category {
 export interface Revenue {
   id: string;
   barbershop_id: string;
+  unit_id?: string;
   date: string;
   time: string;
   item_kind: string;
@@ -120,9 +151,12 @@ export interface Revenue {
   barber_name?: string;
   client_name?: string;
   client_id?: string;
+  client_phone?: string;
   plan_used?: boolean;
+  fee_percent?: number;
   fee_amount: number;
   net_amount: number;
+  commission_percent?: number;
   commission_amount: number;
   shop_amount: number;
   settlement_date: string;
@@ -131,12 +165,14 @@ export interface Revenue {
   commission_paid_date?: string;
   status: string;
   note?: string;
+  notes?: string;
   created_at: string;
 }
 
 export interface Expense {
   id: string;
   barbershop_id: string;
+  unit_id?: string;
   name: string;
   value: number;
   category_id?: string;
@@ -154,6 +190,7 @@ export interface Expense {
 export interface Withdrawal {
   id: string;
   barbershop_id: string;
+  unit_id?: string;
   date: string;
   value: number;
   reason: string;
@@ -164,6 +201,7 @@ export interface Withdrawal {
 export interface CashClosing {
   id: string;
   barbershop_id: string;
+  unit_id?: string;
   date: string;
   expected: Record<string, number>;
   counted: Record<string, number>;
@@ -191,11 +229,15 @@ export interface CommissionPayment {
 export interface CustomerPlan {
   id: string;
   barbershop_id: string;
+  unit_id?: string;
   name: string;
   price: number;
   billing_cycle: "mensal" | "quinzenal" | "anual";
   is_unlimited: boolean;
   total_credits?: number;
+  total_services_per_month?: number;
+  allowed_services?: string[];
+  service_limits?: any;
   services?: {
     service_id?: string;
     service_name: string;
@@ -209,6 +251,7 @@ export interface CustomerPlan {
 export interface Client {
   id: string;
   barbershop_id: string;
+  unit_id?: string;
   name: string;
   phone?: string;
   email?: string;
@@ -238,6 +281,7 @@ export interface Client {
 export interface QueueItem {
   id: string;
   barbershop_id: string;
+  unit_id?: string;
   client_name: string;
   client_phone?: string;
   client_id?: string;
@@ -260,6 +304,7 @@ export interface QueueItem {
 export interface Appointment {
   id: string;
   barbershop_id: string;
+  unit_id?: string;
   client_name: string;
   client_phone?: string;
   client_id?: string;
@@ -290,6 +335,7 @@ export interface ChangeHistory {
 
 export interface Unit {
   id: string;
+  barbershop_id?: string;
   name: string;
   short_name: string;
   slug: string;

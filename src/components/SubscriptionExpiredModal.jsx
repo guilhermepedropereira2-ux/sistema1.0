@@ -36,9 +36,9 @@ export default function SubscriptionExpiredModal({ open = true }) {
   if (!open) return null;
 
   const plansList = [
-    { key: "starter", ...PLANS.starter, displayPrice: "R$ 79,90" },
-    { key: "pro", ...PLANS.pro, displayPrice: "R$ 169,90" },
-    { key: "premium", ...PLANS.premium, displayPrice: "R$ 249,90" },
+    { key: "starter", ...PLANS.starter, displayPrice: "R$ 39,90" },
+    { key: "pro", ...PLANS.pro, displayPrice: "R$ 79,90" },
+    { key: "premium", ...PLANS.premium, displayPrice: "R$ 129,90" },
   ];
 
   const selectedPlanObj = plansList.find((p) => p.key === selectedPlanKey) || plansList[1];

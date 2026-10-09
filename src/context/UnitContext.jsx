@@ -4,44 +4,18 @@ import { PLANS, getPlan, canAccessFeature } from "@/lib/plans";
 
 const UnitContext = createContext(null);
 
-const DEFAULT_UNITS = [
-  {
-    id: "unit_centro",
-    name: "Unidade Centro (Matriz)",
-    short_name: "Centro",
-    slug: "barbearia-vintage-centro",
-    address: "Rua Augusta, 1200 - Consolação, São Paulo - SP",
-    phone: "(11) 99999-8888",
-    city: "São Paulo",
-    state: "SP",
-    is_main: true,
-  },
-  {
-    id: "unit_shopping",
-    name: "Unidade Shopping (Filial)",
-    short_name: "Shopping",
-    slug: "barbearia-vintage-shopping",
-    address: "Av. Brigadeiro Faria Lima, 2232 - Shopping Iguatemi, São Paulo - SP",
-    phone: "(11) 98888-7777",
-    city: "São Paulo",
-    state: "SP",
-    is_main: false,
-  },
-];
-
 export function UnitProvider({ children }) {
-  // Unidade ativa armazenada no localStorage (padrão: "unit_centro")
   const [activeUnitId, setActiveUnitId] = useState(() => {
-    return localStorage.getItem("active_unit_id") || "unit_centro";
+    return localStorage.getItem("active_unit_id") || "matriz";
   });
 
-  const [units, setUnits] = useState(DEFAULT_UNITS);
+  const [units, setUnits] = useState([]);
   const [networkStats, setNetworkStats] = useState(null);
   const [subscription, setSubscription] = useState({
-    plan_id: "premium",
-    status: "active",
-    max_barbers: 10,
-    multi_unit: true,
+    plan_id: "pro",
+    status: "trialing",
+    max_barbers: 4,
+    multi_unit: false,
   });
   const [trialExpiredEvent, setTrialExpiredEvent] = useState(false);
 
@@ -87,7 +61,7 @@ export function UnitProvider({ children }) {
   });
 
   const plan = useMemo(() => {
-    return getPlan(subscription?.plan_id || "premium");
+    return getPlan(subscription?.plan_id || "pro");
   }, [subscription?.plan_id]);
 
   // Carregar unidades e assinatura do backend
@@ -98,17 +72,21 @@ export function UnitProvider({ children }) {
         api.get("/subscription").catch(() => null),
       ]);
 
-      if (unitsRes?.units?.length) {
+      if (unitsRes?.units) {
         setUnits(unitsRes.units);
         setNetworkStats(unitsRes.network_summary || null);
+        if (unitsRes.units.length > 0 && !unitsRes.units.some((u) => u.id === activeUnitId)) {
+          const main = unitsRes.units.find((u) => u.is_main) || unitsRes.units[0];
+          if (main) setActiveUnitId(main.id);
+        }
       }
       if (subRes?.plan_id) {
         setSubscription(subRes);
       }
     } catch {
-      // Manter fallbacks pré-definidos caso backend inicialize
+      // Ignorar erros de rede momentâneos
     }
-  }, []);
+  }, [activeUnitId]);
 
   useEffect(() => {
     loadUnitsAndSubscription();
@@ -118,32 +96,27 @@ export function UnitProvider({ children }) {
   const switchUnit = useCallback((unitId) => {
     localStorage.setItem("active_unit_id", unitId);
     setActiveUnitId(unitId);
-    // Disparar evento para que useApi e listas recarreguem os dados
     window.dispatchEvent(new CustomEvent("refresh-dashboard-data"));
   }, []);
 
-  // Alterar plano de assinatura (Upgrade / Downgrade para testes ou contratação)
+  // Alterar plano de assinatura (Upgrade / Downgrade)
   const changePlan = useCallback(async (newPlanId) => {
     try {
       const res = await api.put("/subscription", { plan_id: newPlanId, status: "active" });
       setSubscription(res);
       setTrialExpiredEvent(false);
-      // Se não for premium e estava com visão consolidada ou unidade secundária, volta para matriz
       if (newPlanId !== "premium") {
-        switchUnit("unit_centro");
+        const mainUnit = units.find((u) => u.is_main) || units[0];
+        if (mainUnit) switchUnit(mainUnit.id);
       }
       window.dispatchEvent(new CustomEvent("refresh-dashboard-data"));
       return res;
     } catch (err) {
-      // Fallback local se erro
       setSubscription((s) => ({ ...s, plan_id: newPlanId, status: "active", subscriptionStatus: "active", subscription_status: "active" }));
       setTrialExpiredEvent(false);
-      if (newPlanId !== "premium") {
-        switchUnit("unit_centro");
-      }
       window.dispatchEvent(new CustomEvent("refresh-dashboard-data"));
     }
-  }, [switchUnit]);
+  }, [units, switchUnit]);
 
   // Gatilho do Modal de Upgrade
   const openUpgradeModal = useCallback(({ title, message, targetPlan = "pro", feature = "" }) => {
@@ -172,16 +145,25 @@ export function UnitProvider({ children }) {
         address: "Todas as Unidades da Rede",
       };
     }
-    return units.find((u) => u.id === activeUnitId) || units[0] || DEFAULT_UNITS[0];
+    return units.find((u) => u.id === activeUnitId) || units[0] || null;
   }, [activeUnitId, units]);
 
   // Checagem de permissão por plano
   const canUse = useCallback(
     (featureKey) => {
-      return canAccessFeature(plan.id, featureKey);
+      return canAccessFeature(subscription?.plan_id || "pro", featureKey);
     },
-    [plan.id]
+    [subscription?.plan_id]
   );
+
+  const isPremium = useMemo(() => {
+    return (subscription?.plan_id || "").toLowerCase() === "premium" && !isSubscriptionExpired;
+  }, [subscription?.plan_id, isSubscriptionExpired]);
+
+  const isPro = useMemo(() => {
+    const pid = (subscription?.plan_id || "").toLowerCase();
+    return (pid === "pro" || pid === "premium") && !isSubscriptionExpired;
+  }, [subscription?.plan_id, isSubscriptionExpired]);
 
   return (
     <UnitContext.Provider
@@ -190,22 +172,19 @@ export function UnitProvider({ children }) {
         activeUnitId,
         activeUnit,
         switchUnit,
-        subscription,
-        plan,
-        isPremium: plan.id === "premium",
-        isPro: plan.id === "pro" || plan.id === "premium",
-        isStarter: plan.id === "starter",
-        changePlan,
-        canUse,
         networkStats,
-        refreshUnits: loadUnitsAndSubscription,
-        // Modal
-        upgradeModalOpen,
-        upgradePayload,
+        plan,
+        subscription,
+        isSubscriptionExpired,
+        isPremium,
+        isPro,
+        canUse,
         openUpgradeModal,
         closeUpgradeModal,
-        isSubscriptionExpired,
-        setTrialExpired: setTrialExpiredEvent,
+        upgradeModalOpen,
+        upgradePayload,
+        refreshUnits: loadUnitsAndSubscription,
+        changePlan,
       }}
     >
       {children}
@@ -213,10 +192,10 @@ export function UnitProvider({ children }) {
   );
 }
 
-export const useUnit = () => {
-  const context = useContext(UnitContext);
-  if (!context) {
-    throw new Error("useUnit deve ser usado dentro de um UnitProvider");
+export function useUnit() {
+  const ctx = useContext(UnitContext);
+  if (!ctx) {
+    throw new Error("useUnit deve ser utilizado dentro de um UnitProvider");
   }
-  return context;
-};
+  return ctx;
+}

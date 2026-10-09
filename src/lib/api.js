@@ -22,8 +22,10 @@ const http = axios.create({ baseURL: API });
 http.interceptors.request.use((config) => {
   const token = localStorage.getItem("token") || sessionStorage.getItem("token");
   if (token) config.headers.Authorization = `Bearer ${token}`;
-  const activeUnit = localStorage.getItem("active_unit_id") || "unit_centro";
-  if (activeUnit) config.headers["x-unit-id"] = activeUnit;
+  const activeUnit = localStorage.getItem("active_unit_id");
+  if (activeUnit && activeUnit !== "all" && activeUnit !== "undefined" && activeUnit !== "null") {
+    config.headers["x-unit-id"] = activeUnit;
+  }
   return config;
 });
 
@@ -31,6 +33,17 @@ http.interceptors.response.use(
   (response) => response,
   (error) => {
     const data = error.response?.data;
+    if (
+      error.response?.status === 401 &&
+      typeof window !== "undefined" &&
+      !window.location.pathname.startsWith("/login") &&
+      !window.location.pathname.startsWith("/agendar") &&
+      !window.location.pathname.startsWith("/preview") &&
+      !window.location.pathname.startsWith("/planos")
+    ) {
+      localStorage.removeItem("token");
+      sessionStorage.removeItem("token");
+    }
     if (
       error.response?.status === 403 &&
       (data?.code === "TRIAL_EXPIRED" ||

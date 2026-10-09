@@ -13,40 +13,59 @@ import {
   Trash2,
   FileText,
   Phone,
+  CheckCircle2,
 } from "lucide-react";
 import { toast } from "sonner";
-import { BARBERS } from "@/data/agendaData";
+import { api } from "@/lib/api";
 
 export default function AppointmentDetailsModal({
   appointment,
   open,
   onClose,
   onStatusUpdate,
+  barbers = [],
 }) {
   if (!open || !appointment) return null;
 
-  const barber = BARBERS.find((b) => b.id === appointment.barberId);
-
-  const handleStartAttendance = () => {
-    onStatusUpdate?.(appointment.id, "em_atendimento");
-    toast.success(`Atendimento de ${appointment.clientName} iniciado com sucesso!`);
-    onClose();
+  const barber = barbers.find((b) => b.id === (appointment.barberId || appointment.barber_id)) || {
+    name: appointment.barberName || appointment.barber_name || "Barbeiro",
+    role: "Barbeiro",
+    avatar: appointment.barberAvatar || "",
   };
 
-  const handleCancelAppointment = () => {
-    onStatusUpdate?.(appointment.id, "cancelado");
-    toast.info(`Agendamento de ${appointment.clientName} foi cancelado.`);
-    onClose();
+  const handleStartAttendance = async () => {
+    try {
+      await api.post(`/appointments/${appointment.id}/start-chair`);
+      toast.success(`Atendimento de ${appointment.clientName} colocado na cadeira com sucesso!`);
+      onStatusUpdate?.(appointment.id, "cadeira");
+      onClose();
+    } catch (err) {
+      toast.error("Erro ao iniciar atendimento.");
+    }
   };
 
-  const handleReschedule = () => {
-    toast.info("Reagendamento: Selecione um novo horário na grade.");
-    onClose();
+  const handleCancelAppointment = async () => {
+    try {
+      await api.delete(`/appointments/${appointment.id}`);
+      toast.info(`Agendamento de ${appointment.clientName} foi cancelado.`);
+      onStatusUpdate?.(appointment.id, "cancelado");
+      onClose();
+    } catch (err) {
+      toast.error("Erro ao cancelar agendamento.");
+    }
   };
 
-  const handleEdit = () => {
-    toast.info("Modo de edição do agendamento aberto.");
-    onClose();
+  const handleFinishAppointment = async () => {
+    try {
+      await api.post(`/appointments/${appointment.id}/finish`, {
+        payment_type: "dinheiro",
+      });
+      toast.success(`Agendamento de ${appointment.clientName} finalizado e registrado no financeiro!`);
+      onStatusUpdate?.(appointment.id, "concluido");
+      onClose();
+    } catch (err) {
+      toast.error("Erro ao finalizar agendamento.");
+    }
   };
 
   return (
@@ -66,7 +85,7 @@ export default function AppointmentDetailsModal({
               <Scissors className="w-4 h-4" />
             </div>
             <div>
-              <h2 className="text-base sm:text-lg font-bold text-white tracking-tight">
+              <h2 className="text-base sm:text-lg font-bold text-white tracking-tight font-['Outfit',sans-serif]">
                 Detalhes do Agendamento
               </h2>
               <p className="text-xs text-slate-400">
@@ -105,7 +124,7 @@ export default function AppointmentDetailsModal({
                   </h4>
                   <p className="text-xs text-slate-400 flex items-center gap-1 mt-0.5">
                     <Phone className="w-3 h-3 text-[#20C997]" />
-                    <span>{appointment.clientPhone || "(11) 98888-7777"}</span>
+                    <span>{appointment.clientPhone || "Sem telefone"}</span>
                   </p>
                 </div>
               </div>
@@ -117,17 +136,23 @@ export default function AppointmentDetailsModal({
                 Profissional
               </span>
               <div className="flex items-center gap-2.5">
-                <img
-                  src={barber?.avatar}
-                  alt={barber?.name}
-                  className="w-10 h-10 rounded-full object-cover border border-[#D4AF37]/30"
-                />
+                {barber?.avatar ? (
+                  <img
+                    src={barber.avatar}
+                    alt={barber.name}
+                    className="w-10 h-10 rounded-full object-cover border border-[#D4AF37]/30"
+                  />
+                ) : (
+                  <div className="w-10 h-10 rounded-full bg-[#D4AF37]/10 text-[#E5C365] font-black flex items-center justify-center border border-[#D4AF37]/30">
+                    {barber?.name?.charAt(0) || "B"}
+                  </div>
+                )}
                 <div className="min-w-0 flex-1">
                   <h4 className="text-sm font-bold text-[#E5C365] truncate">
                     {barber?.name}
                   </h4>
                   <p className="text-xs text-slate-400">
-                    {barber?.role}
+                    {barber?.role || "Barbeiro"}
                   </p>
                 </div>
               </div>
@@ -146,7 +171,7 @@ export default function AppointmentDetailsModal({
               <div className="text-right">
                 <span className="text-xs text-slate-400 block">Valor</span>
                 <span className="text-sm font-black text-[#E5C365] block mt-0.5">
-                  R$ {Number(appointment.price || 65).toFixed(2)}
+                  R$ {Number(appointment.price || 0).toFixed(2).replace(".", ",")}
                 </span>
               </div>
             </div>
@@ -158,21 +183,21 @@ export default function AppointmentDetailsModal({
                 <span className="text-slate-400 block text-[11px]">Horário</span>
                 <span className="font-semibold text-white mt-0.5 block flex items-center gap-1">
                   <Clock className="w-3.5 h-3.5 text-slate-400" />
-                  {appointment.startTime} às {appointment.endTime}
+                  {appointment.startTime} {appointment.endTime ? `às ${appointment.endTime}` : ""}
                 </span>
               </div>
 
               <div>
                 <span className="text-slate-400 block text-[11px]">Duração</span>
                 <span className="font-semibold text-white mt-0.5 block">
-                  {appointment.durationMinutes || 60} minutos
+                  {appointment.durationMinutes || 45} minutos
                 </span>
               </div>
 
               <div>
                 <span className="text-slate-400 block text-[11px]">Status</span>
                 <span className="font-bold text-[#20C997] capitalize mt-0.5 block">
-                  {appointment.status}
+                  {appointment.status === "cadeira" ? "Na Cadeira" : appointment.status}
                 </span>
               </div>
             </div>
@@ -187,7 +212,7 @@ export default function AppointmentDetailsModal({
             )}
           </div>
 
-          {/* Botões de Ação Fiel ao Gabarito */}
+          {/* Botões de Ação */}
           <div className="pt-2 flex flex-wrap items-center justify-between gap-2">
             <button
               type="button"
@@ -199,23 +224,27 @@ export default function AppointmentDetailsModal({
             </button>
 
             <div className="flex items-center gap-2 ml-auto">
-              <button
-                type="button"
-                onClick={handleReschedule}
-                className="px-3 py-2 rounded-xl text-xs font-semibold text-slate-300 hover:text-white bg-[#0D121B] border border-[#161E2C] hover:border-[#D4AF37]/30 transition-all cursor-pointer flex items-center gap-1.5"
-              >
-                <RotateCcw className="w-3.5 h-3.5" />
-                <span>Reagendar</span>
-              </button>
+              {appointment.status !== "concluido" && (
+                <button
+                  type="button"
+                  onClick={handleFinishAppointment}
+                  className="px-3 py-2 rounded-xl text-xs font-semibold text-emerald-400 hover:text-emerald-300 bg-[#0D121B] border border-emerald-500/30 hover:border-emerald-500/60 transition-all cursor-pointer flex items-center gap-1.5"
+                >
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  <span>Concluir</span>
+                </button>
+              )}
 
-              <button
-                type="button"
-                onClick={handleStartAttendance}
-                className="px-4 py-2 rounded-xl text-xs font-bold text-[#070A0F] bg-[#D4AF37] hover:bg-[#E5C365] transition-all shadow-md active:scale-95 cursor-pointer flex items-center gap-1.5"
-              >
-                <Play className="w-3.5 h-3.5 fill-[#070A0F]" />
-                <span>Iniciar atendimento</span>
-              </button>
+              {appointment.status !== "cadeira" && appointment.status !== "concluido" && (
+                <button
+                  type="button"
+                  onClick={handleStartAttendance}
+                  className="px-4 py-2 rounded-xl text-xs font-bold text-[#070A0F] bg-[#D4AF37] hover:bg-[#E5C365] transition-all shadow-md active:scale-95 cursor-pointer flex items-center gap-1.5"
+                >
+                  <Play className="w-3.5 h-3.5 fill-[#070A0F]" />
+                  <span>Na Cadeira</span>
+                </button>
+              )}
             </div>
           </div>
         </div>

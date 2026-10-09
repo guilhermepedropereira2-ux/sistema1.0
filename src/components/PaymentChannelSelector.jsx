@@ -281,11 +281,6 @@ export default function PaymentChannelSelector({
           <Label className="text-xs text-slate-300 font-semibold flex items-center gap-1.5">
             <CreditCard className="h-3.5 w-3.5 text-[#D4AF37]" />
             <span>{labelMethod}</span>
-            {isFixedMethod && (
-              <span className="text-[10px] text-[#D4AF37] font-normal lowercase">
-                (fixo no meio selecionado)
-              </span>
-            )}
           </Label>
           <Select
             value={method}
