@@ -84,10 +84,18 @@ router.get("/public/shop/:slug/availability", (req, res) => {
     (a) => a.barbershop_id === shop.id && a.date === targetDate && a.status !== "cancelado"
   );
 
-  // Barbeiros ativos aptos para agendamento
+  // Barbeiros ativos aptos para agendamento estritamente desta barbearia
   const activeBarbers = db.barbers.filter(
     (b) => b.barbershop_id === shop.id && b.active !== false
   );
+
+  // Validação estrita: rejeitar barbeiros pertencentes a outras barbearias
+  if (barber_id && barber_id !== "any") {
+    const barberInShop = activeBarbers.find((b) => b.id === barber_id);
+    if (!barberInShop) {
+      return res.status(400).json({ detail: "Barbeiro informado não encontrado ou não pertence a esta barbearia." });
+    }
+  }
 
   const now = new Date();
   const isToday = targetDate === todayStr();

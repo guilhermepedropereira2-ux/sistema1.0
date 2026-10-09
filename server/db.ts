@@ -1,6 +1,6 @@
 import { Request } from "express";
 import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken";
+import { verifyToken } from "./jwt.js";
 import fs from "fs";
 import path from "path";
 import {
@@ -984,23 +984,17 @@ process.on("SIGTERM", () => {
   } catch {}
 });
 
-const JWT_SECRET = process.env.JWT_SECRET || "kupola-secure-production-jwt-secret-key-2026-auth";
-
-// Helper auth middleware
+// Helper auth middleware centralizado utilizando validação JWT única
 const authUser = (req: Request): User | null => {
   const auth = req.headers.authorization;
   if (!auth || !auth.startsWith("Bearer ")) return null;
   const token = auth.replace("Bearer ", "").trim();
   if (!token) return null;
 
-  try {
-    const decoded = jwt.verify(token, JWT_SECRET) as any;
-    if (decoded && decoded.userId) {
-      const user = db.users.find((u) => u.id === decoded.userId);
-      if (user && user.active !== false) return user;
-    }
-  } catch {
-    // JWT verification failed
+  const decoded = verifyToken(token);
+  if (decoded && decoded.userId) {
+    const user = db.users.find((u) => u.id === decoded.userId);
+    if (user && user.active !== false) return user;
   }
 
   // Token inválido, expirado ou forjado

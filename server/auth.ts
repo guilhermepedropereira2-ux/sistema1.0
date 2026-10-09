@@ -1,54 +1,16 @@
-import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 import { Request, Response, NextFunction } from "express";
-import { db, isUserSuperAdmin } from "./db.js";
+import { db, isUserSuperAdmin, authUser } from "./db.js";
 import { User } from "./types.js";
+import {
+  JWT_SECRET,
+  JwtPayload,
+  verifyToken,
+  signToken,
+} from "./jwt.js";
 
-/**
- * Resolução e validação estrita da chave JWT.
- * Em produção (NODE_ENV === "production"), exige obrigatoriamente a variável JWT_SECRET
- * configurada no ambiente com no mínimo 32 caracteres criptograficamente fortes.
- * Em desenvolvimento/testes locais, permite fallback restrito para viabilizar execução local.
- */
-function resolveJwtSecret(): string {
-  const isProd = process.env.NODE_ENV === "production";
-  const rawSecret = process.env.JWT_SECRET;
-
-  if (isProd) {
-    if (!rawSecret || rawSecret.trim().length < 32) {
-      const errorMsg =
-        "\n====================================================================\n" +
-        "[KUPOLA FATAL SECURITY ERROR] Inicialização abortada em PRODUÇÃO!\n" +
-        "A variável de ambiente 'JWT_SECRET' é obrigatória e deve possuir no mínimo 32 caracteres.\n" +
-        "Nunca utilize chaves fracas ou pré-definidas em produção.\n" +
-        "Configure 'JWT_SECRET' no painel de variáveis de ambiente da hospedagem.\n" +
-        "====================================================================\n";
-      console.error(errorMsg);
-      throw new Error("JWT_SECRET é obrigatório e deve ter no mínimo 32 caracteres em ambiente de produção.");
-    }
-    return rawSecret.trim();
-  }
-
-  // Ambiente de desenvolvimento ou testes locais
-  if (rawSecret && rawSecret.trim().length >= 16) {
-    return rawSecret.trim();
-  }
-
-  // Fallback estritamente local para desenvolvimento (desativado em produção)
-  return "kupola-dev-local-only-insecure-secret-key-change-in-env";
-}
-
-const JWT_SECRET = resolveJwtSecret();
-const JWT_EXPIRES_IN = "7d";
-
-export interface JwtPayload {
-  userId: string;
-  username: string;
-  role: string;
-  roles: string[];
-  barbershop_id: string;
-  is_superadmin?: boolean;
-}
+export type { JwtPayload };
+export { JWT_SECRET, verifyToken, authUser };
 
 /**
  * Gera um token JWT criptograficamente assinado com expiração
@@ -63,18 +25,7 @@ export function generateToken(user: User): string {
     barbershop_id: user.barbershop_id || "",
     is_superadmin: isSuper,
   };
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
-}
-
-/**
- * Valida e decodifica o token JWT
- */
-export function verifyToken(token: string): JwtPayload | null {
-  try {
-    return jwt.verify(token, JWT_SECRET) as JwtPayload;
-  } catch {
-    return null;
-  }
+  return signToken(payload);
 }
 
 /**
@@ -118,31 +69,6 @@ export function sanitizeUser(user: any): any {
   const { password, password_hash, ...clean } = user;
   return clean;
 }
-
-/**
- * Helper centralizado para obter o usuário autenticado da requisição.
- * NUNCA FAZ FALLBACK PARA OUTRO USUÁRIO SE O TOKEN FOR INVÁLIDO OU AUSENTE.
- */
-export const authUser = (req: Request): User | null => {
-  const auth = req.headers.authorization;
-  if (!auth || !auth.startsWith("Bearer ")) return null;
-
-  const token = auth.replace("Bearer ", "").trim();
-  if (!token) return null;
-
-  // 1. Validação estrita de JWT criptograficamente assinado com expiração
-  const decoded = verifyToken(token);
-  if (decoded && decoded.userId) {
-    const user = db.users.find((u) => u.id === decoded.userId);
-    if (user && user.active !== false) {
-      return user;
-    }
-    return null;
-  }
-
-  // Se o token for inválido, expirado ou forjado, retorna estritamente null
-  return null;
-};
 
 /**
  * Middleware Express: Exige usuário autenticado ativo.
