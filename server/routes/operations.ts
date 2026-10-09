@@ -37,8 +37,7 @@ function recordAttendanceRevenue({
   time?: string;
 }): Revenue {
   const pm = db.paymentMethods.find((p) => p.id === payment_method_id && p.barbershop_id === tenantId) ||
-    db.paymentMethods.find((p) => p.barbershop_id === tenantId) ||
-    db.paymentMethods[0];
+    db.paymentMethods.find((p) => p.barbershop_id === tenantId);
   const barber = db.barbers.find((b) => b.id === barber_id && b.barbershop_id === tenantId);
   const feePercent = pm?.fees?.[payment_type] || 0;
 
@@ -47,7 +46,7 @@ function recordAttendanceRevenue({
     discount,
     feePercent,
     barber,
-    settings: db.settings,
+    settings: db.getSettings(tenantId),
   });
 
   const paid = calc.paidAmount;

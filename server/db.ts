@@ -121,6 +121,19 @@ export class Database {
     currentStep: 1,
     data: {},
   };
+  settingsMap: Record<string, any> = {
+    [DEMO_TENANT_ID]: {
+      id: "settings_demo",
+      barbershop_id: DEMO_TENANT_ID,
+      commission_base: "gross", // "gross" | "net"
+      discount_affects_commission: true, // boolean
+      commission_on: "pago",
+      initial_balance: 3000.0,
+      shop_name: "Barbearia Vintage Club",
+      operational_mode: "hibrido", // "agendamento" | "fila" | "hibrido"
+      public_slug: "barbearia-vintage",
+    },
+  };
   settings = {
     id: "settings_demo",
     barbershop_id: DEMO_TENANT_ID,
@@ -146,6 +159,34 @@ export class Database {
     shop_phone: "(11) 99999-8888",
     operational_mode: "hibrido",
   };
+
+  getSettings(tenantId: string) {
+    if (!this.settingsMap[tenantId]) {
+      const shop = this.barbershops.find((b) => b.id === tenantId);
+      this.settingsMap[tenantId] = {
+        id: "settings_" + tenantId,
+        barbershop_id: tenantId,
+        commission_base: "gross",
+        discount_affects_commission: true,
+        commission_on: "pago",
+        initial_balance: 0.0,
+        shop_name: shop?.name || "Minha Barbearia",
+        operational_mode: shop?.operational_mode || "hibrido",
+        public_slug: shop?.slug || "minha-barbearia",
+      };
+    }
+    return this.settingsMap[tenantId];
+  }
+
+  setSettings(tenantId: string, partial: any) {
+    const current = this.getSettings(tenantId);
+    this.settingsMap[tenantId] = { ...current, ...partial, barbershop_id: tenantId };
+    if (tenantId === DEMO_TENANT_ID) {
+      this.settings = this.settingsMap[tenantId];
+    }
+    this.scheduleSave();
+    return this.settingsMap[tenantId];
+  }
 
   getSubscription(tenantId: string): Subscription {
     if (this.subscriptions[tenantId]) {
@@ -174,10 +215,10 @@ export class Database {
     return updated as Subscription;
   }
 
-  logChange(action: string, entity: string, before: any = null, after: any = null, user = "Administrador") {
+  logChange(action: string, entity: string, before: any = null, after: any = null, user = "Administrador", barbershop_id = DEMO_TENANT_ID) {
     this.history.unshift({
       id: newId(),
-      barbershop_id: DEMO_TENANT_ID,
+      barbershop_id: barbershop_id || DEMO_TENANT_ID,
       user,
       timestamp: nowIso(),
       action,
@@ -186,6 +227,15 @@ export class Database {
       after,
     });
     if (this.history.length > 500) this.history.pop();
+  }
+
+  private saveTimer: any = null;
+
+  scheduleSave() {
+    if (this.saveTimer) clearTimeout(this.saveTimer);
+    this.saveTimer = setTimeout(() => {
+      this.saveToFile();
+    }, 50);
   }
 
   seed() {
@@ -851,9 +901,11 @@ export class Database {
         subscription: this.subscription,
         onboarding: this.onboarding,
         settings: this.settings,
+        settingsMap: this.settingsMap,
         barbershop: this.barbershop,
       };
-      const tmpFile = `${DB_FILE}.tmp.${Date.now()}`;
+      const uniqueSuffix = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+      const tmpFile = `${DB_FILE}.tmp.${uniqueSuffix}`;
       fs.writeFileSync(tmpFile, JSON.stringify(state, null, 2), "utf-8");
       fs.renameSync(tmpFile, DB_FILE);
     } catch (err: any) {
@@ -890,7 +942,13 @@ export class Database {
             if (state.subscription && typeof state.subscription === "object") this.subscription = state.subscription;
             if (state.onboarding && typeof state.onboarding === "object") this.onboarding = state.onboarding;
             if (state.settings && typeof state.settings === "object") this.settings = state.settings;
+            if (state.settingsMap && typeof state.settingsMap === "object") this.settingsMap = state.settingsMap;
             if (state.barbershop && typeof state.barbershop === "object") this.barbershop = state.barbershop;
+
+            // Garantir que a barbearia demo e tenants estejam mapeados no settingsMap
+            if (!this.settingsMap[DEMO_TENANT_ID]) {
+              this.settingsMap[DEMO_TENANT_ID] = this.settings;
+            }
 
             console.log(
               `[Database Persistence] Base de dados carregada de ${DB_FILE}: ${this.users.length} usuários, ${this.barbershops.length} barbearias, ${this.services.length} serviços, ${this.revenues.length} receitas.`
@@ -945,13 +1003,7 @@ const authUser = (req: Request): User | null => {
     // JWT verification failed
   }
 
-  // Strictly check legacy fake-token format if user exists and is active
-  if (token.startsWith("fake-token-")) {
-    const id = token.replace("fake-token-", "");
-    const user = db.users.find((u) => u.id === id);
-    if (user && user.active !== false) return user;
-  }
-
+  // Token inválido, expirado ou forjado
   return null;
 };
 // Helper to enrich client with real-time stats, history and plan progress
@@ -1024,7 +1076,16 @@ export const getUnitFilter = (req: Request): string | null => {
 
 export const getTenantId = (req: Request): string => {
   const user = (req as any).user || authUser(req);
-  if (user?.barbershop_id) return user.barbershop_id;
+  if (user) {
+    // SuperAdmin pode inspecionar tenant específico se informado no header
+    if (isUserSuperAdmin(user)) {
+      const headerTenant = req.headers["x-organization-id"] as string;
+      if (headerTenant && headerTenant !== "undefined" && headerTenant !== "null") return headerTenant;
+    }
+    // Para qualquer outro usuário, o tenant é ESTRITAMENTE o barbershop_id ao qual ele pertence
+    if (user.barbershop_id) return user.barbershop_id;
+  }
+  // Para rotas públicas (ex: webhook ou busca pública), aceita cabeçalho se fornecido
   const headerTenant = req.headers["x-organization-id"] as string;
   if (headerTenant && headerTenant !== "undefined" && headerTenant !== "null") return headerTenant;
   return DEMO_TENANT_ID;

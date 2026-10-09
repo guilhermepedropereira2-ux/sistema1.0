@@ -1,5 +1,5 @@
 import express from "express";
-import { db, authUser, getUnitFilter, getTenantId } from "../db.js";
+import { db, authUser, getUnitFilter, getTenantId, DEMO_TENANT_ID, isUserSuperAdmin } from "../db.js";
 import { newId, nowIso, todayStr, Unit } from "../types.js";
 import { storage } from "../storage.js";
 import { getPgHealth, loadFromPg, persistSubscription } from "../../src/db/sync.js";
@@ -270,17 +270,18 @@ router.delete("/units/:id", requireAuth, requireDono, (req, res) => {
 router.get("/settings", requireAuth, (req, res) => {
   const tenantId = getTenantId(req);
   const shop = db.barbershops.find((b) => b.id === tenantId) || db.barbershop;
-  if (!db.settings.commission_base) {
-    db.settings.commission_base = db.settings.commission_on === "original" ? "gross" : "net";
+  const currentSettings = db.getSettings(tenantId);
+  if (!currentSettings.commission_base) {
+    currentSettings.commission_base = currentSettings.commission_on === "original" ? "gross" : "net";
   }
-  if (db.settings.discount_affects_commission === undefined) {
-    db.settings.discount_affects_commission = true;
+  if (currentSettings.discount_affects_commission === undefined) {
+    currentSettings.discount_affects_commission = true;
   }
   res.json({
-    ...db.settings,
-    shop_name: shop.name,
-    public_slug: shop.slug,
-    operational_mode: shop.operational_mode,
+    ...currentSettings,
+    shop_name: shop.name || currentSettings.shop_name,
+    public_slug: shop.slug || currentSettings.public_slug,
+    operational_mode: shop.operational_mode || currentSettings.operational_mode,
   });
 });
 
@@ -298,7 +299,6 @@ router.put("/settings", requireAuth, requirePermission("alterar_configuracoes"),
       .replace(/-+/g, "-")
       .replace(/^-|-$/g, "");
     body.public_slug = slug || "minha-barbearia";
-    db.barbershop.slug = body.public_slug;
   }
 
   // Handle commission calculation rules
@@ -310,23 +310,26 @@ router.put("/settings", requireAuth, requirePermission("alterar_configuracoes"),
     body.discount_affects_commission = Boolean(body.discount_affects_commission);
   }
 
-  db.settings = { ...db.settings, ...body, barbershop_id: tenantId };
+  const updatedSettings = db.setSettings(tenantId, body);
   const shop = db.barbershops.find((b) => b.id === tenantId);
-  if (shop && body.shop_name) {
-    shop.name = body.shop_name;
+  if (shop) {
+    if (body.shop_name) shop.name = body.shop_name;
+    if (body.public_slug) shop.slug = body.public_slug;
+    if (body.operational_mode) shop.operational_mode = body.operational_mode;
   }
-  db.logChange("Atualizou configurações gerais", "settings", null, db.settings);
-  res.json(db.settings);
+  db.logChange("Atualizou configurações gerais", "settings", null, updatedSettings, (req as any).user?.name || "Administrador", tenantId);
+  res.json(updatedSettings);
 });
 
-// Barbershop profile (Informações públicas ou administrativas)
-router.get("/barbershop", (req, res) => {
+// Barbershop profile (Informações restritas da barbearia do tenant autenticado)
+router.get("/barbershop", requireAuth, (req, res) => {
   const tenantId = getTenantId(req);
   const shop = db.barbershops.find((b) => b.id === tenantId) || db.barbershop;
   res.json(shop);
 });
 
 router.put("/barbershop", requireAuth, requireDono, (req, res) => {
+  const tenantId = getTenantId(req);
   const body = req.body || {};
   let slug = body.slug || body.public_slug;
   if (slug) {
@@ -339,26 +342,36 @@ router.put("/barbershop", requireAuth, requireDono, (req, res) => {
       .replace(/-+/g, "-")
       .replace(/^-|-$/g, "");
     body.slug = slug || "barbearia-vintage";
-    db.settings.public_slug = body.slug;
   }
-  db.barbershop = { ...db.barbershop, ...body };
-  if (body.name) {
-    db.settings.shop_name = body.name;
+  let shop = db.barbershops.find((b) => b.id === tenantId);
+  if (shop) {
+    Object.assign(shop, body);
+  } else {
+    shop = { ...db.barbershop, ...body, id: tenantId };
+    db.barbershops.push(shop);
   }
-  db.logChange("Atualizou perfil da barbearia", "barbershop", null, db.barbershop);
-  res.json(db.barbershop);
+  if (tenantId === DEMO_TENANT_ID) {
+    db.barbershop = { ...db.barbershop, ...body };
+  }
+  if (body.name || body.slug) {
+    db.setSettings(tenantId, { shop_name: shop.name, public_slug: shop.slug });
+  }
+  db.logChange("Atualizou perfil da barbearia", "barbershop", null, shop, (req as any).user?.name || "Administrador", tenantId);
+  db.scheduleSave();
+  res.json(shop);
 });
 
-// Calendar
+// Calendar (Isolado estritamente por tenant)
 router.get("/calendar", requireAuth, (req, res) => {
+  const tenantId = getTenantId(req);
   const m = (req.query.month as string) || todayStr().slice(0, 7);
   const unitFilter = getUnitFilter(req);
-  let exps = db.expenses.filter((e) => e.due_date.startsWith(m));
-  let revs = db.revenues.filter((r) => r.date.startsWith(m) && r.status === "ativo");
+  let exps = db.expenses.filter((e) => e.barbershop_id === tenantId && e.due_date.startsWith(m));
+  let revs = db.revenues.filter((r) => r.barbershop_id === tenantId && r.date.startsWith(m) && r.status === "ativo");
 
   if (unitFilter) {
-    revs = revs.filter((r) => r.barbershop_id === unitFilter || (unitFilter === "unit_centro" && r.barbershop_id === "profile"));
-    exps = exps.filter((e) => e.barbershop_id === unitFilter || (unitFilter === "unit_centro" && e.barbershop_id === "profile"));
+    revs = revs.filter((r) => r.unit_id === unitFilter);
+    exps = exps.filter((e) => e.unit_id === unitFilter);
   }
 
   res.json({
@@ -368,10 +381,18 @@ router.get("/calendar", requireAuth, (req, res) => {
   });
 });
 
-// History
+// History (Logs de auditoria isolados por tenant)
 router.get("/history", requireAuth, (req, res) => {
+  const tenantId = getTenantId(req);
+  const user = (req as any).user || authUser(req);
+  const isSuper = isUserSuperAdmin(user);
   const limit = Number(req.query.limit || 100);
-  res.json(db.history.slice(0, limit));
+
+  const filteredHistory = isSuper
+    ? db.history
+    : db.history.filter((h) => h.barbershop_id === tenantId);
+
+  res.json(filteredHistory.slice(0, limit));
 });
 
 // Admin Demo Actions (Protegidas por SuperAdmin ou Dono)

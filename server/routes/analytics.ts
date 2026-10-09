@@ -36,7 +36,8 @@ router.get("/dashboard/summary", requireAuth, requirePermission("ver_dashboard")
   const available_now = Number(revs.filter((r) => r.settlement_date <= todayStr()).reduce((acc, r) => acc + (r.net_amount || 0), 0).toFixed(2));
   const to_receive = Number(revs.filter((r) => r.settlement_date > todayStr()).reduce((acc, r) => acc + (r.net_amount || 0), 0).toFixed(2));
   
-  const initialBalance = db.settings.barbershop_id === tenantId ? db.settings.initial_balance : 0;
+  const tenantSettings = db.getSettings(tenantId);
+  const initialBalance = Number(tenantSettings.initial_balance || 0);
   const cash_balance = Number((initialBalance + available_now - expenses_paid - withdrawals_total).toFixed(2));
 
   const t = todayStr();
@@ -308,7 +309,8 @@ router.get("/dashboard/cashflow", requireAuth, requirePermission("ver_dashboard"
 
   const inflow = Number(revs.reduce((acc, r) => acc + r.net_amount, 0).toFixed(2));
   const outflow = Number((exps.reduce((acc, e) => acc + e.value, 0) + wds.reduce((acc, w) => acc + w.value, 0)).toFixed(2));
-  const initial = db.settings.barbershop_id === tenantId ? db.settings.initial_balance : 0;
+  const tenantSettings = db.getSettings(tenantId);
+  const initial = Number(tenantSettings.initial_balance || 0);
 
   const days: Record<string, { date: string; in: number; out: number }> = {};
   revs.forEach((r) => {

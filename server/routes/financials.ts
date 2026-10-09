@@ -98,8 +98,7 @@ router.post("/revenues", requireAuth, (req: Request, res: Response) => {
   if (discount < 0 || discount > gross) return res.status(400).json({ detail: "Desconto inválido" });
 
   const pm = db.paymentMethods.find((p) => p.id === body.payment_method_id && p.barbershop_id === tenantId) ||
-    db.paymentMethods.find((p) => p.barbershop_id === tenantId) ||
-    db.paymentMethods[0];
+    db.paymentMethods.find((p) => p.barbershop_id === tenantId);
   const barber = db.barbers.find((b) => b.id === body.barber_id && b.barbershop_id === tenantId);
   const paymentType = body.payment_type || "dinheiro";
   const feePercent = pm?.fees?.[paymentType] || 0;
@@ -109,7 +108,7 @@ router.post("/revenues", requireAuth, (req: Request, res: Response) => {
     discount,
     feePercent,
     barber,
-    settings: db.settings,
+    settings: db.getSettings(tenantId),
   });
 
   const paid = calc.paidAmount;
@@ -401,7 +400,7 @@ router.get("/cash-closings", requireAuth, requirePermission("ver_financeiro"), (
   res.json(list);
 });
 
-router.post("/cash-closings", requireAuth, (req: Request, res: Response) => {
+router.post("/cash-closings", requireAuth, requirePermission("ver_financeiro"), (req: Request, res: Response) => {
   const tenantId = getTenantId(req);
   const body = req.body || {};
   const expected = (body.expected || {}) as Record<string, number>;
@@ -426,7 +425,8 @@ router.post("/cash-closings", requireAuth, (req: Request, res: Response) => {
   };
 
   db.cashClosings.unshift(cc);
-  db.logChange(`Realizou fechamento de caixa (${cc.date}) com diferença de ${formatBRL(diff)}`, "cash_closing", null, cc);
+  db.logChange(`Realizou fechamento de caixa (${cc.date}) com diferença de ${formatBRL(diff)}`, "cash_closing", null, cc, (req as any).user?.name || "Administrador", tenantId);
+  db.scheduleSave();
   res.json(cc);
 });
 

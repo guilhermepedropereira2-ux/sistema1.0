@@ -2,7 +2,7 @@ import express, { Request, Response } from "express";
 import bcrypt from "bcryptjs";
 import { db } from "../db.js";
 import { newId, nowIso, User, Unit, BarbershopInfo, PaymentMethod, Barber, PERMISSIONS_CATALOG } from "../types.js";
-import { generateToken, sanitizeUser } from "../auth.js";
+import { generateToken, sanitizeUser, requireAuth, requireSuperAdmin } from "../auth.js";
 
 const router = express.Router();
 
@@ -68,6 +68,10 @@ router.post("/onboarding/complete", async (req: Request, res: Response) => {
       return res.status(400).json({ error: "Nome e e-mail do proprietário são obrigatórios" });
     }
 
+    if (!profileData.password || profileData.password.trim().length < 6) {
+      return res.status(400).json({ error: "A senha de acesso deve ter no mínimo 6 caracteres" });
+    }
+
     // 1. GERAR IDENTIFICADORES ÚNICOS PARA O NOVO TENANT
     const newBarbershopId = "shop_" + newId();
     const newUnitId = "unit_" + newId();
@@ -102,10 +106,10 @@ router.post("/onboarding/complete", async (req: Request, res: Response) => {
       state: (barbershopData.state || "SP").trim().toUpperCase(),
       operational_mode: opMode,
     };
-
     db.barbershops.push(newBarbershop);
-    db.barbershop = newBarbershop; // Referência ativa
-    db.settings = {
+
+    // Configurações isoladas para este tenant
+    db.setSettings(newBarbershopId, {
       id: "settings_" + newBarbershopId,
       barbershop_id: newBarbershopId,
       commission_base: "gross",
@@ -115,7 +119,7 @@ router.post("/onboarding/complete", async (req: Request, res: Response) => {
       shop_name: newBarbershop.name,
       operational_mode: opMode,
       public_slug: slug,
-    };
+    });
 
     // 3. CRIAR A UNIDADE MATRIZ DO NOVO TENANT
     const newUnit: Unit = {
@@ -192,7 +196,7 @@ router.post("/onboarding/complete", async (req: Request, res: Response) => {
       fullPermissions[p.key] = true;
     });
 
-    const rawPassword = profileData.password || "dono123";
+    const rawPassword = profileData.password;
     const hashedPassword = await bcrypt.hash(rawPassword, 10);
     const emailPrefix = profileData.email.split("@")[0].toLowerCase().replace(/[^a-z0-9_]/g, "");
     let baseUsername = (profileData.username || emailPrefix || "dono").trim().toLowerCase();
@@ -235,7 +239,10 @@ router.post("/onboarding/complete", async (req: Request, res: Response) => {
       completed_at: nowIso(),
     };
 
-    // 8. EMITIR JWT ASSINADO REPRESENTANDO O NOVO TENANT
+    // 8. PERSISTÊNCIA IMEDIATA NO DISCO
+    db.saveToFile();
+
+    // 9. EMITIR JWT ASSINADO REPRESENTANDO O NOVO TENANT
     const token = generateToken(newUser);
 
     return res.json({
@@ -252,13 +259,14 @@ router.post("/onboarding/complete", async (req: Request, res: Response) => {
   }
 });
 
-// POST /api/onboarding/reset - Resetar onboarding para testes
-router.post("/onboarding/reset", (_req: Request, res: Response) => {
+// POST /api/onboarding/reset - Resetar onboarding (Apenas SuperAdmin)
+router.post("/onboarding/reset", requireAuth, requireSuperAdmin, (_req: Request, res: Response) => {
   db.onboarding = {
     completed: false,
     currentStep: 1,
     data: {},
   };
+  db.saveToFile();
   res.json({ ok: true, message: "Onboarding resetado com sucesso" });
 });
 

@@ -74,8 +74,7 @@ apiRouter.use(async (req: Request, res: Response, next: NextFunction) => {
       if (user) {
         user.subscriptionStatus = "expired";
       }
-      db.subscription.status = "expired";
-      db.subscription.subscriptionStatus = "expired";
+      db.setSubscription(orgId, { status: "expired", subscriptionStatus: "expired" });
 
       return res.status(403).json({
         code: "TRIAL_EXPIRED",
@@ -91,8 +90,7 @@ apiRouter.use(async (req: Request, res: Response, next: NextFunction) => {
 
     if (userExpired || user.subscriptionStatus === "expired") {
       user.subscriptionStatus = "expired";
-      db.subscription.status = "expired";
-      db.subscription.subscriptionStatus = "expired";
+      db.setSubscription(orgId, { status: "expired", subscriptionStatus: "expired" });
       if (org && org.subscription_status !== "expired") {
         await storage.updateOrganizationTrialStatus(org.id, "expired");
       }

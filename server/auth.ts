@@ -4,7 +4,41 @@ import { Request, Response, NextFunction } from "express";
 import { db, isUserSuperAdmin } from "./db.js";
 import { User } from "./types.js";
 
-const JWT_SECRET = process.env.JWT_SECRET || "kupola-secure-production-jwt-secret-key-2026-auth";
+/**
+ * Resolução e validação estrita da chave JWT.
+ * Em produção (NODE_ENV === "production"), exige obrigatoriamente a variável JWT_SECRET
+ * configurada no ambiente com no mínimo 32 caracteres criptograficamente fortes.
+ * Em desenvolvimento/testes locais, permite fallback restrito para viabilizar execução local.
+ */
+function resolveJwtSecret(): string {
+  const isProd = process.env.NODE_ENV === "production";
+  const rawSecret = process.env.JWT_SECRET;
+
+  if (isProd) {
+    if (!rawSecret || rawSecret.trim().length < 32) {
+      const errorMsg =
+        "\n====================================================================\n" +
+        "[KUPOLA FATAL SECURITY ERROR] Inicialização abortada em PRODUÇÃO!\n" +
+        "A variável de ambiente 'JWT_SECRET' é obrigatória e deve possuir no mínimo 32 caracteres.\n" +
+        "Nunca utilize chaves fracas ou pré-definidas em produção.\n" +
+        "Configure 'JWT_SECRET' no painel de variáveis de ambiente da hospedagem.\n" +
+        "====================================================================\n";
+      console.error(errorMsg);
+      throw new Error("JWT_SECRET é obrigatório e deve ter no mínimo 32 caracteres em ambiente de produção.");
+    }
+    return rawSecret.trim();
+  }
+
+  // Ambiente de desenvolvimento ou testes locais
+  if (rawSecret && rawSecret.trim().length >= 16) {
+    return rawSecret.trim();
+  }
+
+  // Fallback estritamente local para desenvolvimento (desativado em produção)
+  return "kupola-dev-local-only-insecure-secret-key-change-in-env";
+}
+
+const JWT_SECRET = resolveJwtSecret();
 const JWT_EXPIRES_IN = "7d";
 
 export interface JwtPayload {
@@ -26,7 +60,7 @@ export function generateToken(user: User): string {
     username: user.username,
     role: user.role,
     roles: user.roles || [user.role],
-    barbershop_id: user.barbershop_id || "profile",
+    barbershop_id: user.barbershop_id || "",
     is_superadmin: isSuper,
   };
   return jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
@@ -96,7 +130,7 @@ export const authUser = (req: Request): User | null => {
   const token = auth.replace("Bearer ", "").trim();
   if (!token) return null;
 
-  // 1. Tenta validação JWT
+  // 1. Validação estrita de JWT criptograficamente assinado com expiração
   const decoded = verifyToken(token);
   if (decoded && decoded.userId) {
     const user = db.users.find((u) => u.id === decoded.userId);
@@ -106,17 +140,7 @@ export const authUser = (req: Request): User | null => {
     return null;
   }
 
-  // 2. Suporte estrito a tokens temporários legados apenas se o ID existir exatamente e estiver ativo
-  if (token.startsWith("fake-token-")) {
-    const id = token.replace("fake-token-", "");
-    const user = db.users.find((u) => u.id === id);
-    if (user && user.active !== false) {
-      return user;
-    }
-    return null;
-  }
-
-  // Se o token for inválido, NUNCA retorna fallback de dono. Retorna estritamente null.
+  // Se o token for inválido, expirado ou forjado, retorna estritamente null
   return null;
 };
 

@@ -29,8 +29,9 @@ router.get("/barber/me", requireAuth, (req, res) => {
 router.post("/barber/atendimento", requireAuth, async (req, res) => {
   const user = (req as any).user || authUser(req);
   const tenantId = getTenantId(req);
+  const isManagement = user?.role === "dono" || user?.role === "gerente" || (user?.roles && (user.roles.includes("dono") || user.roles.includes("gerente")));
   let barber = null;
-  if (req.body?.barber_id) {
+  if (isManagement && req.body?.barber_id) {
     barber = db.barbers.find((b) => b.id === req.body.barber_id && b.barbershop_id === tenantId);
   }
   if (!barber) {
@@ -52,8 +53,7 @@ router.post("/barber/atendimento", requireAuth, async (req, res) => {
   const totalGross = items.reduce((acc: number, it: any) => acc + Number(it.price || 0) * Number(it.quantity || 1), 0);
   const discount = Number(discount_amount || 0);
   const pm = db.paymentMethods.find((p) => p.id === payment_method_id && p.barbershop_id === tenantId) ||
-    db.paymentMethods.find((p) => p.barbershop_id === tenantId) ||
-    db.paymentMethods[0];
+    db.paymentMethods.find((p) => p.barbershop_id === tenantId);
   const feePercent = pm?.fees?.[payment_type] || 0;
 
   const group_id = newId();
@@ -71,7 +71,7 @@ router.post("/barber/atendimento", requireAuth, async (req, res) => {
       discount: itemDisc,
       feePercent,
       barber,
-      settings: db.settings,
+      settings: db.getSettings(tenantId),
     });
 
     totalCommissionCalculated += calc.commissionAmount;

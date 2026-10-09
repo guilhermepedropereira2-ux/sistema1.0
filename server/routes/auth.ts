@@ -213,6 +213,73 @@ router.post("/auth/register", async (req, res) => {
   };
   db.users.push(user);
 
+  // Registrar a nova barbearia isolada em db.barbershops
+  const newBarbershop = {
+    id: effectiveOrgId,
+    name: (shop_name || name || "Minha Barbearia").trim(),
+    slug: orgSlug,
+    document: cleanDoc || "",
+    phone: (shop_phone || phone || "").trim(),
+    address: "",
+    logo_url: "",
+    opening_hours: "Segunda a Sábado das 09h às 20h",
+    city: city || "São Paulo",
+    state: state || "SP",
+    shop_phone: (shop_phone || phone || "").trim(),
+    operational_mode: "hibrido" as const,
+  };
+  db.barbershops.push(newBarbershop);
+
+  // Configurações isoladas e assinatura por tenant
+  db.setSettings(effectiveOrgId, {
+    shop_name: newBarbershop.name,
+    public_slug: orgSlug,
+    operational_mode: "hibrido",
+  });
+  db.setSubscription(effectiveOrgId, {
+    plan_id: "pro",
+    status: "trialing",
+    subscriptionStatus: "trialing",
+    subscriptionExpiresAt: trialExpiresAtIso,
+    max_barbers: 4,
+    multi_unit: false,
+    updated_at: nowIso(),
+  });
+
+  // Formas de pagamento padrão do novo tenant
+  db.paymentMethods.push(
+    {
+      id: "pm_dinheiro_" + newId(),
+      barbershop_id: effectiveOrgId,
+      name: "Dinheiro",
+      kind: "dinheiro",
+      fees: { dinheiro: 0 },
+      settlement_days: { dinheiro: 0 },
+      active: true,
+      created_at: nowIso(),
+    },
+    {
+      id: "pm_pix_" + newId(),
+      barbershop_id: effectiveOrgId,
+      name: "PIX",
+      kind: "pix",
+      fees: { pix: 0 },
+      settlement_days: { pix: 0 },
+      active: true,
+      created_at: nowIso(),
+    },
+    {
+      id: "pm_cartao_" + newId(),
+      barbershop_id: effectiveOrgId,
+      name: "Cartão Débito / Crédito",
+      kind: "maquininha",
+      fees: { debito: 1.99, credito_vista: 3.15, credito_parcelado: 4.60, pix: 0.99 },
+      settlement_days: { debito: 1, credito_vista: 1, credito_parcelado: 30, pix: 0 },
+      active: true,
+      created_at: nowIso(),
+    }
+  );
+
   // Garantir a criação da unidade Matriz isolada para o novo tenant
   const existingTenantUnit = db.units.find((u) => u.barbershop_id === effectiveOrgId);
   if (!existingTenantUnit) {
@@ -232,16 +299,8 @@ router.post("/auth/register", async (req, res) => {
     });
   }
 
-  db.subscription.plan_id = "pro";
-  db.subscription.status = "trialing";
-  db.subscription.subscriptionStatus = "trialing";
-  db.subscription.subscriptionExpiresAt = trialExpiresAtIso;
-
-  if (shop_name) {
-    db.settings.shop_name = shop_name;
-    db.barbershop.name = shop_name;
-    if (cleanDoc) db.barbershop.document = cleanDoc;
-  }
+  // Persistência imediata e garantida no disco
+  db.saveToFile();
 
   const token = generateToken(user);
   const clean = sanitizeUser(user);

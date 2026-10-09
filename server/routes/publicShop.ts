@@ -1,5 +1,5 @@
 import express, { Request, Response } from "express";
-import { db } from "../db.js";
+import { db, DEMO_TENANT_ID } from "../db.js";
 import { newId, nowIso, todayStr, Appointment } from "../types.js";
 import { persistAppointment } from "../../src/db/sync.js";
 
@@ -7,18 +7,20 @@ const router = express.Router();
 
 router.get("/public/shop/:slug", (req, res) => {
   const { slug } = req.params;
-  const currentSlug = db.barbershop.slug || db.settings.public_slug || "barbearia-vintage";
+  const shop = db.barbershops.find(
+    (b) => b.slug === slug || b.id === slug || (slug === "default" && b.id === DEMO_TENANT_ID)
+  ) || (slug === db.barbershop.slug || slug === db.barbershop.id ? db.barbershop : null);
 
-  // Verificar se o slug bate com a barbearia cadastrada (ou alias profile/default)
-  if (slug !== currentSlug && slug !== db.barbershop.id && slug !== "default") {
+  // Verificar se o slug bate com a barbearia cadastrada
+  if (!shop) {
     return res.status(404).json({ detail: "Barbearia não encontrada com o link informado." });
   }
 
-  const shop = db.barbershop;
+  const shopSettings = db.getSettings(shop.id);
 
-  // Carregar serviços ativos da barbearia (suporte multi-unidade: profile ou unidades da rede)
+  // Carregar serviços ativos da barbearia
   const services = db.services
-    .filter((s) => (s.barbershop_id === shop.id || s.barbershop_id === "profile" || !s.barbershop_id) && s.active !== false)
+    .filter((s) => s.barbershop_id === shop.id && s.active !== false)
     .map((s) => ({
       id: s.id,
       name: s.name,
@@ -26,9 +28,9 @@ router.get("/public/shop/:slug", (req, res) => {
       duration_min: s.duration_min || 30,
     }));
 
-  // Carregar barbeiros ativos da barbearia (suporte a unidades ativas ou unidade padrão)
+  // Carregar barbeiros ativos da barbearia
   const barbers = db.barbers
-    .filter((b) => (b.barbershop_id === shop.id || b.barbershop_id === "profile" || b.unit_id || b.barbershop_id.startsWith("unit_")) && b.active !== false)
+    .filter((b) => b.barbershop_id === shop.id && b.active !== false)
     .map((b) => ({
       id: b.id,
       name: b.name,
@@ -41,7 +43,7 @@ router.get("/public/shop/:slug", (req, res) => {
     shop: {
       id: shop.id,
       name: shop.name,
-      slug: currentSlug,
+      slug: shop.slug,
       document: shop.document,
       phone: shop.phone || shop.shop_phone,
       address: shop.address,
@@ -49,7 +51,7 @@ router.get("/public/shop/:slug", (req, res) => {
       opening_hours: shop.opening_hours,
       city: shop.city,
       state: shop.state,
-      operational_mode: db.settings.operational_mode || "hibrido",
+      operational_mode: shopSettings?.operational_mode || shop.operational_mode || "hibrido",
     },
     services,
     barbers,
@@ -59,12 +61,14 @@ router.get("/public/shop/:slug", (req, res) => {
 // Disponibilidade de horários em tempo real para o cliente
 router.get("/public/shop/:slug/availability", (req, res) => {
   const { slug } = req.params;
-  const currentSlug = db.barbershop.slug || db.settings.public_slug || "barbearia-vintage";
-  if (slug !== currentSlug && slug !== db.barbershop.id && slug !== "default") {
+  const shop = db.barbershops.find(
+    (b) => b.slug === slug || b.id === slug || (slug === "default" && b.id === DEMO_TENANT_ID)
+  ) || (slug === db.barbershop.slug || slug === db.barbershop.id ? db.barbershop : null);
+
+  if (!shop) {
     return res.status(404).json({ detail: "Barbearia não encontrada" });
   }
 
-  const shop = db.barbershop;
   const { date, barber_id } = req.query as { date?: string; barber_id?: string };
   const targetDate = date || todayStr();
 
@@ -75,14 +79,14 @@ router.get("/public/shop/:slug/availability", (req, res) => {
     "18:00", "18:30", "19:00", "19:30",
   ];
 
-  // Agendamentos ativos na data especificada
+  // Agendamentos ativos na data especificada para este tenant
   const existingApts = db.appointments.filter(
-    (a) => a.date === targetDate && a.status !== "cancelado"
+    (a) => a.barbershop_id === shop.id && a.date === targetDate && a.status !== "cancelado"
   );
 
   // Barbeiros ativos aptos para agendamento
   const activeBarbers = db.barbers.filter(
-    (b) => (b.barbershop_id === shop.id || b.barbershop_id === "profile" || b.unit_id || b.barbershop_id.startsWith("unit_")) && b.active !== false
+    (b) => b.barbershop_id === shop.id && b.active !== false
   );
 
   const now = new Date();
@@ -116,12 +120,13 @@ router.get("/public/shop/:slug/availability", (req, res) => {
 // Gravar novo agendamento público pelo cliente final
 router.post("/public/shop/:slug/book", (req, res) => {
   const { slug } = req.params;
-  const currentSlug = db.barbershop.slug || db.settings.public_slug || "barbearia-vintage";
-  if (slug !== currentSlug && slug !== db.barbershop.id && slug !== "default") {
+  const shop = db.barbershops.find(
+    (b) => b.slug === slug || b.id === slug || (slug === "default" && b.id === DEMO_TENANT_ID)
+  ) || (slug === db.barbershop.slug || slug === db.barbershop.id ? db.barbershop : null);
+
+  if (!shop) {
     return res.status(404).json({ detail: "Barbearia não encontrada" });
   }
-
-  const shop = db.barbershop;
   const body = req.body || {};
   const { client_name, client_phone, barber_id, service_ids, date, time, notes } = body;
 
@@ -138,39 +143,40 @@ router.post("/public/shop/:slug/book", (req, res) => {
     return res.status(400).json({ detail: "Selecione a data e o horário desejados." });
   }
 
-  // Validar serviços selecionados
+  // Validar serviços selecionados estritamente para esta barbearia
   const svcs = db.services.filter(
-    (s) => (s.barbershop_id === shop.id || s.barbershop_id === "profile" || !s.barbershop_id) && s.active !== false && service_ids.includes(s.id)
+    (s) => s.barbershop_id === shop.id && s.active !== false && service_ids.includes(s.id)
   );
-  if (svcs.length === 0) {
-    return res.status(400).json({ detail: "Nenhum serviço válido selecionado." });
+  if (svcs.length === 0 || svcs.length !== service_ids.length) {
+    return res.status(400).json({ detail: "Um ou mais serviços selecionados são inválidos ou não pertencem a esta barbearia." });
   }
 
-  // Definir ou alocar barbeiro ativo
+  // Definir ou alocar barbeiro ativo estritamente desta barbearia
   const activeBarbers = db.barbers.filter(
-    (b) => (b.barbershop_id === shop.id || b.barbershop_id === "profile" || b.unit_id || b.barbershop_id.startsWith("unit_")) && b.active !== false
+    (b) => b.barbershop_id === shop.id && b.active !== false
   );
   let selectedBarber = null;
 
   if (barber_id && barber_id !== "any") {
     selectedBarber = activeBarbers.find((b) => b.id === barber_id);
     if (!selectedBarber) {
-      return res.status(400).json({ detail: "Barbeiro selecionado não encontrado." });
+      return res.status(400).json({ detail: "Barbeiro selecionado não encontrado ou não pertence a esta barbearia." });
     }
   } else {
     const busyBarberIds = db.appointments
-      .filter((a) => a.date === date && a.time === time && a.status !== "cancelado")
+      .filter((a) => a.barbershop_id === shop.id && a.date === date && a.time === time && a.status !== "cancelado")
       .map((a) => a.barber_id);
     selectedBarber = activeBarbers.find((b) => !busyBarberIds.includes(b.id)) || activeBarbers[0];
   }
 
   if (!selectedBarber) {
-    return res.status(400).json({ detail: "Nenhum barbeiro disponível para o horário selecionado." });
+    return res.status(400).json({ detail: "Nenhum barbeiro disponível para o horário selecionado nesta barbearia." });
   }
 
   // Verificar conflito de horário
   const conflict = db.appointments.find(
     (a) =>
+      a.barbershop_id === shop.id &&
       a.date === date &&
       a.time === time &&
       a.barber_id === selectedBarber.id &&
@@ -188,7 +194,7 @@ router.post("/public/shop/:slug/book", (req, res) => {
   // Vincular ou cadastrar cliente
   let client = db.clients.find(
     (c) =>
-      (c.barbershop_id === shop.id || c.barbershop_id === "profile") &&
+      c.barbershop_id === shop.id &&
       (c.phone === client_phone.trim() || c.name.toLowerCase() === client_name.trim().toLowerCase())
   );
   if (!client) {
@@ -206,7 +212,7 @@ router.post("/public/shop/:slug/book", (req, res) => {
 
   const apt: Appointment = {
     id: newId(),
-    barbershop_id: "profile",
+    barbershop_id: shop.id,
     client_name: client_name.trim(),
     client_phone: client_phone.trim(),
     client_id: client.id,
@@ -230,8 +236,10 @@ router.post("/public/shop/:slug/book", (req, res) => {
     "appointment",
     null,
     apt,
-    "Cliente Online"
+    "Cliente Online",
+    shop.id
   );
+  db.scheduleSave();
 
   // WhatsApp confirmation URL
   const shopPhone = (shop.phone || shop.shop_phone || "11999998888").replace(/\D/g, "");

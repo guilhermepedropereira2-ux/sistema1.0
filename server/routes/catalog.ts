@@ -42,7 +42,10 @@ router.put("/categories/:id", requireAuth, requirePermission("gerenciar_servicos
 
 router.delete("/categories/:id", requireAuth, requirePermission("gerenciar_servicos"), (req: Request, res: Response) => {
   const tenantId = getTenantId(req);
+  const exists = db.categories.some((c) => c.id === req.params.id && c.barbershop_id === tenantId);
+  if (!exists) return res.status(404).json({ detail: "Categoria não encontrada" });
   db.categories = db.categories.filter((c) => !(c.id === req.params.id && c.barbershop_id === tenantId));
+  db.scheduleSave();
   res.json({ ok: true });
 });
 
@@ -83,7 +86,10 @@ router.put("/services/:id", requireAuth, requirePermission("gerenciar_servicos")
 
 router.delete("/services/:id", requireAuth, requirePermission("gerenciar_servicos"), (req: Request, res: Response) => {
   const tenantId = getTenantId(req);
+  const exists = db.services.some((s) => s.id === req.params.id && s.barbershop_id === tenantId);
+  if (!exists) return res.status(404).json({ detail: "Serviço não encontrado" });
   db.services = db.services.filter((s) => !(s.id === req.params.id && s.barbershop_id === tenantId));
+  db.scheduleSave();
   res.json({ ok: true });
 });
 
@@ -125,7 +131,10 @@ router.put("/products/:id", requireAuth, requirePermission("gerenciar_produtos")
 
 router.delete("/products/:id", requireAuth, requirePermission("gerenciar_produtos"), (req: Request, res: Response) => {
   const tenantId = getTenantId(req);
+  const exists = db.products.some((p) => p.id === req.params.id && p.barbershop_id === tenantId);
+  if (!exists) return res.status(404).json({ detail: "Produto não encontrado" });
   db.products = db.products.filter((p) => !(p.id === req.params.id && p.barbershop_id === tenantId));
+  db.scheduleSave();
   res.json({ ok: true });
 });
 
@@ -276,8 +285,10 @@ router.put("/clients/:id", requireAuth, requirePermission("gerenciar_clientes"),
 router.delete("/clients/:id", requireAuth, requirePermission("gerenciar_clientes"), (req: Request, res: Response) => {
   const tenantId = getTenantId(req);
   const client = db.clients.find((c) => c.id === req.params.id && c.barbershop_id === tenantId);
+  if (!client) return res.status(404).json({ detail: "Cliente não encontrado" });
   db.clients = db.clients.filter((c) => !(c.id === req.params.id && c.barbershop_id === tenantId));
-  if (client) db.logChange(`Excluiu cliente '${client.name}'`, "client", client, null);
+  db.logChange(`Excluiu cliente '${client.name}'`, "client", client, null, (req as any).user?.name || "Administrador", tenantId);
+  db.scheduleSave();
   res.json({ ok: true });
 });
 
