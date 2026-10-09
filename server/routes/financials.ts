@@ -336,8 +336,9 @@ router.put("/expenses/:id", requireAuth, requirePermission("registrar_despesas")
 router.delete("/expenses/:id", requireAuth, requirePermission("excluir_lancamentos"), (req: Request, res: Response) => {
   const tenantId = getTenantId(req);
   const exp = db.expenses.find((e) => e.id === req.params.id && e.barbershop_id === tenantId);
+  if (!exp) return res.status(404).json({ detail: "Despesa não encontrada" });
   db.expenses = db.expenses.filter((e) => !(e.id === req.params.id && e.barbershop_id === tenantId));
-  if (exp) db.logChange(`Excluiu despesa '${exp.name}'`, "expense", exp, null);
+  db.logChange(`Excluiu despesa '${exp.name}'`, "expense", exp, null);
   res.json({ ok: true });
 });
 
@@ -385,8 +386,9 @@ router.post("/withdrawals", requireAuth, requirePermission("retirada_proprietari
 router.delete("/withdrawals/:id", requireAuth, requirePermission("excluir_lancamentos"), (req: Request, res: Response) => {
   const tenantId = getTenantId(req);
   const w = db.withdrawals.find((x) => x.id === req.params.id && x.barbershop_id === tenantId);
+  if (!w) return res.status(404).json({ detail: "Retirada não encontrada" });
   db.withdrawals = db.withdrawals.filter((x) => !(x.id === req.params.id && x.barbershop_id === tenantId));
-  if (w) db.logChange(`Excluiu retirada de ${formatBRL(w.value)}`, "withdrawal", w, null);
+  db.logChange(`Excluiu retirada de ${formatBRL(w.value)}`, "withdrawal", w, null);
   res.json({ ok: true });
 });
 
