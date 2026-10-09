@@ -1207,6 +1207,244 @@
       "active": true,
       "created_at": "2026-10-09T02:30:57.761Z",
       "is_superadmin": false
+    },
+    {
+      "id": "usr_1791513673331_7c5e",
+      "name": "Proprietário Alpha",
+      "username": "prop_a_73317",
+      "email": "prop_a_73317@barbearia.com",
+      "password": "$2b$10$M2YPEmWwQfivtAfm4p57cetdEgOl2ptRylYS51NHWw1DGtcC7Wkne",
+      "role": "dono",
+      "roles": [
+        "dono"
+      ],
+      "barbershop_id": "org_1791513673330_5w87",
+      "permissions": {
+        "ver_dashboard": true,
+        "ver_financeiro": true,
+        "ver_receitas": true,
+        "registrar_despesas": true,
+        "ver_relatorios": true,
+        "gerenciar_barbeiros": true,
+        "cadastrar_barbeiros": true,
+        "editar_barbeiros": true,
+        "gerenciar_servicos": true,
+        "gerenciar_produtos": true,
+        "gerenciar_clientes": true,
+        "gerenciar_fila": true,
+        "gerenciar_agenda": true,
+        "alterar_comissao": true,
+        "alterar_taxas": true,
+        "retirada_proprietario": true,
+        "excluir_lancamentos": true,
+        "alterar_configuracoes": true,
+        "ver_marketing": true
+      },
+      "active": true,
+      "subscriptionStatus": "trialing",
+      "subscriptionExpiresAt": "2026-10-16T02:41:13.330Z",
+      "created_at": "2026-10-09T02:41:13.449Z"
+    },
+    {
+      "id": "usr_1791513673468_h583",
+      "name": "Proprietário Beta",
+      "username": "prop_b_73317",
+      "email": "prop_b_73317@barbearia.com",
+      "password": "$2b$10$3LsgdUGYSFYbvUOyq1kqae4y3reBB36/dXFWcGhZysgzu1R3q6fDG",
+      "role": "dono",
+      "roles": [
+        "dono"
+      ],
+      "barbershop_id": "org_1791513673467_yjv9",
+      "permissions": {
+        "ver_dashboard": true,
+        "ver_financeiro": true,
+        "ver_receitas": true,
+        "registrar_despesas": true,
+        "ver_relatorios": true,
+        "gerenciar_barbeiros": true,
+        "cadastrar_barbeiros": true,
+        "editar_barbeiros": true,
+        "gerenciar_servicos": true,
+        "gerenciar_produtos": true,
+        "gerenciar_clientes": true,
+        "gerenciar_fila": true,
+        "gerenciar_agenda": true,
+        "alterar_comissao": true,
+        "alterar_taxas": true,
+        "retirada_proprietario": true,
+        "excluir_lancamentos": true,
+        "alterar_configuracoes": true,
+        "ver_marketing": true
+      },
+      "active": true,
+      "subscriptionStatus": "trialing",
+      "subscriptionExpiresAt": "2026-10-16T02:41:13.467Z",
+      "created_at": "2026-10-09T02:41:13.554Z"
+    },
+    {
+      "id": "usr_1791513757483_m3nf",
+      "name": "Dono Barbearia Alpha",
+      "username": "dono_a_57480",
+      "email": "dono_a_57480@barbearia.com",
+      "password": "$2b$10$JCgoHXb/q.9erzI5/GXOFuu2MJsJPmQTEVQHAoZgpSCuHedVlvhgi",
+      "role": "dono",
+      "roles": [
+        "dono"
+      ],
+      "barbershop_id": "org_1791513757482_us0j",
+      "permissions": {
+        "ver_dashboard": true,
+        "ver_financeiro": true,
+        "ver_receitas": true,
+        "registrar_despesas": true,
+        "ver_relatorios": true,
+        "gerenciar_barbeiros": true,
+        "cadastrar_barbeiros": true,
+        "editar_barbeiros": true,
+        "gerenciar_servicos": true,
+        "gerenciar_produtos": true,
+        "gerenciar_clientes": true,
+        "gerenciar_fila": true,
+        "gerenciar_agenda": true,
+        "alterar_comissao": true,
+        "alterar_taxas": true,
+        "retirada_proprietario": true,
+        "excluir_lancamentos": true,
+        "alterar_configuracoes": true,
+        "ver_marketing": true
+      },
+      "active": true,
+      "subscriptionStatus": "trialing",
+      "subscriptionExpiresAt": "2026-10-16T02:42:37.482Z",
+      "created_at": "2026-10-09T02:42:37.570Z"
+    },
+    {
+      "id": "usr_1791513757576_z4oq",
+      "name": "Dono Barbearia Beta",
+      "username": "dono_b_57480",
+      "email": "dono_b_57480@barbearia.com",
+      "password": "$2b$10$1.NiwEEKzb95M4gTaWy4AOBddHfSqGu3tKgsqoPKANPP7wKuJM3BO",
+      "role": "dono",
+      "roles": [
+        "dono"
+      ],
+      "barbershop_id": "org_1791513757576_ljgu",
+      "permissions": {
+        "ver_dashboard": true,
+        "ver_financeiro": true,
+        "ver_receitas": true,
+        "registrar_despesas": true,
+        "ver_relatorios": true,
+        "gerenciar_barbeiros": true,
+        "cadastrar_barbeiros": true,
+        "editar_barbeiros": true,
+        "gerenciar_servicos": true,
+        "gerenciar_produtos": true,
+        "gerenciar_clientes": true,
+        "gerenciar_fila": true,
+        "gerenciar_agenda": true,
+        "alterar_comissao": true,
+        "alterar_taxas": true,
+        "retirada_proprietario": true,
+        "excluir_lancamentos": true,
+        "alterar_configuracoes": true,
+        "ver_marketing": true
+      },
+      "active": true,
+      "subscriptionStatus": "trialing",
+      "subscriptionExpiresAt": "2026-10-16T02:42:37.575Z",
+      "created_at": "2026-10-09T02:42:37.658Z"
+    },
+    {
+      "id": "usr_timbu34mv0d1ah0",
+      "name": "Barbeiro Teste",
+      "username": "barbeiro_57480",
+      "password": "$2b$10$1lUJ9PhpK2cz5496xNNUROmsa6R7MvFYe/rabyRQ8GRO/N26.4Yz.",
+      "email": "barbeiro_57480@barbearia.com",
+      "role": "barbeiro",
+      "roles": [
+        "barbeiro"
+      ],
+      "barbershop_id": "org_1791513757482_us0j",
+      "permissions": {},
+      "active": true,
+      "created_at": "2026-10-09T02:42:37.764Z",
+      "is_superadmin": false
+    },
+    {
+      "id": "usr_1791513766851_cg7v",
+      "name": "Proprietário Alpha",
+      "username": "prop_a_66849",
+      "email": "prop_a_66849@barbearia.com",
+      "password": "$2b$10$EqVy/.3j7grZYV8cgen0fufod2Uof2Q0H90FSvzJfcWSiYigQBMQO",
+      "role": "dono",
+      "roles": [
+        "dono"
+      ],
+      "barbershop_id": "org_1791513766850_hpfq",
+      "permissions": {
+        "ver_dashboard": true,
+        "ver_financeiro": true,
+        "ver_receitas": true,
+        "registrar_despesas": true,
+        "ver_relatorios": true,
+        "gerenciar_barbeiros": true,
+        "cadastrar_barbeiros": true,
+        "editar_barbeiros": true,
+        "gerenciar_servicos": true,
+        "gerenciar_produtos": true,
+        "gerenciar_clientes": true,
+        "gerenciar_fila": true,
+        "gerenciar_agenda": true,
+        "alterar_comissao": true,
+        "alterar_taxas": true,
+        "retirada_proprietario": true,
+        "excluir_lancamentos": true,
+        "alterar_configuracoes": true,
+        "ver_marketing": true
+      },
+      "active": true,
+      "subscriptionStatus": "trialing",
+      "subscriptionExpiresAt": "2026-10-16T02:42:46.850Z",
+      "created_at": "2026-10-09T02:42:46.936Z"
+    },
+    {
+      "id": "usr_1791513766942_gw19",
+      "name": "Proprietário Beta",
+      "username": "prop_b_66849",
+      "email": "prop_b_66849@barbearia.com",
+      "password": "$2b$10$W5X6xgW6wiZP1JXgG1XDy.OIDmD/M/xZSi7gMDhSR21AozhN.yyQu",
+      "role": "dono",
+      "roles": [
+        "dono"
+      ],
+      "barbershop_id": "org_1791513766941_aly0",
+      "permissions": {
+        "ver_dashboard": true,
+        "ver_financeiro": true,
+        "ver_receitas": true,
+        "registrar_despesas": true,
+        "ver_relatorios": true,
+        "gerenciar_barbeiros": true,
+        "cadastrar_barbeiros": true,
+        "editar_barbeiros": true,
+        "gerenciar_servicos": true,
+        "gerenciar_produtos": true,
+        "gerenciar_clientes": true,
+        "gerenciar_fila": true,
+        "gerenciar_agenda": true,
+        "alterar_comissao": true,
+        "alterar_taxas": true,
+        "retirada_proprietario": true,
+        "excluir_lancamentos": true,
+        "alterar_configuracoes": true,
+        "ver_marketing": true
+      },
+      "active": true,
+      "subscriptionStatus": "trialing",
+      "subscriptionExpiresAt": "2026-10-16T02:42:46.941Z",
+      "created_at": "2026-10-09T02:42:47.025Z"
     }
   ],
   "barbers": [
@@ -1536,6 +1774,90 @@
       "authorized_products": [],
       "active": true,
       "created_at": "2026-10-09T02:30:44.082Z"
+    },
+    {
+      "id": "fgw1cz1mv0czhia",
+      "barbershop_id": "org_1791513673330_5w87",
+      "unit_id": "unit_q2wwgixmv0czhf0",
+      "unit_ids": [
+        "unit_q2wwgixmv0czhf0"
+      ],
+      "name": "Barbeiro Alpha 73317",
+      "commission_percent": 50,
+      "commission_type": "percentual",
+      "commission_value": 0,
+      "commission_overrides": {},
+      "phone": "11911112222",
+      "join_date": "2026-10-09",
+      "authorized_services": [
+        "4kmhqjnmv0czhi2"
+      ],
+      "authorized_products": [],
+      "active": true,
+      "created_at": "2026-10-09T02:41:13.570Z"
+    },
+    {
+      "id": "7nnrrfjmv0czhih",
+      "barbershop_id": "org_1791513673467_yjv9",
+      "unit_id": "unit_xtt55fvmv0czhhu",
+      "unit_ids": [
+        "unit_xtt55fvmv0czhhu"
+      ],
+      "name": "Barbeiro Beta 73317",
+      "commission_percent": 45,
+      "commission_type": "percentual",
+      "commission_value": 0,
+      "commission_overrides": {},
+      "phone": "11933334444",
+      "join_date": "2026-10-09",
+      "authorized_services": [
+        "ftyi4kemv0czhid"
+      ],
+      "authorized_products": [],
+      "active": true,
+      "created_at": "2026-10-09T02:41:13.577Z"
+    },
+    {
+      "id": "9n3mkflmv0d1hmk",
+      "barbershop_id": "org_1791513766850_hpfq",
+      "unit_id": "unit_x7i5gqwmv0d1hjs",
+      "unit_ids": [
+        "unit_x7i5gqwmv0d1hjs"
+      ],
+      "name": "Barbeiro Alpha 66849",
+      "commission_percent": 50,
+      "commission_type": "percentual",
+      "commission_value": 0,
+      "commission_overrides": {},
+      "phone": "11911112222",
+      "join_date": "2026-10-09",
+      "authorized_services": [
+        "pyltd3omv0d1hmh"
+      ],
+      "authorized_products": [],
+      "active": true,
+      "created_at": "2026-10-09T02:42:47.036Z"
+    },
+    {
+      "id": "40zgjnvmv0d1hms",
+      "barbershop_id": "org_1791513766941_aly0",
+      "unit_id": "unit_yko3ym9mv0d1hm9",
+      "unit_ids": [
+        "unit_yko3ym9mv0d1hm9"
+      ],
+      "name": "Barbeiro Beta 66849",
+      "commission_percent": 45,
+      "commission_type": "percentual",
+      "commission_value": 0,
+      "commission_overrides": {},
+      "phone": "11933334444",
+      "join_date": "2026-10-09",
+      "authorized_services": [
+        "fa7ddcemv0d1hmp"
+      ],
+      "authorized_products": [],
+      "active": true,
+      "created_at": "2026-10-09T02:42:47.044Z"
     }
   ],
   "barbershops": [
@@ -1893,6 +2215,90 @@
       "id": "org_1791513057586_947e",
       "name": "Barbearia Beta 57495",
       "slug": "barbearia-beta-57495-7586",
+      "document": "",
+      "phone": "",
+      "address": "",
+      "logo_url": "",
+      "opening_hours": "Segunda a Sábado das 09h às 20h",
+      "city": "São Paulo",
+      "state": "SP",
+      "shop_phone": "",
+      "operational_mode": "hibrido"
+    },
+    {
+      "id": "org_1791513673330_5w87",
+      "name": "Barbearia Alpha 73317",
+      "slug": "barbearia-alpha-73317-3330",
+      "document": "",
+      "phone": "",
+      "address": "",
+      "logo_url": "",
+      "opening_hours": "Segunda a Sábado das 09h às 20h",
+      "city": "São Paulo",
+      "state": "SP",
+      "shop_phone": "",
+      "operational_mode": "hibrido"
+    },
+    {
+      "id": "org_1791513673467_yjv9",
+      "name": "Barbearia Beta 73317",
+      "slug": "barbearia-beta-73317-3467",
+      "document": "",
+      "phone": "",
+      "address": "",
+      "logo_url": "",
+      "opening_hours": "Segunda a Sábado das 09h às 20h",
+      "city": "São Paulo",
+      "state": "SP",
+      "shop_phone": "",
+      "operational_mode": "hibrido"
+    },
+    {
+      "id": "org_1791513757482_us0j",
+      "name": "Barbearia Alpha 57480",
+      "slug": "barbearia-alpha-57480-7482",
+      "document": "",
+      "phone": "",
+      "address": "",
+      "logo_url": "",
+      "opening_hours": "Segunda a Sábado das 09h às 20h",
+      "city": "São Paulo",
+      "state": "SP",
+      "shop_phone": "",
+      "operational_mode": "hibrido"
+    },
+    {
+      "id": "org_1791513757576_ljgu",
+      "name": "Barbearia Beta 57480",
+      "slug": "barbearia-beta-57480-7575",
+      "document": "",
+      "phone": "",
+      "address": "",
+      "logo_url": "",
+      "opening_hours": "Segunda a Sábado das 09h às 20h",
+      "city": "São Paulo",
+      "state": "SP",
+      "shop_phone": "",
+      "operational_mode": "hibrido"
+    },
+    {
+      "id": "org_1791513766850_hpfq",
+      "name": "Barbearia Alpha 66849",
+      "slug": "barbearia-alpha-66849-6850",
+      "document": "",
+      "phone": "",
+      "address": "",
+      "logo_url": "",
+      "opening_hours": "Segunda a Sábado das 09h às 20h",
+      "city": "São Paulo",
+      "state": "SP",
+      "shop_phone": "",
+      "operational_mode": "hibrido"
+    },
+    {
+      "id": "org_1791513766941_aly0",
+      "name": "Barbearia Beta 66849",
+      "slug": "barbearia-beta-66849-6941",
       "document": "",
       "phone": "",
       "address": "",
@@ -3192,6 +3598,294 @@
       },
       "active": true,
       "created_at": "2026-10-09T02:30:57.668Z"
+    },
+    {
+      "id": "pm_dinheiro_o5kitffmv0czhf0",
+      "barbershop_id": "org_1791513673330_5w87",
+      "name": "Dinheiro",
+      "kind": "dinheiro",
+      "fees": {
+        "dinheiro": 0
+      },
+      "settlement_days": {
+        "dinheiro": 0
+      },
+      "active": true,
+      "created_at": "2026-10-09T02:41:13.452Z"
+    },
+    {
+      "id": "pm_pix_zvra9w6mv0czhf0",
+      "barbershop_id": "org_1791513673330_5w87",
+      "name": "PIX",
+      "kind": "pix",
+      "fees": {
+        "pix": 0
+      },
+      "settlement_days": {
+        "pix": 0
+      },
+      "active": true,
+      "created_at": "2026-10-09T02:41:13.452Z"
+    },
+    {
+      "id": "pm_cartao_cpg02k4mv0czhf0",
+      "barbershop_id": "org_1791513673330_5w87",
+      "name": "Cartão Débito / Crédito",
+      "kind": "maquininha",
+      "fees": {
+        "debito": 1.99,
+        "credito_vista": 3.15,
+        "credito_parcelado": 4.6,
+        "pix": 0.99
+      },
+      "settlement_days": {
+        "debito": 1,
+        "credito_vista": 1,
+        "credito_parcelado": 30,
+        "pix": 0
+      },
+      "active": true,
+      "created_at": "2026-10-09T02:41:13.452Z"
+    },
+    {
+      "id": "pm_dinheiro_ghhvix5mv0czhhu",
+      "barbershop_id": "org_1791513673467_yjv9",
+      "name": "Dinheiro",
+      "kind": "dinheiro",
+      "fees": {
+        "dinheiro": 0
+      },
+      "settlement_days": {
+        "dinheiro": 0
+      },
+      "active": true,
+      "created_at": "2026-10-09T02:41:13.554Z"
+    },
+    {
+      "id": "pm_pix_s7sys7zmv0czhhu",
+      "barbershop_id": "org_1791513673467_yjv9",
+      "name": "PIX",
+      "kind": "pix",
+      "fees": {
+        "pix": 0
+      },
+      "settlement_days": {
+        "pix": 0
+      },
+      "active": true,
+      "created_at": "2026-10-09T02:41:13.554Z"
+    },
+    {
+      "id": "pm_cartao_04pnfpmmv0czhhu",
+      "barbershop_id": "org_1791513673467_yjv9",
+      "name": "Cartão Débito / Crédito",
+      "kind": "maquininha",
+      "fees": {
+        "debito": 1.99,
+        "credito_vista": 3.15,
+        "credito_parcelado": 4.6,
+        "pix": 0.99
+      },
+      "settlement_days": {
+        "debito": 1,
+        "credito_vista": 1,
+        "credito_parcelado": 30,
+        "pix": 0
+      },
+      "active": true,
+      "created_at": "2026-10-09T02:41:13.554Z"
+    },
+    {
+      "id": "pm_dinheiro_orrmijtmv0d1abn",
+      "barbershop_id": "org_1791513757482_us0j",
+      "name": "Dinheiro",
+      "kind": "dinheiro",
+      "fees": {
+        "dinheiro": 0
+      },
+      "settlement_days": {
+        "dinheiro": 0
+      },
+      "active": true,
+      "created_at": "2026-10-09T02:42:37.571Z"
+    },
+    {
+      "id": "pm_pix_7gj1xokmv0d1abn",
+      "barbershop_id": "org_1791513757482_us0j",
+      "name": "PIX",
+      "kind": "pix",
+      "fees": {
+        "pix": 0
+      },
+      "settlement_days": {
+        "pix": 0
+      },
+      "active": true,
+      "created_at": "2026-10-09T02:42:37.571Z"
+    },
+    {
+      "id": "pm_cartao_sjgcpyzmv0d1abn",
+      "barbershop_id": "org_1791513757482_us0j",
+      "name": "Cartão Débito / Crédito",
+      "kind": "maquininha",
+      "fees": {
+        "debito": 1.99,
+        "credito_vista": 3.15,
+        "credito_parcelado": 4.6,
+        "pix": 0.99
+      },
+      "settlement_days": {
+        "debito": 1,
+        "credito_vista": 1,
+        "credito_parcelado": 30,
+        "pix": 0
+      },
+      "active": true,
+      "created_at": "2026-10-09T02:42:37.571Z"
+    },
+    {
+      "id": "pm_dinheiro_ob1m1cbmv0d1ae2",
+      "barbershop_id": "org_1791513757576_ljgu",
+      "name": "Dinheiro",
+      "kind": "dinheiro",
+      "fees": {
+        "dinheiro": 0
+      },
+      "settlement_days": {
+        "dinheiro": 0
+      },
+      "active": true,
+      "created_at": "2026-10-09T02:42:37.658Z"
+    },
+    {
+      "id": "pm_pix_6gt2e8tmv0d1ae2",
+      "barbershop_id": "org_1791513757576_ljgu",
+      "name": "PIX",
+      "kind": "pix",
+      "fees": {
+        "pix": 0
+      },
+      "settlement_days": {
+        "pix": 0
+      },
+      "active": true,
+      "created_at": "2026-10-09T02:42:37.658Z"
+    },
+    {
+      "id": "pm_cartao_roeeir5mv0d1ae2",
+      "barbershop_id": "org_1791513757576_ljgu",
+      "name": "Cartão Débito / Crédito",
+      "kind": "maquininha",
+      "fees": {
+        "debito": 1.99,
+        "credito_vista": 3.15,
+        "credito_parcelado": 4.6,
+        "pix": 0.99
+      },
+      "settlement_days": {
+        "debito": 1,
+        "credito_vista": 1,
+        "credito_parcelado": 30,
+        "pix": 0
+      },
+      "active": true,
+      "created_at": "2026-10-09T02:42:37.658Z"
+    },
+    {
+      "id": "pm_dinheiro_2wo3nrcmv0d1hjs",
+      "barbershop_id": "org_1791513766850_hpfq",
+      "name": "Dinheiro",
+      "kind": "dinheiro",
+      "fees": {
+        "dinheiro": 0
+      },
+      "settlement_days": {
+        "dinheiro": 0
+      },
+      "active": true,
+      "created_at": "2026-10-09T02:42:46.936Z"
+    },
+    {
+      "id": "pm_pix_39pjbwcmv0d1hjs",
+      "barbershop_id": "org_1791513766850_hpfq",
+      "name": "PIX",
+      "kind": "pix",
+      "fees": {
+        "pix": 0
+      },
+      "settlement_days": {
+        "pix": 0
+      },
+      "active": true,
+      "created_at": "2026-10-09T02:42:46.936Z"
+    },
+    {
+      "id": "pm_cartao_62hgeb0mv0d1hjs",
+      "barbershop_id": "org_1791513766850_hpfq",
+      "name": "Cartão Débito / Crédito",
+      "kind": "maquininha",
+      "fees": {
+        "debito": 1.99,
+        "credito_vista": 3.15,
+        "credito_parcelado": 4.6,
+        "pix": 0.99
+      },
+      "settlement_days": {
+        "debito": 1,
+        "credito_vista": 1,
+        "credito_parcelado": 30,
+        "pix": 0
+      },
+      "active": true,
+      "created_at": "2026-10-09T02:42:46.936Z"
+    },
+    {
+      "id": "pm_dinheiro_plwvovqmv0d1hm9",
+      "barbershop_id": "org_1791513766941_aly0",
+      "name": "Dinheiro",
+      "kind": "dinheiro",
+      "fees": {
+        "dinheiro": 0
+      },
+      "settlement_days": {
+        "dinheiro": 0
+      },
+      "active": true,
+      "created_at": "2026-10-09T02:42:47.025Z"
+    },
+    {
+      "id": "pm_pix_53nrfzmmv0d1hm9",
+      "barbershop_id": "org_1791513766941_aly0",
+      "name": "PIX",
+      "kind": "pix",
+      "fees": {
+        "pix": 0
+      },
+      "settlement_days": {
+        "pix": 0
+      },
+      "active": true,
+      "created_at": "2026-10-09T02:42:47.025Z"
+    },
+    {
+      "id": "pm_cartao_5m2bpecmv0d1hm9",
+      "barbershop_id": "org_1791513766941_aly0",
+      "name": "Cartão Débito / Crédito",
+      "kind": "maquininha",
+      "fees": {
+        "debito": 1.99,
+        "credito_vista": 3.15,
+        "credito_parcelado": 4.6,
+        "pix": 0.99
+      },
+      "settlement_days": {
+        "debito": 1,
+        "credito_vista": 1,
+        "credito_parcelado": 30,
+        "pix": 0
+      },
+      "active": true,
+      "created_at": "2026-10-09T02:42:47.025Z"
     }
   ],
   "services": [
@@ -3424,6 +4118,56 @@
       "icon": "corte_tradicional",
       "active": true,
       "created_at": "2026-10-09T02:30:57.672Z"
+    },
+    {
+      "id": "4kmhqjnmv0czhi2",
+      "barbershop_id": "org_1791513673330_5w87",
+      "name": "Corte Alpha 73317",
+      "price": 75,
+      "duration_min": 30,
+      "icon": "corte_tradicional",
+      "active": true,
+      "created_at": "2026-10-09T02:41:13.562Z"
+    },
+    {
+      "id": "ftyi4kemv0czhid",
+      "barbershop_id": "org_1791513673467_yjv9",
+      "name": "Corte Beta 73317",
+      "price": 60,
+      "duration_min": 30,
+      "icon": "corte_tradicional",
+      "active": true,
+      "created_at": "2026-10-09T02:41:13.573Z"
+    },
+    {
+      "id": "otm6ue0mv0d1ae9",
+      "barbershop_id": "org_1791513757482_us0j",
+      "name": "Corte Alpha Especial 57480",
+      "price": 85,
+      "duration_min": 45,
+      "icon": "corte_tradicional",
+      "active": true,
+      "created_at": "2026-10-09T02:42:37.665Z"
+    },
+    {
+      "id": "pyltd3omv0d1hmh",
+      "barbershop_id": "org_1791513766850_hpfq",
+      "name": "Corte Alpha 66849",
+      "price": 75,
+      "duration_min": 30,
+      "icon": "corte_tradicional",
+      "active": true,
+      "created_at": "2026-10-09T02:42:47.033Z"
+    },
+    {
+      "id": "fa7ddcemv0d1hmp",
+      "barbershop_id": "org_1791513766941_aly0",
+      "name": "Corte Beta 66849",
+      "price": 60,
+      "duration_min": 30,
+      "icon": "corte_tradicional",
+      "active": true,
+      "created_at": "2026-10-09T02:42:47.041Z"
     }
   ],
   "products": [
@@ -6797,6 +7541,24 @@
       "has_plan": false,
       "notes": "Cliente cadastrado via agendamento público online",
       "created_at": "2026-10-09T02:30:44.092Z"
+    },
+    {
+      "id": "5pyn0ztmv0czhiw",
+      "barbershop_id": "org_1791513673330_5w87",
+      "name": "Cliente Legítimo Alpha",
+      "phone": "11977776666",
+      "has_plan": false,
+      "notes": "Cliente cadastrado via agendamento público online",
+      "created_at": "2026-10-09T02:41:13.592Z"
+    },
+    {
+      "id": "3yztyvkmv0d1hn1",
+      "barbershop_id": "org_1791513766850_hpfq",
+      "name": "Cliente Legítimo Alpha",
+      "phone": "11977776666",
+      "has_plan": false,
+      "notes": "Cliente cadastrado via agendamento público online",
+      "created_at": "2026-10-09T02:42:47.053Z"
     }
   ],
   "customerPlans": [
@@ -7332,9 +8094,330 @@
       "status": "confirmado",
       "notes": "[Agendamento Online via Link Público]",
       "created_at": "2026-10-09T02:30:44.092Z"
+    },
+    {
+      "id": "syxqzxzmv0czhiw",
+      "barbershop_id": "org_1791513673330_5w87",
+      "client_name": "Cliente Legítimo Alpha",
+      "client_phone": "11977776666",
+      "client_id": "5pyn0ztmv0czhiw",
+      "barber_id": "fgw1cz1mv0czhia",
+      "barber_name": "Barbeiro Alpha 73317",
+      "service_ids": [
+        "4kmhqjnmv0czhi2"
+      ],
+      "service_names": [
+        "Corte Alpha 73317"
+      ],
+      "date": "2026-10-18",
+      "time": "11:00",
+      "duration_min": 30,
+      "price": 75,
+      "status": "confirmado",
+      "notes": "[Agendamento Online via Link Público]",
+      "created_at": "2026-10-09T02:41:13.592Z"
+    },
+    {
+      "id": "vurk12bmv0d1hn1",
+      "barbershop_id": "org_1791513766850_hpfq",
+      "client_name": "Cliente Legítimo Alpha",
+      "client_phone": "11977776666",
+      "client_id": "3yztyvkmv0d1hn1",
+      "barber_id": "9n3mkflmv0d1hmk",
+      "barber_name": "Barbeiro Alpha 66849",
+      "service_ids": [
+        "pyltd3omv0d1hmh"
+      ],
+      "service_names": [
+        "Corte Alpha 66849"
+      ],
+      "date": "2026-10-18",
+      "time": "11:00",
+      "duration_min": 30,
+      "price": 75,
+      "status": "confirmado",
+      "notes": "[Agendamento Online via Link Público]",
+      "created_at": "2026-10-09T02:42:47.053Z"
     }
   ],
   "history": [
+    {
+      "id": "h488gq1mv0d1hn1",
+      "barbershop_id": "org_1791513766850_hpfq",
+      "user": "Cliente Online",
+      "timestamp": "2026-10-09T02:42:47.053Z",
+      "action": "Novo agendamento online de 'Cliente Legítimo Alpha' para 2026-10-18 às 11:00 com Barbeiro Alpha 66849",
+      "entity": "appointment",
+      "before": null,
+      "after": {
+        "id": "vurk12bmv0d1hn1",
+        "barbershop_id": "org_1791513766850_hpfq",
+        "client_name": "Cliente Legítimo Alpha",
+        "client_phone": "11977776666",
+        "client_id": "3yztyvkmv0d1hn1",
+        "barber_id": "9n3mkflmv0d1hmk",
+        "barber_name": "Barbeiro Alpha 66849",
+        "service_ids": [
+          "pyltd3omv0d1hmh"
+        ],
+        "service_names": [
+          "Corte Alpha 66849"
+        ],
+        "date": "2026-10-18",
+        "time": "11:00",
+        "duration_min": 30,
+        "price": 75,
+        "status": "confirmado",
+        "notes": "[Agendamento Online via Link Público]",
+        "created_at": "2026-10-09T02:42:47.053Z"
+      }
+    },
+    {
+      "id": "ipbksammv0d1hms",
+      "barbershop_id": "demo_vintage",
+      "user": "Administrador",
+      "timestamp": "2026-10-09T02:42:47.044Z",
+      "action": "Cadastrou barbeiro 'Barbeiro Beta 66849'",
+      "entity": "barber",
+      "before": null,
+      "after": {
+        "id": "40zgjnvmv0d1hms",
+        "barbershop_id": "org_1791513766941_aly0",
+        "unit_id": "unit_yko3ym9mv0d1hm9",
+        "unit_ids": [
+          "unit_yko3ym9mv0d1hm9"
+        ],
+        "name": "Barbeiro Beta 66849",
+        "commission_percent": 45,
+        "commission_type": "percentual",
+        "commission_value": 0,
+        "commission_overrides": {},
+        "phone": "11933334444",
+        "join_date": "2026-10-09",
+        "authorized_services": [
+          "fa7ddcemv0d1hmp"
+        ],
+        "authorized_products": [],
+        "active": true,
+        "created_at": "2026-10-09T02:42:47.044Z"
+      }
+    },
+    {
+      "id": "b1ak4otmv0d1hmp",
+      "barbershop_id": "demo_vintage",
+      "user": "Administrador",
+      "timestamp": "2026-10-09T02:42:47.041Z",
+      "action": "Cadastrou serviço 'Corte Beta 66849' (R$ 60,00)",
+      "entity": "service",
+      "before": null,
+      "after": {
+        "id": "fa7ddcemv0d1hmp",
+        "barbershop_id": "org_1791513766941_aly0",
+        "name": "Corte Beta 66849",
+        "price": 60,
+        "duration_min": 30,
+        "icon": "corte_tradicional",
+        "active": true,
+        "created_at": "2026-10-09T02:42:47.041Z"
+      }
+    },
+    {
+      "id": "6lwjsw3mv0d1hmk",
+      "barbershop_id": "demo_vintage",
+      "user": "Administrador",
+      "timestamp": "2026-10-09T02:42:47.036Z",
+      "action": "Cadastrou barbeiro 'Barbeiro Alpha 66849'",
+      "entity": "barber",
+      "before": null,
+      "after": {
+        "id": "9n3mkflmv0d1hmk",
+        "barbershop_id": "org_1791513766850_hpfq",
+        "unit_id": "unit_x7i5gqwmv0d1hjs",
+        "unit_ids": [
+          "unit_x7i5gqwmv0d1hjs"
+        ],
+        "name": "Barbeiro Alpha 66849",
+        "commission_percent": 50,
+        "commission_type": "percentual",
+        "commission_value": 0,
+        "commission_overrides": {},
+        "phone": "11911112222",
+        "join_date": "2026-10-09",
+        "authorized_services": [
+          "pyltd3omv0d1hmh"
+        ],
+        "authorized_products": [],
+        "active": true,
+        "created_at": "2026-10-09T02:42:47.036Z"
+      }
+    },
+    {
+      "id": "fqc79cgmv0d1hmh",
+      "barbershop_id": "demo_vintage",
+      "user": "Administrador",
+      "timestamp": "2026-10-09T02:42:47.033Z",
+      "action": "Cadastrou serviço 'Corte Alpha 66849' (R$ 75,00)",
+      "entity": "service",
+      "before": null,
+      "after": {
+        "id": "pyltd3omv0d1hmh",
+        "barbershop_id": "org_1791513766850_hpfq",
+        "name": "Corte Alpha 66849",
+        "price": 75,
+        "duration_min": 30,
+        "icon": "corte_tradicional",
+        "active": true,
+        "created_at": "2026-10-09T02:42:47.033Z"
+      }
+    },
+    {
+      "id": "a8c1es0mv0d1ae9",
+      "barbershop_id": "demo_vintage",
+      "user": "Administrador",
+      "timestamp": "2026-10-09T02:42:37.665Z",
+      "action": "Cadastrou serviço 'Corte Alpha Especial 57480' (R$ 85,00)",
+      "entity": "service",
+      "before": null,
+      "after": {
+        "id": "otm6ue0mv0d1ae9",
+        "barbershop_id": "org_1791513757482_us0j",
+        "name": "Corte Alpha Especial 57480",
+        "price": 85,
+        "duration_min": 45,
+        "icon": "corte_tradicional",
+        "active": true,
+        "created_at": "2026-10-09T02:42:37.665Z"
+      }
+    },
+    {
+      "id": "zv2otjimv0czhiw",
+      "barbershop_id": "org_1791513673330_5w87",
+      "user": "Cliente Online",
+      "timestamp": "2026-10-09T02:41:13.592Z",
+      "action": "Novo agendamento online de 'Cliente Legítimo Alpha' para 2026-10-18 às 11:00 com Barbeiro Alpha 73317",
+      "entity": "appointment",
+      "before": null,
+      "after": {
+        "id": "syxqzxzmv0czhiw",
+        "barbershop_id": "org_1791513673330_5w87",
+        "client_name": "Cliente Legítimo Alpha",
+        "client_phone": "11977776666",
+        "client_id": "5pyn0ztmv0czhiw",
+        "barber_id": "fgw1cz1mv0czhia",
+        "barber_name": "Barbeiro Alpha 73317",
+        "service_ids": [
+          "4kmhqjnmv0czhi2"
+        ],
+        "service_names": [
+          "Corte Alpha 73317"
+        ],
+        "date": "2026-10-18",
+        "time": "11:00",
+        "duration_min": 30,
+        "price": 75,
+        "status": "confirmado",
+        "notes": "[Agendamento Online via Link Público]",
+        "created_at": "2026-10-09T02:41:13.592Z"
+      }
+    },
+    {
+      "id": "km3jxvnmv0czhih",
+      "barbershop_id": "demo_vintage",
+      "user": "Administrador",
+      "timestamp": "2026-10-09T02:41:13.577Z",
+      "action": "Cadastrou barbeiro 'Barbeiro Beta 73317'",
+      "entity": "barber",
+      "before": null,
+      "after": {
+        "id": "7nnrrfjmv0czhih",
+        "barbershop_id": "org_1791513673467_yjv9",
+        "unit_id": "unit_xtt55fvmv0czhhu",
+        "unit_ids": [
+          "unit_xtt55fvmv0czhhu"
+        ],
+        "name": "Barbeiro Beta 73317",
+        "commission_percent": 45,
+        "commission_type": "percentual",
+        "commission_value": 0,
+        "commission_overrides": {},
+        "phone": "11933334444",
+        "join_date": "2026-10-09",
+        "authorized_services": [
+          "ftyi4kemv0czhid"
+        ],
+        "authorized_products": [],
+        "active": true,
+        "created_at": "2026-10-09T02:41:13.577Z"
+      }
+    },
+    {
+      "id": "fzambmvmv0czhid",
+      "barbershop_id": "demo_vintage",
+      "user": "Administrador",
+      "timestamp": "2026-10-09T02:41:13.573Z",
+      "action": "Cadastrou serviço 'Corte Beta 73317' (R$ 60,00)",
+      "entity": "service",
+      "before": null,
+      "after": {
+        "id": "ftyi4kemv0czhid",
+        "barbershop_id": "org_1791513673467_yjv9",
+        "name": "Corte Beta 73317",
+        "price": 60,
+        "duration_min": 30,
+        "icon": "corte_tradicional",
+        "active": true,
+        "created_at": "2026-10-09T02:41:13.573Z"
+      }
+    },
+    {
+      "id": "k4ibmsymv0czhia",
+      "barbershop_id": "demo_vintage",
+      "user": "Administrador",
+      "timestamp": "2026-10-09T02:41:13.570Z",
+      "action": "Cadastrou barbeiro 'Barbeiro Alpha 73317'",
+      "entity": "barber",
+      "before": null,
+      "after": {
+        "id": "fgw1cz1mv0czhia",
+        "barbershop_id": "org_1791513673330_5w87",
+        "unit_id": "unit_q2wwgixmv0czhf0",
+        "unit_ids": [
+          "unit_q2wwgixmv0czhf0"
+        ],
+        "name": "Barbeiro Alpha 73317",
+        "commission_percent": 50,
+        "commission_type": "percentual",
+        "commission_value": 0,
+        "commission_overrides": {},
+        "phone": "11911112222",
+        "join_date": "2026-10-09",
+        "authorized_services": [
+          "4kmhqjnmv0czhi2"
+        ],
+        "authorized_products": [],
+        "active": true,
+        "created_at": "2026-10-09T02:41:13.570Z"
+      }
+    },
+    {
+      "id": "rjimsjpmv0czhi2",
+      "barbershop_id": "demo_vintage",
+      "user": "Administrador",
+      "timestamp": "2026-10-09T02:41:13.562Z",
+      "action": "Cadastrou serviço 'Corte Alpha 73317' (R$ 75,00)",
+      "entity": "service",
+      "before": null,
+      "after": {
+        "id": "4kmhqjnmv0czhi2",
+        "barbershop_id": "org_1791513673330_5w87",
+        "name": "Corte Alpha 73317",
+        "price": 75,
+        "duration_min": 30,
+        "icon": "corte_tradicional",
+        "active": true,
+        "created_at": "2026-10-09T02:41:13.562Z"
+      }
+    },
     {
       "id": "iqn0s9xmv0cmaa0",
       "barbershop_id": "demo_vintage",
@@ -8774,6 +9857,90 @@
       "is_main": true,
       "operational_mode": "hibrido",
       "created_at": "2026-10-09T02:30:57.668Z"
+    },
+    {
+      "id": "unit_q2wwgixmv0czhf0",
+      "barbershop_id": "org_1791513673330_5w87",
+      "name": "Barbearia Alpha 73317 (Matriz)",
+      "short_name": "Matriz",
+      "slug": "barbearia-alpha-73317-3330-matriz",
+      "address": "",
+      "phone": "",
+      "city": "São Paulo",
+      "state": "SP",
+      "is_main": true,
+      "operational_mode": "hibrido",
+      "created_at": "2026-10-09T02:41:13.452Z"
+    },
+    {
+      "id": "unit_xtt55fvmv0czhhu",
+      "barbershop_id": "org_1791513673467_yjv9",
+      "name": "Barbearia Beta 73317 (Matriz)",
+      "short_name": "Matriz",
+      "slug": "barbearia-beta-73317-3467-matriz",
+      "address": "",
+      "phone": "",
+      "city": "São Paulo",
+      "state": "SP",
+      "is_main": true,
+      "operational_mode": "hibrido",
+      "created_at": "2026-10-09T02:41:13.554Z"
+    },
+    {
+      "id": "unit_sxbpz2ymv0d1abn",
+      "barbershop_id": "org_1791513757482_us0j",
+      "name": "Barbearia Alpha 57480 (Matriz)",
+      "short_name": "Matriz",
+      "slug": "barbearia-alpha-57480-7482-matriz",
+      "address": "",
+      "phone": "",
+      "city": "São Paulo",
+      "state": "SP",
+      "is_main": true,
+      "operational_mode": "hibrido",
+      "created_at": "2026-10-09T02:42:37.571Z"
+    },
+    {
+      "id": "unit_b52jdw4mv0d1ae2",
+      "barbershop_id": "org_1791513757576_ljgu",
+      "name": "Barbearia Beta 57480 (Matriz)",
+      "short_name": "Matriz",
+      "slug": "barbearia-beta-57480-7575-matriz",
+      "address": "",
+      "phone": "",
+      "city": "São Paulo",
+      "state": "SP",
+      "is_main": true,
+      "operational_mode": "hibrido",
+      "created_at": "2026-10-09T02:42:37.658Z"
+    },
+    {
+      "id": "unit_x7i5gqwmv0d1hjs",
+      "barbershop_id": "org_1791513766850_hpfq",
+      "name": "Barbearia Alpha 66849 (Matriz)",
+      "short_name": "Matriz",
+      "slug": "barbearia-alpha-66849-6850-matriz",
+      "address": "",
+      "phone": "",
+      "city": "São Paulo",
+      "state": "SP",
+      "is_main": true,
+      "operational_mode": "hibrido",
+      "created_at": "2026-10-09T02:42:46.936Z"
+    },
+    {
+      "id": "unit_yko3ym9mv0d1hm9",
+      "barbershop_id": "org_1791513766941_aly0",
+      "name": "Barbearia Beta 66849 (Matriz)",
+      "short_name": "Matriz",
+      "slug": "barbearia-beta-66849-6941-matriz",
+      "address": "",
+      "phone": "",
+      "city": "São Paulo",
+      "state": "SP",
+      "is_main": true,
+      "operational_mode": "hibrido",
+      "created_at": "2026-10-09T02:42:47.025Z"
     }
   ],
   "subscriptions": {
@@ -9009,6 +10176,60 @@
       "multi_unit": false,
       "updated_at": "2026-10-09T02:30:57.668Z",
       "subscriptionExpiresAt": "2026-10-16T02:30:57.586Z"
+    },
+    "org_1791513673330_5w87": {
+      "plan_id": "pro",
+      "status": "trialing",
+      "subscriptionStatus": "trialing",
+      "max_barbers": 4,
+      "multi_unit": false,
+      "updated_at": "2026-10-09T02:41:13.451Z",
+      "subscriptionExpiresAt": "2026-10-16T02:41:13.330Z"
+    },
+    "org_1791513673467_yjv9": {
+      "plan_id": "pro",
+      "status": "trialing",
+      "subscriptionStatus": "trialing",
+      "max_barbers": 4,
+      "multi_unit": false,
+      "updated_at": "2026-10-09T02:41:13.554Z",
+      "subscriptionExpiresAt": "2026-10-16T02:41:13.467Z"
+    },
+    "org_1791513757482_us0j": {
+      "plan_id": "pro",
+      "status": "trialing",
+      "subscriptionStatus": "trialing",
+      "max_barbers": 4,
+      "multi_unit": false,
+      "updated_at": "2026-10-09T02:42:37.571Z",
+      "subscriptionExpiresAt": "2026-10-16T02:42:37.482Z"
+    },
+    "org_1791513757576_ljgu": {
+      "plan_id": "pro",
+      "status": "trialing",
+      "subscriptionStatus": "trialing",
+      "max_barbers": 4,
+      "multi_unit": false,
+      "updated_at": "2026-10-09T02:42:37.658Z",
+      "subscriptionExpiresAt": "2026-10-16T02:42:37.575Z"
+    },
+    "org_1791513766850_hpfq": {
+      "plan_id": "pro",
+      "status": "trialing",
+      "subscriptionStatus": "trialing",
+      "max_barbers": 4,
+      "multi_unit": false,
+      "updated_at": "2026-10-09T02:42:46.936Z",
+      "subscriptionExpiresAt": "2026-10-16T02:42:46.850Z"
+    },
+    "org_1791513766941_aly0": {
+      "plan_id": "pro",
+      "status": "trialing",
+      "subscriptionStatus": "trialing",
+      "max_barbers": 4,
+      "multi_unit": false,
+      "updated_at": "2026-10-09T02:42:47.025Z",
+      "subscriptionExpiresAt": "2026-10-16T02:42:46.941Z"
     }
   },
   "subscription": {
@@ -9322,6 +10543,72 @@
       "shop_name": "Barbearia Beta 57495",
       "operational_mode": "hibrido",
       "public_slug": "barbearia-beta-57495-7586"
+    },
+    "org_1791513673330_5w87": {
+      "id": "settings_org_1791513673330_5w87",
+      "barbershop_id": "org_1791513673330_5w87",
+      "commission_base": "gross",
+      "discount_affects_commission": true,
+      "commission_on": "pago",
+      "initial_balance": 0,
+      "shop_name": "Barbearia Alpha 73317",
+      "operational_mode": "hibrido",
+      "public_slug": "barbearia-alpha-73317-3330"
+    },
+    "org_1791513673467_yjv9": {
+      "id": "settings_org_1791513673467_yjv9",
+      "barbershop_id": "org_1791513673467_yjv9",
+      "commission_base": "gross",
+      "discount_affects_commission": true,
+      "commission_on": "pago",
+      "initial_balance": 0,
+      "shop_name": "Barbearia Beta 73317",
+      "operational_mode": "hibrido",
+      "public_slug": "barbearia-beta-73317-3467"
+    },
+    "org_1791513757482_us0j": {
+      "id": "settings_org_1791513757482_us0j",
+      "barbershop_id": "org_1791513757482_us0j",
+      "commission_base": "gross",
+      "discount_affects_commission": true,
+      "commission_on": "pago",
+      "initial_balance": 0,
+      "shop_name": "Barbearia Alpha 57480",
+      "operational_mode": "hibrido",
+      "public_slug": "barbearia-alpha-57480-7482"
+    },
+    "org_1791513757576_ljgu": {
+      "id": "settings_org_1791513757576_ljgu",
+      "barbershop_id": "org_1791513757576_ljgu",
+      "commission_base": "gross",
+      "discount_affects_commission": true,
+      "commission_on": "pago",
+      "initial_balance": 0,
+      "shop_name": "Barbearia Beta 57480",
+      "operational_mode": "hibrido",
+      "public_slug": "barbearia-beta-57480-7575"
+    },
+    "org_1791513766850_hpfq": {
+      "id": "settings_org_1791513766850_hpfq",
+      "barbershop_id": "org_1791513766850_hpfq",
+      "commission_base": "gross",
+      "discount_affects_commission": true,
+      "commission_on": "pago",
+      "initial_balance": 0,
+      "shop_name": "Barbearia Alpha 66849",
+      "operational_mode": "hibrido",
+      "public_slug": "barbearia-alpha-66849-6850"
+    },
+    "org_1791513766941_aly0": {
+      "id": "settings_org_1791513766941_aly0",
+      "barbershop_id": "org_1791513766941_aly0",
+      "commission_base": "gross",
+      "discount_affects_commission": true,
+      "commission_on": "pago",
+      "initial_balance": 0,
+      "shop_name": "Barbearia Beta 66849",
+      "operational_mode": "hibrido",
+      "public_slug": "barbearia-beta-66849-6941"
     }
   },
   "barbershop": {

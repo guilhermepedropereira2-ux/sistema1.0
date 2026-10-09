@@ -458,6 +458,108 @@
         "subscription_expires_at": "2026-10-16T02:30:57.586Z",
         "created_at": "2026-10-09T02:30:57.586Z"
       }
+    ],
+    [
+      "org_1791513673330_5w87",
+      {
+        "id": "org_1791513673330_5w87",
+        "name": "Barbearia Alpha 73317",
+        "slug": "barbearia-alpha-73317-3330",
+        "document": null,
+        "plan": "pro",
+        "status": "active",
+        "subscription_status": "trial",
+        "trial_started_at": "2026-10-09T02:41:13.330Z",
+        "trial_ends_at": "2026-10-16T02:41:13.330Z",
+        "trial_already_used": true,
+        "subscription_expires_at": "2026-10-16T02:41:13.330Z",
+        "created_at": "2026-10-09T02:41:13.330Z"
+      }
+    ],
+    [
+      "org_1791513673467_yjv9",
+      {
+        "id": "org_1791513673467_yjv9",
+        "name": "Barbearia Beta 73317",
+        "slug": "barbearia-beta-73317-3467",
+        "document": null,
+        "plan": "pro",
+        "status": "active",
+        "subscription_status": "trial",
+        "trial_started_at": "2026-10-09T02:41:13.467Z",
+        "trial_ends_at": "2026-10-16T02:41:13.467Z",
+        "trial_already_used": true,
+        "subscription_expires_at": "2026-10-16T02:41:13.467Z",
+        "created_at": "2026-10-09T02:41:13.467Z"
+      }
+    ],
+    [
+      "org_1791513757482_us0j",
+      {
+        "id": "org_1791513757482_us0j",
+        "name": "Barbearia Alpha 57480",
+        "slug": "barbearia-alpha-57480-7482",
+        "document": null,
+        "plan": "pro",
+        "status": "active",
+        "subscription_status": "trial",
+        "trial_started_at": "2026-10-09T02:42:37.482Z",
+        "trial_ends_at": "2026-10-16T02:42:37.482Z",
+        "trial_already_used": true,
+        "subscription_expires_at": "2026-10-16T02:42:37.482Z",
+        "created_at": "2026-10-09T02:42:37.482Z"
+      }
+    ],
+    [
+      "org_1791513757576_ljgu",
+      {
+        "id": "org_1791513757576_ljgu",
+        "name": "Barbearia Beta 57480",
+        "slug": "barbearia-beta-57480-7575",
+        "document": null,
+        "plan": "pro",
+        "status": "active",
+        "subscription_status": "trial",
+        "trial_started_at": "2026-10-09T02:42:37.575Z",
+        "trial_ends_at": "2026-10-16T02:42:37.575Z",
+        "trial_already_used": true,
+        "subscription_expires_at": "2026-10-16T02:42:37.575Z",
+        "created_at": "2026-10-09T02:42:37.575Z"
+      }
+    ],
+    [
+      "org_1791513766850_hpfq",
+      {
+        "id": "org_1791513766850_hpfq",
+        "name": "Barbearia Alpha 66849",
+        "slug": "barbearia-alpha-66849-6850",
+        "document": null,
+        "plan": "pro",
+        "status": "active",
+        "subscription_status": "trial",
+        "trial_started_at": "2026-10-09T02:42:46.850Z",
+        "trial_ends_at": "2026-10-16T02:42:46.850Z",
+        "trial_already_used": true,
+        "subscription_expires_at": "2026-10-16T02:42:46.850Z",
+        "created_at": "2026-10-09T02:42:46.850Z"
+      }
+    ],
+    [
+      "org_1791513766941_aly0",
+      {
+        "id": "org_1791513766941_aly0",
+        "name": "Barbearia Beta 66849",
+        "slug": "barbearia-beta-66849-6941",
+        "document": null,
+        "plan": "pro",
+        "status": "active",
+        "subscription_status": "trial",
+        "trial_started_at": "2026-10-09T02:42:46.941Z",
+        "trial_ends_at": "2026-10-16T02:42:46.941Z",
+        "trial_already_used": true,
+        "subscription_expires_at": "2026-10-16T02:42:46.941Z",
+        "created_at": "2026-10-09T02:42:46.941Z"
+      }
     ]
   ],
   "users": [
@@ -849,6 +951,84 @@
         "commission_rate": "0.00",
         "password": "$2b$10$O.Pgq8sUfH6BnKgL0tGOQuXjfNLwPusW8brGt50QWwX6EN6QY7dk.",
         "created_at": "2026-10-09T02:30:57.667Z"
+      }
+    ],
+    [
+      "usr_1791513673331_7c5e",
+      {
+        "id": "usr_1791513673331_7c5e",
+        "organization_id": "org_1791513673330_5w87",
+        "name": "Proprietário Alpha",
+        "email": "prop_a_73317@barbearia.com",
+        "role": "owner",
+        "commission_rate": "0.00",
+        "password": "$2b$10$M2YPEmWwQfivtAfm4p57cetdEgOl2ptRylYS51NHWw1DGtcC7Wkne",
+        "created_at": "2026-10-09T02:41:13.449Z"
+      }
+    ],
+    [
+      "usr_1791513673468_h583",
+      {
+        "id": "usr_1791513673468_h583",
+        "organization_id": "org_1791513673467_yjv9",
+        "name": "Proprietário Beta",
+        "email": "prop_b_73317@barbearia.com",
+        "role": "owner",
+        "commission_rate": "0.00",
+        "password": "$2b$10$3LsgdUGYSFYbvUOyq1kqae4y3reBB36/dXFWcGhZysgzu1R3q6fDG",
+        "created_at": "2026-10-09T02:41:13.553Z"
+      }
+    ],
+    [
+      "usr_1791513757483_m3nf",
+      {
+        "id": "usr_1791513757483_m3nf",
+        "organization_id": "org_1791513757482_us0j",
+        "name": "Dono Barbearia Alpha",
+        "email": "dono_a_57480@barbearia.com",
+        "role": "owner",
+        "commission_rate": "0.00",
+        "password": "$2b$10$JCgoHXb/q.9erzI5/GXOFuu2MJsJPmQTEVQHAoZgpSCuHedVlvhgi",
+        "created_at": "2026-10-09T02:42:37.570Z"
+      }
+    ],
+    [
+      "usr_1791513757576_z4oq",
+      {
+        "id": "usr_1791513757576_z4oq",
+        "organization_id": "org_1791513757576_ljgu",
+        "name": "Dono Barbearia Beta",
+        "email": "dono_b_57480@barbearia.com",
+        "role": "owner",
+        "commission_rate": "0.00",
+        "password": "$2b$10$1.NiwEEKzb95M4gTaWy4AOBddHfSqGu3tKgsqoPKANPP7wKuJM3BO",
+        "created_at": "2026-10-09T02:42:37.657Z"
+      }
+    ],
+    [
+      "usr_1791513766851_cg7v",
+      {
+        "id": "usr_1791513766851_cg7v",
+        "organization_id": "org_1791513766850_hpfq",
+        "name": "Proprietário Alpha",
+        "email": "prop_a_66849@barbearia.com",
+        "role": "owner",
+        "commission_rate": "0.00",
+        "password": "$2b$10$EqVy/.3j7grZYV8cgen0fufod2Uof2Q0H90FSvzJfcWSiYigQBMQO",
+        "created_at": "2026-10-09T02:42:46.935Z"
+      }
+    ],
+    [
+      "usr_1791513766942_gw19",
+      {
+        "id": "usr_1791513766942_gw19",
+        "organization_id": "org_1791513766941_aly0",
+        "name": "Proprietário Beta",
+        "email": "prop_b_66849@barbearia.com",
+        "role": "owner",
+        "commission_rate": "0.00",
+        "password": "$2b$10$W5X6xgW6wiZP1JXgG1XDy.OIDmD/M/xZSi7gMDhSR21AozhN.yyQu",
+        "created_at": "2026-10-09T02:42:47.025Z"
       }
     ]
   ],

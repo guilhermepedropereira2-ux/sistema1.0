@@ -1,7 +1,7 @@
+import "dotenv/config";
 import express, { Request, Response, NextFunction } from "express";
 import cors from "cors";
 import path from "path";
-import dotenv from "dotenv";
 import { createServer as createViteServer } from "vite";
 import { initDatabaseWithPg } from "./src/db/sync.js";
 import { db, authUser } from "./server/db.js";
@@ -20,10 +20,8 @@ import analyticsRoutes from "./server/routes/analytics.js";
 import superadminRoutes from "./server/routes/superadmin.js";
 import onboardingRoutes from "./server/routes/onboarding.js";
 
-dotenv.config();
-
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
 
 app.use(cors());
 app.use(express.json());

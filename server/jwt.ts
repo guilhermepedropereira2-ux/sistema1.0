@@ -1,3 +1,4 @@
+import "dotenv/config";
 import jwt from "jsonwebtoken";
 
 export interface JwtPayload {
@@ -46,6 +47,7 @@ function resolveJwtSecret(): string {
 }
 
 export const JWT_SECRET = resolveJwtSecret();
+export { resolveJwtSecret };
 
 /**
  * Valida e decodifica o token JWT de forma estrita.
