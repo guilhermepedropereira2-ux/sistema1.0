@@ -1,0 +1,4 @@
+# SHA-256 Checksum Log - Backup 2026-10-10T01-27-25-287Z
+9e5582a50010ac8f4a19202bebe45d48c4bdb47df8cb9cb9396e7fb8fa67a703  kupola_db.json
+dfcc81890a5ab09768a17f6d1b806b1e5a5ab2355b5a65b90e04fe3e128b36a2  kupola_storage.json
+Status: VALIDADOS E IDÊNTICOS

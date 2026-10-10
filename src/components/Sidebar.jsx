@@ -254,6 +254,35 @@ export default function Sidebar({
             </NavLink>
           );
         })}
+
+        {isSuperAdmin(user) && (
+          <div className="pt-2">
+            <div className="px-3 pb-1 pt-1 text-[10px] font-bold uppercase tracking-wider text-[#D4AF37]">
+              SAAS MASTER
+            </div>
+            <NavLink
+              to="/superadmin"
+              onClick={() => {
+                if (isMobile && onCloseMobile) onCloseMobile();
+              }}
+              className={() =>
+                `w-full min-h-[48px] h-[48px] sm:h-[50px] flex items-center gap-3.5 px-3.5 rounded-xl text-sm transition-all select-none ${
+                  location.pathname === "/superadmin"
+                    ? "bg-[#D4AF37]/15 text-[#E5C365] font-semibold border-l-[3px] border-[#D4AF37] pl-3 shadow-[inset_0_1px_1px_rgba(212,175,55,0.08)]"
+                    : "text-amber-300/80 hover:text-[#E5C365] hover:bg-[#D4AF37]/10 font-medium border border-[#D4AF37]/20"
+                }`
+              }
+              data-testid="nav-superadmin"
+            >
+              <ShieldCheck
+                className={`w-5 h-5 shrink-0 transition-colors ${
+                  location.pathname === "/superadmin" ? "text-[#E5C365]" : "text-[#D4AF37]"
+                }`}
+              />
+              <span className="truncate font-bold">Painel SuperAdmin</span>
+            </NavLink>
+          </div>
+        )}
       </div>
 
       {/* ======================================================== */}

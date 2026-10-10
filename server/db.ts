@@ -1087,14 +1087,10 @@ export const getTenantId = (req: Request): string => {
 
 export const isUserSuperAdmin = (u: any): boolean => {
   if (!u) return false;
-  if (u.is_superadmin === true) return true;
-  if (u.role === "superadmin" || (Array.isArray(u.roles) && u.roles.includes("superadmin"))) return true;
-  const email = (u.email || "").toLowerCase().trim();
-  const username = (u.username || "").toLowerCase().trim();
-  return (
-    email === "admin@kupola.app" ||
-    email === "superadmin@kupola.app" ||
-    username === "superadmin"
+  return Boolean(
+    u.is_superadmin === true ||
+    u.role === "superadmin" ||
+    (Array.isArray(u.roles) && u.roles.includes("superadmin"))
   );
 };
 

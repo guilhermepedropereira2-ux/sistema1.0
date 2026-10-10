@@ -80,6 +80,17 @@ router.get("/subscription", requireAuth, async (req, res) => {
 router.put("/subscription", requireAuth, requireDono, async (req, res) => {
   const user = (req as any).user || authUser(req);
   const tenantId = getTenantId(req);
+  const isSuper = isUserSuperAdmin(user);
+
+  // Bloqueio rigoroso: autoativação direta ou alteração de plano por usuário comum sem gateway de pagamento verificado
+  if (!isSuper) {
+    return res.status(403).json({
+      error: "Forbidden",
+      detail: "A alteração e ativação direta de planos exige confirmação de pagamento via gateway ou liberação pelo SuperAdministrador.",
+      code: "SUBSCRIPTION_UPGRADE_RESTRICTED",
+    });
+  }
+
   const { plan_id, status } = req.body || {};
   if (plan_id && ["starter", "pro", "premium", "basic"].includes(plan_id)) {
     const canonicalPlan = plan_id === "basic" ? "starter" : plan_id;
@@ -125,10 +136,33 @@ router.put("/subscription", requireAuth, requireDono, async (req, res) => {
 
 // Units (Rede / Multi-unidades)
 router.get("/units", requireAuth, (req, res) => {
+  const user = (req as any).user || authUser(req);
   const tenantId = getTenantId(req);
   const currentMonth = todayStr().slice(0, 7);
 
   const tenantUnits = db.units.filter((u) => u.barbershop_id === tenantId);
+
+  const isSuper = isUserSuperAdmin(user);
+  const roles = user?.roles || (user?.role ? [user.role] : []);
+  const isDono = roles.includes("dono") || roles.includes("admin") || roles.includes("owner");
+  const hasFinancialAccess = isSuper || isDono || Boolean(user?.permissions?.ver_financeiro);
+
+  // Usuários sem permissão financeira (ex: Barbeiros) recebem unidades sem indicadores financeiros
+  if (!hasFinancialAccess) {
+    return res.json({
+      units: tenantUnits.map((u) => ({
+        id: u.id,
+        name: u.name,
+        short_name: u.short_name,
+        address: u.address,
+        phone: u.phone,
+        is_main: u.is_main,
+        barbershop_id: u.barbershop_id,
+        created_at: u.created_at,
+      })),
+      network_summary: null,
+    });
+  }
 
   const unitsWithMetrics = tenantUnits.map((u) => {
     const isMain = u.is_main;
@@ -361,8 +395,8 @@ router.put("/barbershop", requireAuth, requireDono, (req, res) => {
   res.json(shop);
 });
 
-// Calendar (Isolado estritamente por tenant)
-router.get("/calendar", requireAuth, (req, res) => {
+// Calendar (Isolado estritamente por tenant - restrito a quem tem permissão financeira)
+router.get("/calendar", requireAuth, requirePermission("ver_financeiro"), (req, res) => {
   const tenantId = getTenantId(req);
   const m = (req.query.month as string) || todayStr().slice(0, 7);
   const unitFilter = getUnitFilter(req);
@@ -381,11 +415,20 @@ router.get("/calendar", requireAuth, (req, res) => {
   });
 });
 
-// History (Logs de auditoria isolados por tenant)
+// History (Logs de auditoria isolados por tenant - restrito a Dono, Gerente e SuperAdmin)
 router.get("/history", requireAuth, (req, res) => {
   const tenantId = getTenantId(req);
   const user = (req as any).user || authUser(req);
   const isSuper = isUserSuperAdmin(user);
+  const roles = user?.roles || (user?.role ? [user.role] : []);
+  const isAdminOrManager = isSuper || roles.includes("dono") || roles.includes("admin") || roles.includes("owner") || roles.includes("gerente") || roles.includes("manager");
+  if (!isAdminOrManager) {
+    return res.status(403).json({
+      error: "Forbidden",
+      detail: "Acesso negado aos logs de auditoria administrativa.",
+      code: "ROLE_FORBIDDEN",
+    });
+  }
   const limit = Number(req.query.limit || 100);
 
   const filteredHistory = isSuper

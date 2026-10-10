@@ -3,7 +3,7 @@ import { db, authUser, getUnitFilter, getTenantId } from "../db.js";
 import { newId, nowIso, todayStr, parseDateStr, formatBRL, QueueItem, Appointment, Revenue } from "../types.js";
 import { persistQueue, persistAppointment, persistRevenue } from "../../src/db/sync.js";
 import { calculateCommission } from "../services/commissionService.js";
-import { requireAuth } from "../auth.js";
+import { requireAuth, requirePermission } from "../auth.js";
 
 const router = express.Router();
 
@@ -161,7 +161,7 @@ router.post("/queue", requireAuth, (req: Request, res: Response) => {
   res.json(item);
 });
 
-router.put("/queue/:id", requireAuth, (req: Request, res: Response) => {
+router.put("/queue/:id", requireAuth, requirePermission("gerenciar_fila"), (req: Request, res: Response) => {
   const tenantId = getTenantId(req);
   const idx = db.queue.findIndex((q) => q.id === req.params.id && q.barbershop_id === tenantId);
   if (idx === -1) return res.status(404).json({ detail: "Item da fila não encontrado" });

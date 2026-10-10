@@ -176,6 +176,26 @@ router.get("/barbers/:id/report", requireAuth, (req: Request, res: Response) => 
     return res.status(404).json({ detail: "Barbeiro não encontrado" });
   }
 
+  const currentUser = (req as any).user || authUser(req);
+  const isSuper = isUserSuperAdmin(currentUser);
+  const roles = currentUser?.roles || (currentUser?.role ? [currentUser.role] : []);
+  const isDono = roles.includes("dono") || roles.includes("admin") || roles.includes("owner");
+  const isGerente = roles.includes("gerente") || roles.includes("manager");
+  const isSelf = Boolean(
+    (currentUser?.barber_id && currentUser.barber_id === barberId) ||
+    (barber.user_id && barber.user_id === currentUser?.id) ||
+    (currentUser?.email && barber.email && currentUser.email.toLowerCase() === barber.email.toLowerCase()) ||
+    (currentUser?.name && barber.name && currentUser.name.toLowerCase() === barber.name.toLowerCase())
+  );
+
+  if (!isSuper && !isDono && !isGerente && !isSelf) {
+    return res.status(403).json({
+      error: "Forbidden",
+      detail: "Acesso negado. Você só tem permissão para visualizar seu próprio relatório de comissões e atendimentos.",
+      code: "PERMISSION_DENIED",
+    });
+  }
+
   const start = req.query.start as string;
   const end = req.query.end as string;
 

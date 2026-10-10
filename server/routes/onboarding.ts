@@ -6,19 +6,18 @@ import { generateToken, sanitizeUser, requireAuth, requireSuperAdmin } from "../
 
 const router = express.Router();
 
-// GET /api/onboarding/state - Consultar o estado atual do onboarding (sempre limpo para novas contas)
+// GET /api/onboarding/state - Consultar o estado atual do onboarding (sempre limpo para novas contas, sem expor dados privados)
 router.get("/onboarding/state", (_req: Request, res: Response) => {
-  const savedData = db.onboarding?.data || {};
   res.json({
-    completed: db.onboarding?.completed || false,
-    currentStep: db.onboarding?.currentStep || 1,
-    data: savedData,
+    completed: false,
+    currentStep: 1,
+    data: {},
     barbershop: {
-      name: savedData.barbershop?.name || "",
-      phone: savedData.barbershop?.phone || "",
-      city: savedData.barbershop?.city || "",
-      state: savedData.barbershop?.state || "",
-      address: savedData.barbershop?.address || "",
+      name: "",
+      phone: "",
+      city: "",
+      state: "",
+      address: "",
     },
   });
 });

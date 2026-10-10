@@ -1,0 +1,6 @@
+{
+  "summary":  "Plano revisado da Etapa 3.5 contendo exclusivamente as garantias e o passo a passo seguro para criação de backups, migração de scripts legados para sandbox, simulação (DRY-RUN) somente leitura dos dados, geração de relatório de dependências, regras de interrupção imediata em caso de ambiguidade e parada obrigatória pós-simulação, sem realizar qualquer limpeza de dados nesta etapa.",
+  "updatedAt":  "2026-10-10T01:21:13.902407263Z",
+  "requestFeedback":  true,
+  "userFacing":  true
+}

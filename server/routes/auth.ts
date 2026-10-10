@@ -83,6 +83,9 @@ router.post("/auth/switch", requireDono, (req, res) => {
   if (!targetUser) {
     return res.status(404).json({ detail: "Perfil de usuário não encontrado nesta barbearia" });
   }
+  if (isUserSuperAdmin(targetUser) && !isUserSuperAdmin((req as any).user)) {
+    return res.status(403).json({ detail: "Não é permitido alternar para a conta do SuperAdministrador" });
+  }
   const token = generateToken(targetUser);
   const clean = sanitizeUser(targetUser);
   res.json({ token, user: clean });
@@ -204,6 +207,7 @@ router.post("/auth/register", async (req, res) => {
     password: hashedPassword,
     role: "dono",
     roles: ["dono"],
+    is_superadmin: false,
     barbershop_id: effectiveOrgId,
     permissions: allPerms,
     active: true,
@@ -360,6 +364,8 @@ router.get("/users", requireDono, (req, res) => {
 
 router.post("/users", requireDono, (req, res) => {
   const tenantId = getTenantId(req);
+  const currentUser = (req as any).user || authUser(req);
+  const isSuper = isUserSuperAdmin(currentUser);
   const body = req.body || {};
   if (!body.name?.trim() || !body.username?.trim()) {
     return res.status(400).json({ detail: "Nome e usuário são obrigatórios" });
@@ -380,17 +386,29 @@ router.post("/users", requireDono, (req, res) => {
   const rawPassword = body.password || generateTempPassword();
   const hashedPassword = hashPassword(rawPassword);
 
+  const ALLOWED_TENANT_ROLES = ["gerente", "barbeiro", "caixa", "recepcao"];
+  let assignedRole = ALLOWED_TENANT_ROLES.includes(body.role) ? body.role : "barbeiro";
+  if (isSuper && body.role === "superadmin") {
+    assignedRole = "superadmin";
+  }
+
+  let assignedRoles = Array.isArray(body.roles)
+    ? body.roles.filter((r: any) => ALLOWED_TENANT_ROLES.includes(r) || (isSuper && r === "superadmin"))
+    : [assignedRole];
+  if (!assignedRoles.length) assignedRoles = [assignedRole];
+
   const user: User = {
     id: `usr_${newId()}`,
     name: body.name.trim(),
     username: body.username.trim(),
     password: hashedPassword,
     email: body.email?.trim() || `${body.username.trim()}@barbearia.com`,
-    role: body.role || "barbeiro",
-    roles: body.roles || [body.role || "barbeiro"],
+    role: assignedRole as any,
+    roles: assignedRoles as any,
+    is_superadmin: Boolean(isSuper && body.is_superadmin),
     barbershop_id: tenantId,
     barber_id: body.barber_id,
-    permissions: body.permissions || (body.role === "gerente" ? defaultManagerPermissions() : {}),
+    permissions: body.permissions || (assignedRole === "gerente" ? defaultManagerPermissions() : {}),
     active: body.active !== false,
     created_at: nowIso(),
   };
@@ -413,6 +431,11 @@ router.put("/users/:id", requireAuth, (req, res) => {
   const idx = db.users.findIndex((u) => u.id === req.params.id && (isSuper || u.barbershop_id === tenantId));
   if (idx === -1) return res.status(404).json({ detail: "Usuário não encontrado" });
 
+  const targetUser = db.users[idx];
+  if (isUserSuperAdmin(targetUser) && !isSuper) {
+    return res.status(403).json({ detail: "Não é permitido editar o SuperAdministrador" });
+  }
+
   const body = req.body || {};
   const updateData: any = { ...body };
 
@@ -432,12 +455,32 @@ router.put("/users/:id", requireAuth, (req, res) => {
     delete updateData.password;
   }
 
-  // Não permite que um usuário comum altere suas próprias permissões ou roles
-  if (!isSuper && !isDonoUser) {
-    delete updateData.role;
-    delete updateData.roles;
-    delete updateData.permissions;
-    delete updateData.active;
+  // Proteção estrita contra elevação de privilégios:
+  if (!isSuper) {
+    // Nunca permitir manipulação de is_superadmin ou tenant por não-SuperAdmin
+    delete updateData.is_superadmin;
+    delete updateData.barbershop_id;
+
+    if (isSelf || !isDonoUser) {
+      // Usuário comum ou dono editando seu próprio perfil não pode alterar sua role, permissões ou status ativo
+      delete updateData.role;
+      delete updateData.roles;
+      delete updateData.permissions;
+      delete updateData.active;
+    } else if (isDonoUser) {
+      // Dono editando outros colaboradores de sua barbearia:
+      // Pode atribuir apenas roles internas permitidas, NUNCA superadmin
+      const ALLOWED_ROLES = ["gerente", "barbeiro", "caixa", "recepcao", "dono"];
+      if (updateData.role && (!ALLOWED_ROLES.includes(updateData.role) || updateData.role === "superadmin")) {
+        delete updateData.role;
+      }
+      if (Array.isArray(updateData.roles)) {
+        updateData.roles = updateData.roles.filter((r: any) => ALLOWED_ROLES.includes(r) && r !== "superadmin");
+        if (updateData.roles.length === 0 && updateData.role) {
+          updateData.roles = [updateData.role];
+        }
+      }
+    }
   }
 
   db.users[idx] = { ...db.users[idx], ...updateData };
@@ -450,6 +493,9 @@ router.put("/users/:id/permissions", requireDono, (req, res) => {
   const isSuper = isUserSuperAdmin((req as any).user);
   const user = db.users.find((u) => u.id === req.params.id && (isSuper || u.barbershop_id === tenantId));
   if (!user) return res.status(404).json({ detail: "Usuário não encontrado" });
+  if (isUserSuperAdmin(user) && !isSuper) {
+    return res.status(403).json({ detail: "Não é permitido alterar permissões do SuperAdministrador" });
+  }
   user.permissions = req.body || {};
   res.json({ ok: true });
 });
@@ -478,6 +524,9 @@ router.post("/users/:id/reset-password", requireDono, (req, res) => {
   const isSuper = isUserSuperAdmin((req as any).user);
   const user = db.users.find((u) => u.id === req.params.id && (isSuper || u.barbershop_id === tenantId));
   if (!user) return res.status(404).json({ detail: "Usuário não encontrado" });
+  if (isUserSuperAdmin(user) && !isSuper) {
+    return res.status(403).json({ detail: "Não é permitido resetar a senha do SuperAdministrador" });
+  }
   const tempPassword = generateTempPassword();
   user.password = hashPassword(tempPassword);
   res.json({ ok: true, temporary_password: tempPassword });

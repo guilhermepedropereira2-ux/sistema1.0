@@ -2,23 +2,15 @@ export const rolesOf = (u) => (u?.roles?.length ? u.roles : u?.role ? [u.role] :
 export const hasRole = (u, r) => rolesOf(u).includes(r);
 export const isSuperAdmin = (u) => {
   if (!u) return false;
-  if (u.is_superadmin === true) return true;
-  if (hasRole(u, "superadmin")) return true;
-  const email = (u.email || "").toLowerCase().trim();
-  const username = (u.username || "").toLowerCase().trim();
-  return (
-    email === "admin@kupola.app" ||
-    email === "superadmin@kupola.app" ||
-    username === "superadmin"
-  );
+  return Boolean(u.is_superadmin === true || hasRole(u, "superadmin"));
 };
 export const isDono = (u) => hasRole(u, "dono") || hasRole(u, "admin") || hasRole(u, "owner");
 export const isGerente = (u) => (hasRole(u, "gerente") || hasRole(u, "manager")) && !isDono(u);
 export const isCaixa = (u) => hasRole(u, "caixa") || hasRole(u, "recepcao");
-export const isAdmin = (u) => hasRole(u, "dono") || hasRole(u, "admin") || hasRole(u, "owner") || hasRole(u, "gerente") || hasRole(u, "manager") || hasRole(u, "caixa");
+export const isAdmin = (u) => isSuperAdmin(u) || hasRole(u, "dono") || hasRole(u, "admin") || hasRole(u, "owner") || hasRole(u, "gerente") || hasRole(u, "manager") || hasRole(u, "caixa");
 export const isBarber = (u) => hasRole(u, "barbeiro") || hasRole(u, "barber");
 export const canManagePaymentMethods = (u) => (isDono(u) || isGerente(u)) && !isBarber(u);
-export const defaultPanel = (u) => (isCaixa(u) ? "/operacional" : isAdmin(u) ? "/" : "/barbeiro");
+export const defaultPanel = (u) => (isSuperAdmin(u) ? "/superadmin" : isCaixa(u) ? "/operacional" : isAdmin(u) ? "/" : "/barbeiro");
 
 export const ROLE_LABEL = {
   dono: "Dono",
