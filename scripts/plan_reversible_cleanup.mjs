@@ -1,7 +1,6 @@
 import fs from "fs";
 import path from "path";
 import crypto from "crypto";
-import { createBackup } from "./backup_database.mjs";
 
 function calculateHash(filePath) {
   if (!fs.existsSync(filePath)) return null;
@@ -45,30 +44,28 @@ function classifyOrganization(id, name) {
   }
 
   // Se não estiver na whitelist e não possuir critérios positivos explícitos de teste,
-  // DEVE ser classificada como AMBÍGUA para bloquear a aprovação do manifesto!
+  // DEVE ser classificada como AMBÍGUA para bloquear o planejamento e garantir a segurança!
   return {
     status: "AMBIGUOUS",
-    reason: `Organização sem classificação inequívoca: não está na whitelist nem possui padrões explícitos de teste.`,
+    reason: `Organização sem classificação inequívoca: não está na whitelist nem possui padrões positivos explícitos de teste.`,
   };
 }
 
-export function generateCleanupManifest() {
+export function generateCleanupManifest(options = {}) {
+  const writeManifest = options.writeManifest === true;
   const rootDir = process.cwd();
   const dbPath = path.join(rootDir, "data", "kupola_db.json");
   const storagePath = path.join(rootDir, "data", "kupola_storage.json");
 
-  // 1. Calculate hashes before planning
+  // 1. Calculate initial hashes before planning (READ-ONLY)
   const initialDbHash = calculateHash(dbPath);
   const initialStorageHash = calculateHash(storagePath);
 
-  // 2. Ensure timestamped backup exists and is verified
-  const backupRes = createBackup();
-
-  // 3. Load original data (READ-ONLY)
+  // 2. Load original data (READ-ONLY)
   const dbData = JSON.parse(fs.readFileSync(dbPath, "utf-8"));
   const storageData = JSON.parse(fs.readFileSync(storagePath, "utf-8"));
 
-  // 4. Classify All Organizations using Positive Criteria
+  // 3. Classify All Organizations using Positive Criteria
   const candidateOrgsMap = new Map();
   const ambiguousOrgsMap = new Map();
   const preservedOrgsMap = new Map();
@@ -144,6 +141,7 @@ export function generateCleanupManifest() {
     }
   });
 
+  // Check for ambiguous organizations
   const ambiguousOrgsList = Array.from(ambiguousOrgsMap.values());
   if (ambiguousOrgsList.length > 0) {
     console.error("[ERRO CRÍTICO DE SEGURANÇA]: Foram encontradas organizações com classificação ambígua!");
@@ -151,15 +149,16 @@ export function generateCleanupManifest() {
       console.error(`  - ID: ${org.id} | Nome: ${org.name} | Origem: ${org.source} | Razão: ${org.reason}`);
     });
     throw new Error(
-      `PLANEJAMENTO BLOQUEADO: Existem ${ambiguousOrgsList.length} organizações ambíguas sem classificação inequívoca. A aprovação do manifesto foi interrompida.`
+      `PLANEJAMENTO BLOQUEADO: Existem ${ambiguousOrgsList.length} organizações ambíguas sem classificação inequívoca. O planejamento foi interrompido.`
     );
   }
 
   const candidateOrgsList = Array.from(candidateOrgsMap.values());
   const candidateOrgIdsSet = new Set(candidateOrgsList.map((o) => o.id));
 
-  // 5. Catalog Candidate Records with Strict Tenant Verification
+  // 4. Catalog Candidate Records with Strict Tenant Verification & Cross-Reference Checks
   const manifestRecords = [];
+  const crossReferenceViolations = [];
 
   // Helper for DB collections
   const processDbCollection = (collName, items) => {
@@ -168,7 +167,26 @@ export function generateCleanupManifest() {
       let tenantId = item.barbershop_id || item.organization_id;
       if (collName === "barbershops") tenantId = item.id;
 
+      // Verify no cross-reference to whitelisted legitimate organizations
+      if (WHITELISTED_ORGS.has(tenantId)) {
+        return; // Legitimate record belonging to whitelisted org
+      }
+
       if (tenantId && candidateOrgIdsSet.has(tenantId)) {
+        // Additional safety check: check if record references a whitelisted org in any property
+        const refsWhitelisted = Object.values(item).some(
+          (val) => typeof val === "string" && WHITELISTED_ORGS.has(val) && val !== tenantId
+        );
+        if (refsWhitelisted) {
+          crossReferenceViolations.push({
+            id: item.id || "(sem id)",
+            collection: collName,
+            tenantId,
+            reason: "Registro candidato possui referência cruzada com entidade whitelisted de produção",
+          });
+          return;
+        }
+
         const orgInfo = candidateOrgsMap.get(tenantId);
         manifestRecords.push({
           id: item.id || item.email || item.code || `${collName}_${manifestRecords.length}`,
@@ -190,6 +208,10 @@ export function generateCleanupManifest() {
       const value = Array.isArray(entry) ? entry[1] : entry;
       let tenantId = value.organization_id || value.barbershop_id;
       if (collName === "organizations") tenantId = key;
+
+      if (WHITELISTED_ORGS.has(tenantId)) {
+        return; // Legitimate record
+      }
 
       if (tenantId && candidateOrgIdsSet.has(tenantId)) {
         const orgInfo = candidateOrgsMap.get(tenantId);
@@ -215,6 +237,16 @@ export function generateCleanupManifest() {
     processStorageCollection(coll, storageData[coll]);
   });
 
+  if (crossReferenceViolations.length > 0) {
+    console.error("[ERRO CRÍTICO DE SEGURANÇA]: Foram encontradas referências cruzadas com dados legítimos!");
+    crossReferenceViolations.forEach((v) => {
+      console.error(`  - Registro ID: ${v.id} | Coleção: ${v.collection} | Tenant: ${v.tenantId}`);
+    });
+    throw new Error(
+      `PLANEJAMENTO BLOQUEADO: ${crossReferenceViolations.length} registros candidatos possuem referências cruzadas com entidades whitelisted.`
+    );
+  }
+
   // Calculate summary counts by collection
   const summaryByCollection = {};
   manifestRecords.forEach((r) => {
@@ -222,7 +254,7 @@ export function generateCleanupManifest() {
     summaryByCollection[key] = (summaryByCollection[key] || 0) + 1;
   });
 
-  // 6. Build Manifest JSON
+  // 5. Build Manifest Object
   const manifest = {
     metadata: {
       generatedAt: new Date().toISOString(),
@@ -235,7 +267,6 @@ export function generateCleanupManifest() {
         "data/kupola_db.json": initialDbHash,
         "data/kupola_storage.json": initialStorageHash,
       },
-      backupLocation: backupRes.backupDir,
       totalCandidateOrgs: candidateOrgsList.length,
       totalCandidateRecords: manifestRecords.length,
       ambiguousOrgsCount: 0,
@@ -246,14 +277,7 @@ export function generateCleanupManifest() {
     manifestRecords,
   };
 
-  // Save manifest file in backups directory and data directory
-  const manifestPathBackup = path.join(backupRes.backupDir, "cleanup_manifest.json");
-  const manifestPathData = path.join(rootDir, "data", "cleanup_manifest.json");
-
-  fs.writeFileSync(manifestPathBackup, JSON.stringify(manifest, null, 2), "utf-8");
-  fs.writeFileSync(manifestPathData, JSON.stringify(manifest, null, 2), "utf-8");
-
-  // 7. Verify SHA-256 Hashes of original files post-planning to guarantee zero modification
+  // 6. Verify SHA-256 Hashes of original files post-planning to guarantee zero modification
   const finalDbHash = calculateHash(dbPath);
   const finalStorageHash = calculateHash(storagePath);
 
@@ -261,11 +285,16 @@ export function generateCleanupManifest() {
     throw new Error("ERRO CRÍTICO: Os arquivos de dados originais foram alterados durante o planejamento!");
   }
 
+  // Write manifest file ONLY if writeManifest is explicitly requested (not during read-only audit)
+  if (writeManifest) {
+    const manifestPathData = path.join(rootDir, "data", "cleanup_manifest.json");
+    fs.writeFileSync(manifestPathData, JSON.stringify(manifest, null, 2), "utf-8");
+  }
+
   return {
-    backupRes,
     manifest,
-    manifestPathBackup,
-    manifestPathData,
+    initialDbHash,
+    initialStorageHash,
     finalDbHash,
     finalStorageHash,
   };
@@ -274,29 +303,29 @@ export function generateCleanupManifest() {
 if (process.argv[1] && process.argv[1].endsWith("plan_reversible_cleanup.mjs")) {
   try {
     console.log("================================================================================");
-    console.log("=== KUPOLA 2.0 — ETAPA 3.6A.2: PLANEJAMENTO COM SEGURANÇA E CLASSIFICAÇÃO POSITIVA ===");
-    console.log("================================================================================\n");
+    console.log("=== KUPOLA 2.0 — ETAPA 3.6A.3: AUDITORIA E PLANEJAMENTO SOMENTE LEITURA      ===");
+    console.log("================================================================ drop-file-mode\n");
 
-    const result = generateCleanupManifest();
+    const result = generateCleanupManifest({ writeManifest: false });
 
-    console.log("[SUCESSO] Manifesto gerado com sucesso em modo SOMENTE LEITURA.");
-    console.log(`- Backup criado em: ${result.backupRes.backupDir}`);
-    console.log(`- Manifesto salvo em: ${result.manifestPathData}`);
+    console.log("[SUCESSO] Auditoria de Planejamento concluída com sucesso em modo SOMENTE LEITURA.");
+    console.log(`- Nenhum backup ou arquivo de manifesto foi criado ou alterado no disco.`);
     console.log(`- SHA-256 kupola_db.json:      ${result.finalDbHash}`);
     console.log(`- SHA-256 kupola_storage.json: ${result.finalStorageHash}`);
-    console.log(`- Status da Integridade: VERIFICADO E 100% INTACTO (0 bytes alterados em dados originais)\n`);
+    console.log(`- Status da Integridade: VERIFICADO E 100% INTACTO (0 bytes alterados nos arquivos originais)\n`);
 
-    console.log("--- RESUMO DO MANIFESTO JSON ---");
+    console.log("--- RESUMO DA AUDITORIA DO MANIFESTO ---");
     console.log(`Total de Organizações de Teste Mapeadas: ${result.manifest.metadata.totalCandidateOrgs}`);
     console.log(`Total de Registros Candidatos Catalogados: ${result.manifest.metadata.totalCandidateRecords}`);
     console.log(`Organizações Ambíguas Encontradas: ${result.manifest.metadata.ambiguousOrgsCount}`);
+    console.log(`Entidades Preservadas na Whitelist: ${result.manifest.metadata.whitelistedEntities.join(", ")}`);
     console.log("\nDetalhamento por Coleção:");
     Object.entries(result.manifest.summaryByCollection).forEach(([coll, count]) => {
       console.log(`  - ${coll.padEnd(42)}: ${count} registros`);
     });
 
     console.log("\n================================================================================");
-    console.log("=== FIM DO PLANEJAMENTO (3.6A.2) — NENHUM DADO FOI EXCLUÍDO OU ALTERADO     ===");
+    console.log("=== FIM DO PLANEJAMENTO (3.6A.3) — NENHUM DADO FOI EXCLUÍDO OU ALTERADO     ===");
     console.log("=== AGUARDANDO AUTORIZAÇÃO EXPLÍCITA DO USUÁRIO PARA QUALQUER EXCLUSÃO REAL ===");
     console.log("================================================================================\n");
   } catch (err) {
@@ -304,3 +333,4 @@ if (process.argv[1] && process.argv[1].endsWith("plan_reversible_cleanup.mjs")) 
     process.exit(1);
   }
 }
+

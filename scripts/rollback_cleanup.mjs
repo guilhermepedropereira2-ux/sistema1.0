@@ -14,23 +14,24 @@ export function performRollback(targetBackupDir = null, options = {}) {
   const targetDbPath = path.join(rootDir, "data", "kupola_db.json");
   const targetStoragePath = path.join(rootDir, "data", "kupola_storage.json");
 
-  if (!fs.existsSync(backupsDir)) {
-    throw new Error("Diretório de backups não encontrado.");
+  // 1. Exigir explicitamente o caminho do backup via argumento, env var ou opção (NUNCA escolha automática)
+  let selectedBackupDir = targetBackupDir || process.env.BACKUP_DIR || options.backupDir || null;
+
+  if (!selectedBackupDir) {
+    throw new Error(
+      "ERRO CRÍTICO DE SEGURANÇA: Nenhum diretório de backup foi especificado. " +
+        "O rollback exige a especificação explícita do caminho do backup via argumento de linha de comando " +
+        "ou variável de ambiente (BACKUP_DIR). A seleção automática do backup mais recente está desativada."
+    );
   }
 
-  // 1. Locate backup directory
-  let selectedBackupDir = targetBackupDir;
-  if (!selectedBackupDir) {
-    const subdirs = fs
-      .readdirSync(backupsDir)
-      .filter((d) => fs.statSync(path.join(backupsDir, d)).isDirectory() && !d.startsWith("pre-rollback-"))
-      .sort();
+  // Resolve absolute path if relative
+  if (!path.isAbsolute(selectedBackupDir)) {
+    selectedBackupDir = path.resolve(rootDir, selectedBackupDir);
+  }
 
-    if (subdirs.length === 0) {
-      throw new Error("Nenhum backup válido encontrado no diretório backups/");
-    }
-
-    selectedBackupDir = path.join(backupsDir, subdirs[subdirs.length - 1]);
+  if (!fs.existsSync(selectedBackupDir) || !fs.statSync(selectedBackupDir).isDirectory()) {
+    throw new Error(`FALHA DE SEGURANÇA: O diretório de backup especificado não existe: ${selectedBackupDir}`);
   }
 
   console.log(`=== RESTAURAÇÃO / ROLLBACK SEGURA A PARTIR DE: ${selectedBackupDir} ===`);
@@ -39,32 +40,73 @@ export function performRollback(targetBackupDir = null, options = {}) {
   const backupStorage = path.join(selectedBackupDir, "kupola_storage.json");
   const shaFile = path.join(selectedBackupDir, "sha256sums.txt");
 
-  // 2. Validate source backup files existence
+  // 2. Validar existência dos arquivos de backup e de sha256sums.txt
   if (!fs.existsSync(backupDb) || !fs.existsSync(backupStorage)) {
     throw new Error(`FALHA DE SEGURANÇA: Arquivos de backup incompletos no diretório ${selectedBackupDir}`);
   }
 
-  // 3. Calculate and verify backup hashes against sha256sums.txt
-  const backupDbHash = calculateHash(backupDb);
-  const backupStorageHash = calculateHash(backupStorage);
-
-  if (fs.existsSync(shaFile)) {
-    const shaContent = fs.readFileSync(shaFile, "utf-8");
-    if (!shaContent.includes(backupDbHash) || !shaContent.includes(backupStorageHash)) {
-      throw new Error("ALERTA CRÍTICO DE INTEGRIDADE: Os arquivos de backup não correspondem aos hashes em sha256sums.txt!");
-    }
-  } else {
-    throw new Error("FALHA DE SEGURANÇA NO ROLLBACK: Arquivo sha256sums.txt ausente no diretório de backup!");
+  if (!fs.existsSync(shaFile)) {
+    throw new Error(
+      `FALHA DE SEGURANÇA NO ROLLBACK: Arquivo 'sha256sums.txt' ausente no diretório de backup: ${selectedBackupDir}`
+    );
   }
 
-  // 4. Calculate current state hashes before overwriting
+  // 3. Calcular e verificar hashes dos arquivos de backup contra sha256sums.txt
+  const backupDbHash = calculateHash(backupDb);
+  const backupStorageHash = calculateHash(backupStorage);
+  const shaContent = fs.readFileSync(shaFile, "utf-8");
+
+  if (!shaContent.includes(backupDbHash) || !shaContent.includes(backupStorageHash)) {
+    throw new Error(
+      "ALERTA CRÍTICO DE INTEGRIDADE: Os arquivos no diretório de backup não correspondem aos hashes registrados em sha256sums.txt!"
+    );
+  }
+
+  // 4. Verificar o estado atual dos arquivos de dados contra o manifesto/auditoria
   const currentDbHash = calculateHash(targetDbPath);
   const currentStorageHash = calculateHash(targetStoragePath);
 
   console.log(`- Estado atual de kupola_db.json:      ${currentDbHash || "(não existe)"}`);
   console.log(`- Estado atual de kupola_storage.json: ${currentStorageHash || "(não existe)"}`);
 
-  // 5. Preserve safety copy of current state before restoration
+  // Verificar se existe um manifesto para validar a integridade pós-limpeza esperada
+  const manifestPath = fs.existsSync(path.join(selectedBackupDir, "cleanup_manifest.json"))
+    ? path.join(selectedBackupDir, "cleanup_manifest.json")
+    : fs.existsSync(path.join(rootDir, "data", "cleanup_manifest.json"))
+    ? path.join(rootDir, "data", "cleanup_manifest.json")
+    : null;
+
+  if (manifestPath && fs.existsSync(manifestPath)) {
+    try {
+      const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf-8"));
+      const expectedDbPre = manifest.metadata?.hashesPreCleanup?.["data/kupola_db.json"] || manifest.metadata?.sha256?.kupola_db;
+      const expectedStoragePre = manifest.metadata?.hashesPreCleanup?.["data/kupola_storage.json"] || manifest.metadata?.sha256?.kupola_storage;
+      const expectedDbPost = manifest.metadata?.hashesPostCleanup?.["data/kupola_db.json"];
+      const expectedStoragePost = manifest.metadata?.hashesPostCleanup?.["data/kupola_storage.json"];
+
+      const matchesPre = currentDbHash === expectedDbPre && currentStorageHash === expectedStoragePre;
+      const matchesPost = expectedDbPost ? currentDbHash === expectedDbPost && currentStorageHash === expectedStoragePost : true;
+
+      // Se a base foi modificada por outras operações que não batem nem com o estado pré nem pós limpeza
+      const isForce = options.force === true || process.env.FORCE_ROLLBACK === "true";
+      if (!matchesPre && !matchesPost && !isForce) {
+        throw new Error(
+          "ALERTA DE SEGURANÇA NO ROLLBACK: A base de dados atual possui alterações divergentes do manifesto. " +
+            "A restauração foi bloqueada para evitar a perda acidental de dados modificados por outras operações. " +
+            "Se for intencional, defina FORCE_ROLLBACK=true ou force: true."
+        );
+      }
+    } catch (e) {
+      if (e.message.startsWith("ALERTA DE SEGURANÇA")) throw e;
+      console.warn(`[AVISO] Erro ao ler manifesto de integridade: ${e.message}`);
+    }
+  }
+
+  // 5. Preservar cópia de segurança (snapshot) do estado atual antes da restauração
+  if (!fs.existsSync(backupsDir)) {
+    fs.mkdirSync(backupsDir, { recursive: true });
+  }
+
   const preRollbackTimestamp = new Date().toISOString().replace(/[:.]/g, "-");
   const preRollbackDir = path.join(backupsDir, `pre-rollback-${preRollbackTimestamp}`);
   fs.mkdirSync(preRollbackDir, { recursive: true });
@@ -85,11 +127,11 @@ export function performRollback(targetBackupDir = null, options = {}) {
   fs.writeFileSync(path.join(preRollbackDir, "sha256sums.txt"), preRollbackShaLog, "utf-8");
   console.log(`[SEGURANÇA] Cópia íntegra do estado atual preservada em: ${preRollbackDir}`);
 
-  // 6. Restore files safely
+  // 6. Restaurar arquivos com segurança
   fs.copyFileSync(backupDb, targetDbPath);
   fs.copyFileSync(backupStorage, targetStoragePath);
 
-  // 7. Verify restored files match backup hashes
+  // 7. Verificar se os arquivos restaurados coincidem exatamente com os hashes do backup
   const restoredDbHash = calculateHash(targetDbPath);
   const restoredStorageHash = calculateHash(targetStoragePath);
 
@@ -123,3 +165,4 @@ if (process.argv[1] && process.argv[1].endsWith("rollback_cleanup.mjs")) {
     process.exit(1);
   }
 }
+
