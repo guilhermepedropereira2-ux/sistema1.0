@@ -1,11 +1,12 @@
 import fs from "fs";
 import path from "path";
+import os from "os";
 import crypto from "crypto";
 import { performRollback, validateSha256SumsFile, calculateHash } from "./rollback_cleanup.mjs";
 
-console.log("=======================================================================");
-console.log("TESTES ISOLADOS DAS PROTEÇÕES DE ROLLBACK (ETAPA 3.6A.4)");
-console.log("=======================================================================\n");
+console.log("================================================================================");
+console.log("=== KUPOLA 2.0 — ETAPA 3.6C.3: TESTES ISOLADOS DE RECUPERAÇÃO DO ROLLBACK    ===");
+console.log("================================================================================\n");
 
 let passedTests = 0;
 let totalTests = 0;
@@ -17,159 +18,393 @@ function assert(condition, testName) {
     passedTests++;
   } else {
     console.error(`[FAIL] Teste ${totalTests}: ${testName}`);
+    throw new Error(`Falha de asserção no teste: ${testName}`);
   }
 }
 
-// Criar diretório sandbox isolado em /tmp
-const sandboxDir = path.join("/tmp", `rollback_test_sandbox_${Date.now()}`);
-fs.mkdirSync(path.join(sandboxDir, "data"), { recursive: true });
-fs.mkdirSync(path.join(sandboxDir, "backups", "valid_backup"), { recursive: true });
+// Sandbox isolada em diretório temporário
+const sandboxRoot = path.join(os.tmpdir(), `kupola_rollback_test_${Date.now()}`);
+fs.mkdirSync(sandboxRoot, { recursive: true });
 
-// Conteúdo fictício de teste
-const currentDbContent = JSON.stringify({ version: "1.0", db: "current_data" });
-const currentStorageContent = JSON.stringify({ version: "1.0", storage: "current_data" });
-const backupDbContent = JSON.stringify({ version: "1.0", db: "backup_data" });
-const backupStorageContent = JSON.stringify({ version: "1.0", storage: "backup_data" });
+function setupEnvironment(envName) {
+  const envDir = path.join(sandboxRoot, envName);
+  const dataDir = path.join(envDir, "data");
+  const backupDir = path.join(envDir, "backups", "backup_2026");
 
-const currentDbPath = path.join(sandboxDir, "data", "kupola_db.json");
-const currentStoragePath = path.join(sandboxDir, "data", "kupola_storage.json");
-fs.writeFileSync(currentDbPath, currentDbContent, "utf-8");
-fs.writeFileSync(currentStoragePath, currentStorageContent, "utf-8");
+  fs.mkdirSync(dataDir, { recursive: true });
+  fs.mkdirSync(backupDir, { recursive: true });
 
-const backupDbPath = path.join(sandboxDir, "backups", "valid_backup", "kupola_db.json");
-const backupStoragePath = path.join(sandboxDir, "backups", "valid_backup", "kupola_storage.json");
-fs.writeFileSync(backupDbPath, backupDbContent, "utf-8");
-fs.writeFileSync(backupStoragePath, backupStorageContent, "utf-8");
+  const preCleanupDbContent = JSON.stringify({ state: "pre_cleanup", items: [1, 2, 3] });
+  const preCleanupStorageContent = JSON.stringify({ state: "pre_cleanup", orgs: ["a", "b"] });
 
-const currentDbHash = calculateHash(currentDbPath);
-const currentStorageHash = calculateHash(currentStoragePath);
-const backupDbHash = calculateHash(backupDbPath);
-const backupStorageHash = calculateHash(backupStoragePath);
+  const postCleanupDbContent = JSON.stringify({ state: "post_cleanup", items: [1] });
+  const postCleanupStorageContent = JSON.stringify({ state: "post_cleanup", orgs: ["a"] });
 
-// Criar sha256sums.txt válido
-const validShaContent =
-  `${backupDbHash}  kupola_db.json\n` +
-  `${backupStorageHash}  kupola_storage.json\n`;
-const shaFilePath = path.join(sandboxDir, "backups", "valid_backup", "sha256sums.txt");
-fs.writeFileSync(shaFilePath, validShaContent, "utf-8");
+  // Backup contém o estado pré-limpeza
+  const backupDbPath = path.join(backupDir, "kupola_db.json");
+  const backupStoragePath = path.join(backupDir, "kupola_storage.json");
+  fs.writeFileSync(backupDbPath, preCleanupDbContent, "utf-8");
+  fs.writeFileSync(backupStoragePath, preCleanupStorageContent, "utf-8");
 
-// --- TESTE 1: Exigência de Confirmação Explícita ---
-try {
-  performRollback(path.join(sandboxDir, "backups", "valid_backup"), {
-    rootDir: sandboxDir,
-    confirm: false, // Sem confirmação
-    expectedCurrentHashes: { "kupola_db.json": currentDbHash, "kupola_storage.json": currentStorageHash },
-  });
-  assert(false, "Deve rejeitar execução sem confirmação explícita");
-} catch (e) {
-  assert(
-    e.message.includes("FALHA DE CONFIRMAÇÃO"),
-    "Bloqueia operação e lança FALHA DE CONFIRMAÇÃO sem confirmação explícita"
-  );
+  const backupDbHash = calculateHash(backupDbPath);
+  const backupStorageHash = calculateHash(backupStoragePath);
+
+  // sha256sums.txt no backup
+  const shaContent = `${backupDbHash}  kupola_db.json\n${backupStorageHash}  kupola_storage.json\n`;
+  fs.writeFileSync(path.join(backupDir, "sha256sums.txt"), shaContent, "utf-8");
+
+  // Manifesto no backup
+  const manifestData = {
+    metadata: {
+      generatedAt: new Date().toISOString(),
+      status: "PLANNED",
+      hashesPreCleanup: {
+        "data/kupola_db.json": backupDbHash,
+        "data/kupola_storage.json": backupStorageHash,
+      },
+      hashesPostCleanup: {
+        "data/kupola_db.json": crypto.createHash("sha256").update(postCleanupDbContent).digest("hex"),
+        "data/kupola_storage.json": crypto.createHash("sha256").update(postCleanupStorageContent).digest("hex"),
+      },
+      sha256: {
+        kupola_db: backupDbHash,
+        kupola_storage: backupStorageHash,
+      },
+    },
+  };
+  fs.writeFileSync(path.join(backupDir, "cleanup_manifest.json"), JSON.stringify(manifestData, null, 2), "utf-8");
+  fs.writeFileSync(path.join(dataDir, "cleanup_manifest.json"), JSON.stringify(manifestData, null, 2), "utf-8");
+
+  return {
+    envDir,
+    dataDir,
+    backupDir,
+    backupDbHash,
+    backupStorageHash,
+    preCleanupDbContent,
+    preCleanupStorageContent,
+    postCleanupDbContent,
+    postCleanupStorageContent,
+    postDbHash: manifestData.metadata.hashesPostCleanup["data/kupola_db.json"],
+    postStorageHash: manifestData.metadata.hashesPostCleanup["data/kupola_storage.json"],
+  };
 }
 
-// --- TESTE 2: Validação de sha256sums.txt - Linha Inválida ---
-const invalidLineBackupDir = path.join(sandboxDir, "backups", "invalid_line_backup");
-fs.mkdirSync(invalidLineBackupDir, { recursive: true });
-fs.writeFileSync(path.join(invalidLineBackupDir, "sha256sums.txt"), "linhainvalidasemhash kupola_db.json\n", "utf-8");
 try {
-  validateSha256SumsFile(path.join(invalidLineBackupDir, "sha256sums.txt"), invalidLineBackupDir);
-  assert(false, "Deve rejeitar linha inválida em sha256sums.txt");
-} catch (e) {
-  assert(e.message.includes("LINHA INVÁLIDA"), "Detecta linha inválida no sha256sums.txt");
-}
+  // ---------------------------------------------------------------------------
+  // TESTE 1: Recuperação bem-sucedida quando o estado atual é PÓS-LIMPEZA
+  // ---------------------------------------------------------------------------
+  console.log("--- Executando Teste 1: Recuperação em Estado Pós-Limpeza ---");
+  const env1 = setupEnvironment("test1");
+  const db1Path = path.join(env1.dataDir, "kupola_db.json");
+  const storage1Path = path.join(env1.dataDir, "kupola_storage.json");
 
-// --- TESTE 3: Validação de sha256sums.txt - Registro Duplicado ---
-const duplicateFileBackupDir = path.join(sandboxDir, "backups", "dup_file_backup");
-fs.mkdirSync(duplicateFileBackupDir, { recursive: true });
-fs.writeFileSync(
-  path.join(duplicateFileBackupDir, "sha256sums.txt"),
-  `${backupDbHash}  kupola_db.json\n${backupStorageHash}  kupola_db.json\n`,
-  "utf-8"
-);
-try {
-  validateSha256SumsFile(path.join(duplicateFileBackupDir, "sha256sums.txt"), duplicateFileBackupDir);
-  assert(false, "Deve rejeitar arquivo duplicado em sha256sums.txt");
-} catch (e) {
-  assert(e.message.includes("REGISTRO DUPLICADO"), "Detecta arquivo duplicado no sha256sums.txt");
-}
+  // Escrever estado pós-limpeza nos arquivos atuais de data/
+  fs.writeFileSync(db1Path, env1.postCleanupDbContent, "utf-8");
+  fs.writeFileSync(storage1Path, env1.postCleanupStorageContent, "utf-8");
 
-// --- TESTE 4: Remoção do bypass FORCE_ROLLBACK / Bloqueio por Divergência ---
-try {
-  performRollback(path.join(sandboxDir, "backups", "valid_backup"), {
-    rootDir: sandboxDir,
+  const res1 = performRollback(env1.backupDir, {
+    rootDir: env1.envDir,
     confirm: true,
-    force: true, // Forçar bypass
-    expectedCurrentHashes: { "kupola_db.json": "hash_falso_123", "kupola_storage.json": "hash_falso_456" },
   });
-  assert(false, "Deve rejeitar divergência mesmo com force: true");
-} catch (e) {
-  assert(
-    e.message.includes("ALERTA DE SEGURANÇA NO ROLLBACK"),
-    "Bloqueia divergência de estado atual e ignora flag de força/bypass"
-  );
-}
 
-// --- TESTE 5: Proteção contra Falha Parcial e Auto-Reversão ---
-const originalRenameSync = fs.renameSync;
-let renameCallCount = 0;
-// Interceptar renameSync para simular falha ao renomear o segundo arquivo (kupola_storage.json)
-fs.renameSync = function (oldPath, newPath) {
-  renameCallCount++;
-  if (newPath.includes("kupola_storage.json")) {
-    throw new Error("SIMULATED_DISK_FAILURE_ON_STORAGE");
+  assert(
+    res1.isSuccess === true &&
+      res1.restoredDbHash === env1.backupDbHash &&
+      res1.restoredStorageHash === env1.backupStorageHash,
+    "Recuperação aceita e concluída com sucesso quando o estado atual corresponde a POST_CLEANUP"
+  );
+
+  // ---------------------------------------------------------------------------
+  // TESTE 2: Bloqueio diante de hashes inesperados
+  // ---------------------------------------------------------------------------
+  console.log("\n--- Executando Teste 2: Bloqueio de Hashes Inesperados ---");
+  const env2 = setupEnvironment("test2");
+  const db2Path = path.join(env2.dataDir, "kupola_db.json");
+  const storage2Path = path.join(env2.dataDir, "kupola_storage.json");
+
+  // Escrever conteúdo desconhecido que diverge de pré e de pós
+  fs.writeFileSync(db2Path, JSON.stringify({ state: "corrupted_or_arbitrary_data" }), "utf-8");
+  fs.writeFileSync(storage2Path, env1.postCleanupStorageContent, "utf-8");
+
+  let blockedUnexpected = false;
+  try {
+    performRollback(env2.backupDir, {
+      rootDir: env2.envDir,
+      confirm: true,
+    });
+  } catch (err) {
+    if (err.message.includes("alterações divergentes do estado esperado")) {
+      blockedUnexpected = true;
+    }
   }
-  return originalRenameSync.call(fs, oldPath, newPath);
-};
+  assert(blockedUnexpected, "Bloqueia operação quando os dados atuais possuem hashes inesperados");
 
-try {
-  performRollback(path.join(sandboxDir, "backups", "valid_backup"), {
-    rootDir: sandboxDir,
-    confirm: true,
-    expectedCurrentHashes: { "kupola_db.json": currentDbHash, "kupola_storage.json": currentStorageHash },
-  });
-  assert(false, "Deve lançar erro de falha parcial ao falhar no segundo arquivo");
-} catch (e) {
-  const dbContentAfterPartialFailure = fs.readFileSync(currentDbPath, "utf-8");
-  const isDbRevertedToOriginal = dbContentAfterPartialFailure === currentDbContent;
+  // ---------------------------------------------------------------------------
+  // TESTE 3: Bloqueio de um estado inconsistente entre os dois arquivos
+  // ---------------------------------------------------------------------------
+  console.log("\n--- Executando Teste 3: Bloqueio de Estado Misto/Inconsistente ---");
+  const env3 = setupEnvironment("test3");
+  const db3Path = path.join(env3.dataDir, "kupola_db.json");
+  const storage3Path = path.join(env3.dataDir, "kupola_storage.json");
+
+  // DB em Pré-limpeza e Storage em Pós-limpeza (estado incompatível)
+  fs.writeFileSync(db3Path, env3.preCleanupDbContent, "utf-8");
+  fs.writeFileSync(storage3Path, env3.postCleanupStorageContent, "utf-8");
+
+  let blockedMixed = false;
+  try {
+    performRollback(env3.backupDir, {
+      rootDir: env3.envDir,
+      confirm: true,
+    });
+  } catch (err) {
+    if (err.message.includes("Estado inconsistente e misto detectado")) {
+      blockedMixed = true;
+    }
+  }
+  assert(blockedMixed, "Detecta e bloqueia estado misto (um arquivo pré e outro pós-limpeza)");
+
+  // ---------------------------------------------------------------------------
+  // TESTE 4: Manutenção da proteção contra bypass por força
+  // ---------------------------------------------------------------------------
+  console.log("\n--- Executando Teste 4: Rejeição de Bypass por Força ---");
+  const env4 = setupEnvironment("test4");
+  const db4Path = path.join(env4.dataDir, "kupola_db.json");
+  const storage4Path = path.join(env4.dataDir, "kupola_storage.json");
+
+  fs.writeFileSync(db4Path, "arbitrary_corrupt_data", "utf-8");
+  fs.writeFileSync(storage4Path, env4.postCleanupStorageContent, "utf-8");
+
+  let blockedForce = false;
+  try {
+    performRollback(env4.backupDir, {
+      rootDir: env4.envDir,
+      confirm: true,
+      force: true,
+      FORCE_ROLLBACK: true,
+    });
+  } catch (err) {
+    if (err.message.includes("sem possibilidade de bypass automático")) {
+      blockedForce = true;
+    }
+  }
+  assert(blockedForce, "Rejeita tentativa de bypass mesmo com parâmetros de força ativados");
+
+  // ---------------------------------------------------------------------------
+  // TESTE 5: Falha na substituição do segundo arquivo (Auto-Reversão do 1º)
+  // ---------------------------------------------------------------------------
+  console.log("\n--- Executando Teste 5: Falha na Substituição do Segundo Arquivo ---");
+  const env5 = setupEnvironment("test5");
+  const db5Path = path.join(env5.dataDir, "kupola_db.json");
+  const storage5Path = path.join(env5.dataDir, "kupola_storage.json");
+
+  fs.writeFileSync(db5Path, env5.postCleanupDbContent, "utf-8");
+  fs.writeFileSync(storage5Path, env5.postCleanupStorageContent, "utf-8");
+
+  const originalRenameSync = fs.renameSync;
+  let simulatedSecondFileFail = false;
+  fs.renameSync = function (oldPath, newPath) {
+    if (newPath.includes("kupola_storage.json")) {
+      throw new Error("DISK_IO_FAILURE_STORAGE");
+    }
+    return originalRenameSync.call(fs, oldPath, newPath);
+  };
+
+  try {
+    performRollback(env5.backupDir, {
+      rootDir: env5.envDir,
+      confirm: true,
+    });
+  } catch (err) {
+    if (err.message.includes("FALHA PARCIAL DETECTADA E REVERTIDA")) {
+      simulatedSecondFileFail = true;
+    }
+  } finally {
+    fs.renameSync = originalRenameSync;
+  }
+
+  const db5ContentAfter = fs.readFileSync(db5Path, "utf-8");
   assert(
-    e.message.includes("FALHA PARCIAL DETECTADA E REVERTIDA") && isDbRevertedToOriginal,
-    "Detecta falha parcial no segundo arquivo e reverte automaticamente o primeiro arquivo para o snapshot"
+    simulatedSecondFileFail && db5ContentAfter === env5.postCleanupDbContent,
+    "Falha no segundo arquivo reverte imediatamente o primeiro para o snapshot intacto"
   );
+
+  // ---------------------------------------------------------------------------
+  // TESTE 6 & 7: Falha de Validação Final e Auto-Recuperação de Ambos os Arquivos
+  // ---------------------------------------------------------------------------
+  console.log("\n--- Executando Teste 6 e 7: Falha na Validação Final e Auto-Recuperação Dupla ---");
+  const env6 = setupEnvironment("test6");
+  const db6Path = path.join(env6.dataDir, "kupola_db.json");
+  const storage6Path = path.join(env6.dataDir, "kupola_storage.json");
+
+  fs.writeFileSync(db6Path, env6.postCleanupDbContent, "utf-8");
+  fs.writeFileSync(storage6Path, env6.postCleanupStorageContent, "utf-8");
+
+  const db6HashBefore = calculateHash(db6Path);
+  const storage6HashBefore = calculateHash(storage6Path);
+
+  // Interceptar fs.renameSync para simular corrupção silenciosa nos arquivos após serem renomeados
+  fs.renameSync = function (oldPath, newPath) {
+    originalRenameSync.call(fs, oldPath, newPath);
+    // Adulterar o conteúdo logo após a renomeação para simular falha de hash na validação pós-restauração
+    if (newPath.includes("kupola_db.json")) {
+      fs.writeFileSync(newPath, "corrompido_apos_rename", "utf-8");
+    }
+  };
+
+  let doubleRecoveryTriggered = false;
+  try {
+    performRollback(env6.backupDir, {
+      rootDir: env6.envDir,
+      confirm: true,
+    });
+  } catch (err) {
+    if (err.message.includes("AUTO-RECUPERAÇÃO CONCLUÍDA") && err.message.includes("REVERTIDOS COM SUCESSO")) {
+      doubleRecoveryTriggered = true;
+    }
+  } finally {
+    fs.renameSync = originalRenameSync;
+  }
+
+  const db6HashAfter = calculateHash(db6Path);
+  const storage6HashAfter = calculateHash(storage6Path);
+
+  assert(
+    doubleRecoveryTriggered &&
+      db6HashAfter === db6HashBefore &&
+      storage6HashAfter === storage6HashBefore,
+    "Validação final detecta corrupção pós-rename e recupera com sucesso ambos os arquivos ao snapshot"
+  );
+
+  // ---------------------------------------------------------------------------
+  // TESTE 8: Comportamento quando a própria recuperação do snapshot falhar
+  // ---------------------------------------------------------------------------
+  console.log("\n--- Executando Teste 8: Falha Catastrófica na Recuperação do Snapshot ---");
+  const env8 = setupEnvironment("test8");
+  const db8Path = path.join(env8.dataDir, "kupola_db.json");
+  const storage8Path = path.join(env8.dataDir, "kupola_storage.json");
+
+  fs.writeFileSync(db8Path, env8.postCleanupDbContent, "utf-8");
+  fs.writeFileSync(storage8Path, env8.postCleanupStorageContent, "utf-8");
+
+  // Interceptar fs.renameSync para simular falha de hash pós-rename
+  fs.renameSync = function (oldPath, newPath) {
+    originalRenameSync.call(fs, oldPath, newPath);
+    if (newPath.includes("kupola_db.json")) {
+      fs.writeFileSync(newPath, "corrompido_apos_rename", "utf-8");
+    }
+  };
+
+  const originalCopyFileSync = fs.copyFileSync;
+  // Interceptar copyFileSync para falhar ao tentar recuperar do snapshot
+  fs.copyFileSync = function (src, dest) {
+    if (src.includes("pre-rollback") && dest.includes("kupola_storage.json")) {
+      throw new Error("READ_ONLY_FILESYSTEM_ON_RECOVERY");
+    }
+    return originalCopyFileSync.call(fs, src, dest);
+  };
+
+  let catastrophicReported = false;
+  try {
+    performRollback(env8.backupDir, {
+      rootDir: env8.envDir,
+      confirm: true,
+    });
+  } catch (err) {
+    if (
+      err.message.includes("ERRO CATASTRÓFICO") &&
+      err.message.includes("CÓPIA DE SEGURANÇA INTACTA DISPONÍVEL") &&
+      err.message.includes("Intervenção manual necessária")
+    ) {
+      catastrophicReported = true;
+    }
+  } finally {
+    fs.renameSync = originalRenameSync;
+    fs.copyFileSync = originalCopyFileSync;
+  }
+
+  assert(
+    catastrophicReported,
+    "Emite relatório forense explícito preservando artefatos quando a recuperação do snapshot falha"
+  );
+
+  // ---------------------------------------------------------------------------
+  // TESTE 9: Validação dos hashes finais após recuperação bem-sucedida
+  // ---------------------------------------------------------------------------
+  console.log("\n--- Executando Teste 9: Validação Rigorosa dos Hashes Finais ---");
+  const env9 = setupEnvironment("test9");
+  const db9Path = path.join(env9.dataDir, "kupola_db.json");
+  const storage9Path = path.join(env9.dataDir, "kupola_storage.json");
+
+  fs.writeFileSync(db9Path, env9.postCleanupDbContent, "utf-8");
+  fs.writeFileSync(storage9Path, env9.postCleanupStorageContent, "utf-8");
+
+  const res9 = performRollback(env9.backupDir, {
+    rootDir: env9.envDir,
+    confirm: true,
+  });
+
+  const finalDiskDbHash = calculateHash(db9Path);
+  const finalDiskStorageHash = calculateHash(storage9Path);
+
+  assert(
+    res9.isSuccess === true &&
+      finalDiskDbHash === env9.backupDbHash &&
+      finalDiskStorageHash === env9.backupStorageHash &&
+      res9.restoredDbHash === finalDiskDbHash &&
+      res9.restoredStorageHash === finalDiskStorageHash,
+    "Verificação integral dos hashes finais no disco confirmando paridade de 100% com o backup"
+  );
+
+  // ---------------------------------------------------------------------------
+  // TESTES ADICIONAIS: sha256sums.txt e Confirmação Obrigatória
+  // ---------------------------------------------------------------------------
+  console.log("\n--- Executando Testes Adicionais de Salvaguarda de Entrada ---");
+
+  // Rejeição sem confirmação
+  let blockedNoConfirm = false;
+  try {
+    performRollback(env1.backupDir, {
+      rootDir: env1.envDir,
+      confirm: false,
+    });
+  } catch (e) {
+    if (e.message.includes("FALHA DE CONFIRMAÇÃO")) blockedNoConfirm = true;
+  }
+  assert(blockedNoConfirm, "Exige confirmação explícita antes de qualquer operação");
+
+  // Linha inválida em sha256sums.txt
+  const badShaDir = path.join(sandboxRoot, "bad_sha_dir");
+  fs.mkdirSync(badShaDir, { recursive: true });
+  fs.writeFileSync(path.join(badShaDir, "sha256sums.txt"), "linhainvalida kupola_db.json\n");
+  let blockedBadLine = false;
+  try {
+    validateSha256SumsFile(path.join(badShaDir, "sha256sums.txt"), badShaDir);
+  } catch (e) {
+    if (e.message.includes("LINHA INVÁLIDA")) blockedBadLine = true;
+  }
+  assert(blockedBadLine, "Detecta linha com sintaxe inválida no sha256sums.txt");
+
+  // Registro duplicado em sha256sums.txt
+  const dupShaDir = path.join(sandboxRoot, "dup_sha_dir");
+  fs.mkdirSync(dupShaDir, { recursive: true });
+  fs.writeFileSync(
+    path.join(dupShaDir, "sha256sums.txt"),
+    `${env1.backupDbHash}  kupola_db.json\n${env1.backupStorageHash}  kupola_db.json\n`
+  );
+  let blockedDup = false;
+  try {
+    validateSha256SumsFile(path.join(dupShaDir, "sha256sums.txt"), dupShaDir);
+  } catch (e) {
+    if (e.message.includes("REGISTRO DUPLICADO")) blockedDup = true;
+  }
+  assert(blockedDup, "Detecta arquivo duplicado no sha256sums.txt");
+
+  console.log("\n================================================================================");
+  console.log(`=== RESULTADO: TODOS OS ${passedTests}/${totalTests} TESTES FORAM APROVADOS COM 100% DE SUCESSO! ===`);
+  console.log("================================================================================\n");
 } finally {
-  fs.renameSync = originalRenameSync; // Restaurar fs.renameSync original
-}
-
-// --- TESTE 6: Restauração com Sucesso em Ambiente Sandbox ---
-try {
-  const result = performRollback(path.join(sandboxDir, "backups", "valid_backup"), {
-    rootDir: sandboxDir,
-    confirm: true,
-    expectedCurrentHashes: { "kupola_db.json": currentDbHash, "kupola_storage.json": currentStorageHash },
-  });
-
-  const restoredDbContent = fs.readFileSync(currentDbPath, "utf-8");
-  const restoredStorageContent = fs.readFileSync(currentStoragePath, "utf-8");
-
-  const isRestoredCorrectly =
-    restoredDbContent === backupDbContent &&
-    restoredStorageContent === backupStorageContent &&
-    result.isSuccess === true;
-
-  assert(isRestoredCorrectly, "Restauração com sucesso e validação final dos hashes do backup");
-} catch (e) {
-  assert(false, `Falha inesperada no rollback com parâmetros válidos: ${e.message}`);
-}
-
-// Limpeza da sandbox de teste em /tmp
-try {
-  fs.rmSync(sandboxDir, { recursive: true, force: true });
-} catch (_) {}
-
-console.log("\n================================================");
-console.log(`RESULTADO DOS TESTES: ${passedTests}/${totalTests} PASSARAM`);
-console.log("================================================\n");
-
-if (passedTests !== totalTests) {
-  process.exit(1);
+  // Limpar diretório temporário isolado da sandbox
+  fs.rmSync(sandboxRoot, { recursive: true, force: true });
 }

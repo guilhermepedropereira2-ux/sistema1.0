@@ -9,9 +9,11 @@ import crypto from "crypto";
  * ('kupola_db.json' e 'kupola_storage.json').
  * Para mitigar esse limite físico sem simular falsa atomicidade perfeita:
  * 1. Os arquivos de backup são validados previamente e preparados em arquivos temporários (.tmp).
- * 2. É feita a substituição sequencial protegida via fs.renameSync.
- * 3. Se a substituição do segundo arquivo falhar, o script executa a REVERSÃO IMEDIATA do primeiro arquivo a partir do
- *    snapshot pré-rollback e valida sua integridade.
+ * 2. É gerado um snapshot pré-rollback validado criptograficamente com hashes SHA-256.
+ * 3. É feita a substituição sequencial protegida via fs.renameSync.
+ * 4. Se a substituição do segundo arquivo falhar, o script executa a reversão automática do primeiro arquivo para o snapshot.
+ * 5. Se a validação final pós-restauração falhar, o script executa a reversão automática de AMBOS os arquivos para o snapshot.
+ * 6. Se a própria reversão do snapshot falhar, os artefatos são preservados e um relatório forense detalhado é emitido.
  */
 
 export function calculateHash(filePath) {
@@ -144,7 +146,7 @@ export function performRollback(targetBackupDir = null, options = {}) {
   const backupDbHash = verifiedBackupHashes.get("kupola_db.json");
   const backupStorageHash = verifiedBackupHashes.get("kupola_storage.json");
 
-  // 4. Verificar o estado atual dos arquivos de dados contra o estado esperado (SEM BYPASS / FORCE_ROLLBACK)
+  // 4. Verificar o estado atual dos arquivos de dados contra estados conhecidos e consistentes (SEM BYPASS / FORCE_ROLLBACK)
   const currentDbHash = calculateHash(targetDbPath);
   const currentStorageHash = calculateHash(targetStoragePath);
 
@@ -160,46 +162,97 @@ export function performRollback(targetBackupDir = null, options = {}) {
     options.expectedCurrentHashes?.["data/kupola_storage.json"] ||
     null;
 
-  if (!expectedDbHash || !expectedStorageHash) {
+  let recognizedStateName = null;
+
+  if (expectedDbHash && expectedStorageHash) {
+    recognizedStateName = "EXPLICIT_OPTIONS";
+    if (currentDbHash !== expectedDbHash || currentStorageHash !== expectedStorageHash) {
+      throw new Error(
+        `ALERTA DE SEGURANÇA NO ROLLBACK: A base de dados atual possui alterações divergentes dos hashes esperados fornecidos!\n` +
+          `  kupola_db.json: atual (${currentDbHash}) vs esperado (${expectedDbHash})\n` +
+          `  kupola_storage.json: atual (${currentStorageHash}) vs esperado (${expectedStorageHash})\n` +
+          `A restauração foi BLOQUEADA sem possibilidade de bypass automático para evitar a perda de dados.`
+      );
+    }
+  } else {
+    // Buscar manifestos nos caminhos potenciais
     const manifestPath = fs.existsSync(path.join(selectedBackupDir, "cleanup_manifest.json"))
       ? path.join(selectedBackupDir, "cleanup_manifest.json")
       : fs.existsSync(path.join(rootDir, "data", "cleanup_manifest.json"))
       ? path.join(rootDir, "data", "cleanup_manifest.json")
       : null;
 
-    if (manifestPath && fs.existsSync(manifestPath)) {
-      try {
-        const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf-8"));
-        expectedDbHash =
-          expectedDbHash ||
-          manifest.metadata?.hashesPreCleanup?.["data/kupola_db.json"] ||
-          manifest.metadata?.hashesPostCleanup?.["data/kupola_db.json"] ||
-          manifest.metadata?.sha256?.kupola_db;
-        expectedStorageHash =
-          expectedStorageHash ||
-          manifest.metadata?.hashesPreCleanup?.["data/kupola_storage.json"] ||
-          manifest.metadata?.hashesPostCleanup?.["data/kupola_storage.json"] ||
-          manifest.metadata?.sha256?.kupola_storage;
-      } catch (e) {
-        throw new Error(`FALHA DE VALIDAÇÃO DO MANIFESTO: Não foi possível ler o manifesto de integridade: ${e.message}`);
-      }
+    if (!manifestPath || !fs.existsSync(manifestPath)) {
+      throw new Error(
+        "FALHA DE VALIDAÇÃO DE SEGURANÇA: Não foi possível determinar e verificar os hashes esperados para o estado atual dos arquivos (manifesto ausente e expectedCurrentHashes não fornecido). Operação interrompida."
+      );
+    }
+
+    let manifest;
+    try {
+      manifest = JSON.parse(fs.readFileSync(manifestPath, "utf-8"));
+    } catch (e) {
+      throw new Error(`FALHA DE VALIDAÇÃO DO MANIFESTO: Não foi possível ler o manifesto de integridade: ${e.message}`);
+    }
+
+    const preDb =
+      manifest.metadata?.hashesPreCleanup?.["data/kupola_db.json"] ||
+      manifest.metadata?.hashesPreCleanup?.["kupola_db.json"] ||
+      manifest.metadata?.sha256?.kupola_db ||
+      null;
+    const preStorage =
+      manifest.metadata?.hashesPreCleanup?.["data/kupola_storage.json"] ||
+      manifest.metadata?.hashesPreCleanup?.["kupola_storage.json"] ||
+      manifest.metadata?.sha256?.kupola_storage ||
+      null;
+
+    const postDb =
+      manifest.metadata?.hashesPostCleanup?.["data/kupola_db.json"] ||
+      manifest.metadata?.hashesPostCleanup?.["kupola_db.json"] ||
+      null;
+    const postStorage =
+      manifest.metadata?.hashesPostCleanup?.["data/kupola_storage.json"] ||
+      manifest.metadata?.hashesPostCleanup?.["kupola_storage.json"] ||
+      null;
+
+    const matchesPre = Boolean(preDb && preStorage && currentDbHash === preDb && currentStorageHash === preStorage);
+    const matchesPost = Boolean(postDb && postStorage && currentDbHash === postDb && currentStorageHash === postStorage);
+
+    // Detecção de estado misto / inconsistente
+    const dbMatchesPre = preDb && currentDbHash === preDb;
+    const dbMatchesPost = postDb && currentDbHash === postDb;
+    const storageMatchesPre = preStorage && currentStorageHash === preStorage;
+    const storageMatchesPost = postStorage && currentStorageHash === postStorage;
+
+    if ((dbMatchesPre && storageMatchesPost) || (dbMatchesPost && storageMatchesPre)) {
+      throw new Error(
+        `ALERTA DE SEGURANÇA NO ROLLBACK: Estado inconsistente e misto detectado entre os arquivos!\n` +
+          `  kupola_db.json corresponde ao estado ${dbMatchesPre ? "PRÉ-LIMPEZA" : "PÓS-LIMPEZA"},\n` +
+          `  enquanto kupola_storage.json corresponde ao estado ${storageMatchesPre ? "PRÉ-LIMPEZA" : "PÓS-LIMPEZA"}.\n` +
+          `A restauração foi BLOQUEADA devido a combinação incompatível entre os bancos de dados.`
+      );
+    }
+
+    if (matchesPost) {
+      recognizedStateName = "POST_CLEANUP";
+      expectedDbHash = postDb;
+      expectedStorageHash = postStorage;
+    } else if (matchesPre) {
+      recognizedStateName = "PRE_CLEANUP";
+      expectedDbHash = preDb;
+      expectedStorageHash = preStorage;
+    } else {
+      throw new Error(
+        `ALERTA DE SEGURANÇA NO ROLLBACK: A base de dados atual possui alterações divergentes do estado esperado!\n` +
+          `  kupola_db.json atual: ${currentDbHash} (esperado pré: ${preDb || "N/A"}, pós: ${postDb || "N/A"})\n` +
+          `  kupola_storage.json atual: ${currentStorageHash} (esperado pré: ${preStorage || "N/A"}, pós: ${postStorage || "N/A"})\n` +
+          `O estado atual não corresponde integralmente a nenhum estado conhecido (pré-limpeza ou pós-limpeza).\n` +
+          `A restauração foi BLOQUEADA sem possibilidade de bypass automático para evitar a perda de dados.`
+      );
     }
   }
 
-  if (!expectedDbHash || !expectedStorageHash) {
-    throw new Error(
-      "FALHA DE VALIDAÇÃO DE SEGURANÇA: Não foi possível determinar e verificar os hashes esperados para o estado atual dos arquivos (manifesto ausente e expectedCurrentHashes não fornecido). Operação interrompida."
-    );
-  }
-
-  if (currentDbHash !== expectedDbHash || currentStorageHash !== expectedStorageHash) {
-    throw new Error(
-      `ALERTA DE SEGURANÇA NO ROLLBACK: A base de dados atual possui alterações divergentes do estado esperado!\n` +
-        `  kupola_db.json: atual (${currentDbHash}) vs esperado (${expectedDbHash})\n` +
-        `  kupola_storage.json: atual (${currentStorageHash}) vs esperado (${expectedStorageHash})\n` +
-        `A restauração foi BLOQUEADA sem possibilidade de bypass automático para evitar a perda de dados.`
-    );
-  }
+  console.log(`- Estado atual validado como consistente: ${recognizedStateName}`);
 
   // 5. Preservar cópia de segurança (snapshot) do estado atual e validá-la antes da restauração
   if (!fs.existsSync(backupsDir)) {
@@ -292,14 +345,60 @@ export function performRollback(targetBackupDir = null, options = {}) {
     }
   }
 
-  // 7. Validação final pós-restauração
+  // 7. Validação final pós-restauração com mecanismo de auto-recuperação dupla
   const restoredDbHash = calculateHash(targetDbPath);
   const restoredStorageHash = calculateHash(targetStoragePath);
 
   const isSuccess = restoredDbHash === backupDbHash && restoredStorageHash === backupStorageHash;
 
   if (!isSuccess) {
-    throw new Error("ERRO CRÍTICO NA RESTAURAÇÃO: Os arquivos restaurados não coincidem com os hashes do backup!");
+    console.error(`[FALHA CRÍTICA NA VALIDAÇÃO FINAL] Os arquivos restaurados não coincidem com os hashes do backup!`);
+    console.error(`  kupola_db.json: restaurado (${restoredDbHash}) vs backup (${backupDbHash})`);
+    console.error(`  kupola_storage.json: restaurado (${restoredStorageHash}) vs backup (${backupStorageHash})`);
+    console.log(`[AÇÃO DE EMERGÊNCIA] Iniciando auto-recuperação de AMBOS os arquivos para o snapshot pré-rollback...`);
+
+    let dbRecovered = false;
+    let storageRecovered = false;
+
+    try {
+      fs.copyFileSync(path.join(preRollbackDir, "kupola_db.json"), targetDbPath);
+      const testDbHash = calculateHash(targetDbPath);
+      if (testDbHash === snapshotDbHash) {
+        dbRecovered = true;
+      }
+    } catch (eDb) {
+      console.error(`[FALHA DE RECUPERAÇÃO] Erro ao recuperar kupola_db.json para o snapshot: ${eDb.message}`);
+    }
+
+    try {
+      fs.copyFileSync(path.join(preRollbackDir, "kupola_storage.json"), targetStoragePath);
+      const testStorageHash = calculateHash(targetStoragePath);
+      if (testStorageHash === snapshotStorageHash) {
+        storageRecovered = true;
+      }
+    } catch (eStorage) {
+      console.error(`[FALHA DE RECUPERAÇÃO] Erro ao recuperar kupola_storage.json para o snapshot: ${eStorage.message}`);
+    }
+
+    if (dbRecovered && storageRecovered) {
+      throw new Error(
+        `FALHA DE VALIDAÇÃO FINAL E AUTO-RECUPERAÇÃO CONCLUÍDA: A validação final pós-substituição falhou (hashes não coincidiram com o backup).\n` +
+          `Ambos os arquivos foram REVERTIDOS COM SUCESSO para o snapshot pré-rollback em ${preRollbackDir}.\n` +
+          `kupola_db.json: recuperado (${snapshotDbHash})\n` +
+          `kupola_storage.json: recuperado (${snapshotStorageHash})\n` +
+          `Nenhum dado foi corrompido, e a integridade pré-rollback foi 100% restabelecida.`
+      );
+    } else {
+      const currentFailDbHash = calculateHash(targetDbPath);
+      const currentFailStorageHash = calculateHash(targetStoragePath);
+      throw new Error(
+        `ERRO CATASTRÓFICO: Falha na validação final e a auto-recuperação do snapshot falhou parcialmente!\n` +
+          `  Status kupola_db.json: ${dbRecovered ? "RECUPERADO" : "FALHA NA RECUPERAÇÃO"} (hash atual: ${currentFailDbHash}, esperado: ${snapshotDbHash})\n` +
+          `  Status kupola_storage.json: ${storageRecovered ? "RECUPERADO" : "FALHA NA RECUPERAÇÃO"} (hash atual: ${currentFailStorageHash}, esperado: ${snapshotStorageHash})\n` +
+          `  CÓPIA DE SEGURANÇA INTACTA DISPONÍVEL EM: ${preRollbackDir}\n` +
+          `  Intervenção manual necessária utilizando os arquivos preservados no snapshot pré-rollback.`
+      );
+    }
   }
 
   return {
