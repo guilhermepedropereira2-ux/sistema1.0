@@ -10,10 +10,12 @@ import crypto from "crypto";
  * Para mitigar esse limite físico sem simular falsa atomicidade perfeita:
  * 1. Os arquivos de backup são validados previamente e preparados em arquivos temporários (.tmp).
  * 2. É gerado um snapshot pré-rollback validado criptograficamente com hashes SHA-256.
- * 3. É feita a substituição sequencial protegida via fs.renameSync.
- * 4. Se a substituição do segundo arquivo falhar, o script executa a reversão automática do primeiro arquivo para o snapshot.
- * 5. Se a validação final pós-restauração falhar, o script executa a reversão automática de AMBOS os arquivos para o snapshot.
- * 6. Se a própria reversão do snapshot falhar, os artefatos são preservados e um relatório forense detalhado é emitido.
+ * 3. É feita a verificação de correspondência entre o backup e os hashes de pré-limpeza do manifesto validado.
+ * 4. É feita a substituição sequencial protegida via fs.renameSync.
+ * 5. Se a substituição do segundo arquivo falhar, o script executa a reversão automática do primeiro arquivo para o snapshot.
+ * 6. Se a reversão do primeiro arquivo falhar, emite diagnóstico forense com hashes reais e preserva o snapshot.
+ * 7. Se a validação final pós-restauração falhar, o script executa a reversão automática de AMBOS os arquivos para o snapshot.
+ * 8. Se a própria reversão do snapshot falhar, os artefatos são preservados e um relatório forense detalhado é emitido.
  */
 
 export function calculateHash(filePath) {
@@ -163,6 +165,8 @@ export function performRollback(targetBackupDir = null, options = {}) {
     null;
 
   let recognizedStateName = null;
+  let preDb = null;
+  let preStorage = null;
 
   if (expectedDbHash && expectedStorageHash) {
     recognizedStateName = "EXPLICIT_OPTIONS";
@@ -174,33 +178,80 @@ export function performRollback(targetBackupDir = null, options = {}) {
           `A restauração foi BLOQUEADA sem possibilidade de bypass automático para evitar a perda de dados.`
       );
     }
+    // Se hashes esperados explícitos foram passados, usar como referência de pré-limpeza se não houver manifesto
+    preDb = expectedDbHash;
+    preStorage = expectedStorageHash;
   } else {
     // Buscar manifestos nos caminhos potenciais
-    const manifestPath = fs.existsSync(path.join(selectedBackupDir, "cleanup_manifest.json"))
-      ? path.join(selectedBackupDir, "cleanup_manifest.json")
-      : fs.existsSync(path.join(rootDir, "data", "cleanup_manifest.json"))
-      ? path.join(rootDir, "data", "cleanup_manifest.json")
-      : null;
+    const backupManifestPath = path.join(selectedBackupDir, "cleanup_manifest.json");
+    const dataManifestPath = path.join(rootDir, "data", "cleanup_manifest.json");
 
-    if (!manifestPath || !fs.existsSync(manifestPath)) {
+    const hasBackupManifest = fs.existsSync(backupManifestPath);
+    const hasDataManifest = fs.existsSync(dataManifestPath);
+
+    if (!hasBackupManifest && !hasDataManifest) {
       throw new Error(
         "FALHA DE VALIDAÇÃO DE SEGURANÇA: Não foi possível determinar e verificar os hashes esperados para o estado atual dos arquivos (manifesto ausente e expectedCurrentHashes não fornecido). Operação interrompida."
       );
     }
 
-    let manifest;
-    try {
-      manifest = JSON.parse(fs.readFileSync(manifestPath, "utf-8"));
-    } catch (e) {
-      throw new Error(`FALHA DE VALIDAÇÃO DO MANIFESTO: Não foi possível ler o manifesto de integridade: ${e.message}`);
+    let backupManifest = null;
+    let dataManifest = null;
+
+    if (hasBackupManifest) {
+      try {
+        backupManifest = JSON.parse(fs.readFileSync(backupManifestPath, "utf-8"));
+      } catch (e) {
+        throw new Error(`FALHA DE VALIDAÇÃO DO MANIFESTO: Não foi possível ler o manifesto do backup: ${e.message}`);
+      }
     }
 
-    const preDb =
+    if (hasDataManifest) {
+      try {
+        dataManifest = JSON.parse(fs.readFileSync(dataManifestPath, "utf-8"));
+      } catch (e) {
+        throw new Error(`FALHA DE VALIDAÇÃO DO MANIFESTO: Não foi possível ler o manifesto de dados: ${e.message}`);
+      }
+    }
+
+    // Se houver manifestos em ambos os locais, verificar compatibilidade estrita!
+    if (hasBackupManifest && hasDataManifest) {
+      const bPreDb =
+        backupManifest.metadata?.hashesPreCleanup?.["data/kupola_db.json"] ||
+        backupManifest.metadata?.hashesPreCleanup?.["kupola_db.json"] ||
+        backupManifest.metadata?.sha256?.kupola_db;
+      const dPreDb =
+        dataManifest.metadata?.hashesPreCleanup?.["data/kupola_db.json"] ||
+        dataManifest.metadata?.hashesPreCleanup?.["kupola_db.json"] ||
+        dataManifest.metadata?.sha256?.kupola_db;
+
+      const bPreStorage =
+        backupManifest.metadata?.hashesPreCleanup?.["data/kupola_storage.json"] ||
+        backupManifest.metadata?.hashesPreCleanup?.["kupola_storage.json"] ||
+        backupManifest.metadata?.sha256?.kupola_storage;
+      const dPreStorage =
+        dataManifest.metadata?.hashesPreCleanup?.["data/kupola_storage.json"] ||
+        dataManifest.metadata?.hashesPreCleanup?.["kupola_storage.json"] ||
+        dataManifest.metadata?.sha256?.kupola_storage;
+
+      if (bPreDb !== dPreDb || bPreStorage !== dPreStorage) {
+        throw new Error(
+          `CONFLITO DE MANIFESTOS DETECTADO: O manifesto no backup e o manifesto na raiz de dados possuem hashes de pré-limpeza incompatíveis!\n` +
+            `  Backup Pre-Cleanup: DB=${bPreDb}, Storage=${bPreStorage}\n` +
+            `  Data Pre-Cleanup:   DB=${dPreDb}, Storage=${dPreStorage}\n` +
+            `A restauração foi BLOQUEADA para evitar escolha arbitrária de manifesto incompatível.`
+        );
+      }
+    }
+
+    const manifest = backupManifest || dataManifest;
+
+    preDb =
       manifest.metadata?.hashesPreCleanup?.["data/kupola_db.json"] ||
       manifest.metadata?.hashesPreCleanup?.["kupola_db.json"] ||
       manifest.metadata?.sha256?.kupola_db ||
       null;
-    const preStorage =
+    preStorage =
       manifest.metadata?.hashesPreCleanup?.["data/kupola_storage.json"] ||
       manifest.metadata?.hashesPreCleanup?.["kupola_storage.json"] ||
       manifest.metadata?.sha256?.kupola_storage ||
@@ -253,6 +304,19 @@ export function performRollback(targetBackupDir = null, options = {}) {
   }
 
   console.log(`- Estado atual validado como consistente: ${recognizedStateName}`);
+
+  // 4.1 Validação de correspondência entre os arquivos do backup e o estado de pré-limpeza esperado do manifesto
+  if (preDb && preStorage) {
+    if (backupDbHash !== preDb || backupStorageHash !== preStorage) {
+      throw new Error(
+        `ALERTA DE SEGURANÇA NO ROLLBACK: Os arquivos do backup selecionado são internamente íntegros, mas DIVERGEM dos hashes de pré-limpeza esperados registrados no manifesto!\n` +
+          `  kupola_db.json no backup:      ${backupDbHash} vs manifesto (${preDb})\n` +
+          `  kupola_storage.json no backup: ${backupStorageHash} vs manifesto (${preStorage})\n` +
+          `A restauração foi BLOQUEADA antes de qualquer substituição para evitar restauração de backup incompatível.`
+      );
+    }
+    console.log("- Correspondência do backup com o manifesto esperado: APROVADO (100% IDÊNTICO)");
+  }
 
   // 5. Preservar cópia de segurança (snapshot) do estado atual e validá-la antes da restauração
   if (!fs.existsSync(backupsDir)) {
@@ -317,19 +381,34 @@ export function performRollback(targetBackupDir = null, options = {}) {
       console.error(`[FALHA CRÍTICA] Erro ao substituir kupola_storage.json: ${errStorage.message}`);
       console.log("[AÇÃO DE EMERGÊNCIA] Iniciando reversão automática do primeiro arquivo para o snapshot pré-rollback...");
 
-      // Reverter o primeiro arquivo imediatamente para a cópia de segurança pré-rollback
-      fs.copyFileSync(path.join(preRollbackDir, "kupola_db.json"), targetDbPath);
-
-      const revertedDbHash = calculateHash(targetDbPath);
-      if (revertedDbHash !== currentDbHash) {
-        throw new Error(
-          `ERRO CATASTRÓFICO: Falha na substituição do segundo arquivo e a reversão automática do primeiro arquivo também falhou! O snapshot original está salvo em ${preRollbackDir}`
-        );
+      let dbRevertError = null;
+      try {
+        fs.copyFileSync(path.join(preRollbackDir, "kupola_db.json"), targetDbPath);
+      } catch (errCopy) {
+        dbRevertError = errCopy;
+        console.error(`[FALHA DE RECUPERAÇÃO] Erro ao copiar kupola_db.json de volta do snapshot: ${errCopy.message}`);
       }
 
-      throw new Error(
-        `FALHA PARCIAL DETECTADA E REVERTIDA: Falha ao substituir 'kupola_storage.json' (${errStorage.message}). O arquivo 'kupola_db.json' foi REVERTIDO COM SUCESSO para o snapshot pré-rollback. Nenhum dado foi corrompido.`
-      );
+      const finalDbHash = calculateHash(targetDbPath);
+      const finalStorageHash = calculateHash(targetStoragePath);
+
+      const isDbReverted = !dbRevertError && finalDbHash === currentDbHash;
+
+      if (isDbReverted) {
+        throw new Error(
+          `FALHA PARCIAL DETECTADA E REVERTIDA: Falha ao substituir 'kupola_storage.json' (${errStorage.message}). ` +
+            `O arquivo 'kupola_db.json' foi REVERTIDO COM SUCESSO para o snapshot pré-rollback (hash verificado: ${finalDbHash}). Nenhum dado foi corrompido.`
+        );
+      } else {
+        throw new Error(
+          `ERRO CATASTRÓFICO: Falha na substituição de 'kupola_storage.json' (${errStorage.message}) ` +
+            `E a reversão automática de 'kupola_db.json' também FALHOU (${dbRevertError ? dbRevertError.message : "hash divergente"})!\n` +
+            `  kupola_db.json:      hash atual (${finalDbHash}), esperado (${currentDbHash}) [STATUS: NÃO RECUPERADO]\n` +
+            `  kupola_storage.json: hash atual (${finalStorageHash}), esperado (${currentStorageHash}) [STATUS: NÃO ALTERADO]\n` +
+            `  SNAPSHOT PRÉ-ROLLBACK PRESERVADO EM: ${preRollbackDir}\n` +
+            `  Intervenção manual necessária utilizando os arquivos preservados no snapshot pré-rollback.`
+        );
+      }
     }
   } finally {
     // Limpeza de quaisquer arquivos temporários remanescentes
