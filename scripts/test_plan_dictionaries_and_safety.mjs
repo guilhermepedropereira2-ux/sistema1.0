@@ -2,7 +2,7 @@ import fs from "fs";
 import path from "path";
 import os from "os";
 import crypto from "crypto";
-import { generateCleanupManifest } from "./plan_reversible_cleanup.mjs";
+import { generateCleanupManifest, classifyOrganization, WHITELISTED_ORGS } from "./plan_reversible_cleanup.mjs";
 
 function sha256(filePath) {
   const buf = fs.readFileSync(filePath);
@@ -228,8 +228,135 @@ try {
   }
   assert(blockedUnexpected, "Planejador bloqueou com sucesso ao encontrar estrutura de formato inesperado");
 
+  // ============================================================================
+  // TESTE 9: REJEIÇÃO DE FALSOS POSITIVOS DE NOMES POR PREFIXO (AMBIGUOUS)
+  // ============================================================================
+  console.log("\n--- Executando Teste 9: Rejeição de Falsos Positivos por Prefixo ---");
+  const falsePositiveNames = [
+    "Barbearia Testemunha",
+    "Barbearia Alphaville",
+    "Barbearia Betamax",
+    "Barbearia Xerox",
+    "Barbearia Yugoslavia",
+    "Barbearia X-Men",
+    "Barbearia Testing",
+    "Barbearia Testosterona",
+    "Testemunha",
+    "Testamento",
+    "Testar",
+    "Org Testemunha",
+    "Organization Testamento",
+  ];
+
+  const validTestId = "org_1791511054173_svoq";
+  for (const name of falsePositiveNames) {
+    const classification = classifyOrganization(validTestId, name);
+    assert(
+      classification.status === "AMBIGUOUS",
+      `Falso positivo '${name}' foi classificado como AMBIGUOUS (status obtido: '${classification.status}')`
+    );
+  }
+
+  // ============================================================================
+  // TESTE 10: PRESERVAÇÃO DE CASOS LEGÍTIMOS DE TESTE (TEST_CANDIDATE)
+  // ============================================================================
+  console.log("\n--- Executando Teste 10: Preservação de Nomes de Teste Válidos ---");
+  const legitimateTestNames = [
+    "Barbearia Alpha",
+    "Barbearia Alpha 54170",
+    "Barbearia Alpha 1",
+    "Barbearia Beta",
+    "Barbearia Beta 10078",
+    "Barbearia Beta 2",
+    "Barbearia X",
+    "Barbearia X 29977",
+    "Barbearia Y",
+    "Barbearia Y 57296",
+    "Barbearia Alfa Persistente",
+    "Barbearia Teste",
+    "Barbearia Teste 1",
+    "Barbearia Teste Alpha 1",
+    "Barbearia Test",
+    "Barbearia Test 1",
+    "Teste 1",
+    "Teste",
+    "Test 1",
+    "Test",
+    "Org Test 1",
+    "Org Test",
+    "Organization Teste 1",
+    "Organization Teste",
+  ];
+
+  for (const name of legitimateTestNames) {
+    const classification = classifyOrganization(validTestId, name);
+    assert(
+      classification.status === "TEST_CANDIDATE",
+      `Nome legítimo de teste '${name}' classificado como TEST_CANDIDATE`
+    );
+  }
+
+  // ============================================================================
+  // TESTE 11: PRECEDÊNCIA ABSOLUTA DA WHITELIST SOBRE PADRÕES DE NOME
+  // ============================================================================
+  console.log("\n--- Executando Teste 11: Precedência Absoluta da Whitelist ---");
+  const whitelistedIds = ["demo_vintage", "org_vintage", "unit_shopping"];
+  const suspiciousOrTestNames = [
+    "Barbearia Testemunha",
+    "Barbearia Alphaville",
+    "Barbearia Teste 1",
+    "Barbearia Alpha 54170",
+    "Qualquer Nome Suspeito",
+  ];
+
+  for (const wId of whitelistedIds) {
+    for (const name of suspiciousOrTestNames) {
+      const classification = classifyOrganization(wId, name);
+      assert(
+        classification.status === "LEGITIMATE",
+        `Entidade da Whitelist '${wId}' com nome '${name}' classificada como LEGITIMATE`
+      );
+    }
+  }
+
+  // ============================================================================
+  // TESTE 12: SEGURANÇA DO PLANNER: BLOQUEIO DIANTE DE ORGANIZAÇÃO AMBÍGUA
+  // ============================================================================
+  console.log("\n--- Executando Teste 12: Segurança do Planner contra Organizações Ambíguas ---");
+  const case12Dir = path.join(testDir, "case12");
+  fs.mkdirSync(case12Dir, { recursive: true });
+  const case12DbPath = path.join(case12Dir, "kupola_db.json");
+  const case12StoragePath = path.join(case12Dir, "kupola_storage.json");
+
+  const { db: data12Db, storage: data12Storage } = createBaseSyntheticData();
+  // Injeta organização com id sintático válido mas nome de falso positivo por prefixo
+  data12Db.barbershops.push({
+    id: "org_1791512398817_v9ga",
+    name: "Barbearia Alphaville",
+  });
+  fs.writeFileSync(case12DbPath, JSON.stringify(data12Db, null, 2), "utf-8");
+  fs.writeFileSync(case12StoragePath, JSON.stringify(data12Storage, null, 2), "utf-8");
+
+  let blockedAmbiguousOrg = false;
+  try {
+    generateCleanupManifest({
+      rootDir: case12Dir,
+      dbPath: case12DbPath,
+      storagePath: case12StoragePath,
+      writeManifest: false,
+    });
+  } catch (err) {
+    if (err.message.includes("organizações ambíguas sem classificação inequívoca") || err.message.includes("PLANEJAMENTO BLOQUEADO")) {
+      blockedAmbiguousOrg = true;
+    }
+  }
+  assert(
+    blockedAmbiguousOrg,
+    "Planner bloqueia com sucesso e aborta ao detectar organização ambígua ('Barbearia Alphaville')"
+  );
+
   console.log("\n================================================================================");
-  console.log("=== RESULTADO: TODOS OS 8 TESTES ISOLADOS PASSARAM COM 100% DE SUCESSO!     ===");
+  console.log("=== RESULTADO: TODOS OS 12 TESTES ISOLADOS PASSARAM COM 100% DE SUCESSO!    ===");
   console.log("================================================================================\n");
 } finally {
   // Limpeza de segurança: remove o diretório de testes temporário
