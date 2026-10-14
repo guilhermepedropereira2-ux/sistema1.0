@@ -35,11 +35,35 @@ function setupEnvironment(envName) {
   fs.mkdirSync(dataDir, { recursive: true });
   fs.mkdirSync(backupDir, { recursive: true });
 
-  const preCleanupDbContent = JSON.stringify({ state: "pre_cleanup", items: [1, 2, 3], subscriptions: {}, settingsMap: {} });
-  const preCleanupStorageContent = JSON.stringify({ state: "pre_cleanup", orgs: ["a", "b"] });
+  const preCleanupDbContent = JSON.stringify({
+    state: "pre_cleanup",
+    barbershops: [{ id: "org_test_1", name: "Barbearia Teste 1" }],
+    users: [{ id: "usr_1", organization_id: "org_test_1" }],
+    items: [1, 2, 3],
+    subscriptions: {},
+    settingsMap: {},
+  });
+  const preCleanupStorageContent = JSON.stringify({
+    state: "pre_cleanup",
+    organizations: [["org_test_1", { name: "Barbearia Teste 1" }]],
+    users: [["usr_1", { organization_id: "org_test_1" }]],
+    orgs: ["a", "b"],
+  });
 
-  const postCleanupDbContent = JSON.stringify({ state: "post_cleanup", items: [1], subscriptions: {}, settingsMap: {} });
-  const postCleanupStorageContent = JSON.stringify({ state: "post_cleanup", orgs: ["a"] });
+  const postCleanupDbContent = JSON.stringify({
+    state: "post_cleanup",
+    barbershops: [],
+    users: [],
+    items: [1],
+    subscriptions: {},
+    settingsMap: {},
+  });
+  const postCleanupStorageContent = JSON.stringify({
+    state: "post_cleanup",
+    organizations: [],
+    users: [],
+    orgs: ["a"],
+  });
 
   // Backup contém o estado pré-limpeza
   const backupDbPath = path.join(backupDir, "kupola_db.json");

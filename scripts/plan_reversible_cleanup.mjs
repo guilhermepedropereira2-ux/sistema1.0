@@ -20,7 +20,7 @@ const TEST_ORG_ID_PATTERNS = [
 ];
 
 const TEST_ORG_NAME_PATTERNS = [
-  /^Barbearia (Alpha|Beta|X|Y|Alfa Persistente)/i,
+  /^Barbearia (Alpha|Beta|X|Y|Alfa Persistente|Test(e)?)/i,
   /^Test(e)?\b/i,
   /^Org(anization)?\s*Test/i,
 ];
