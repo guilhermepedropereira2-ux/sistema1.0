@@ -31,6 +31,55 @@ export const KNOWN_DB_ORG_DICTIONARIES = new Set(["subscriptions", "settingsMap"
 // Objetos raiz únicos conhecidos e reconhecidos (Singletons da aplicação/demo)
 export const KNOWN_DB_SINGLE_ROOT_OBJECTS = new Set(["subscription", "settings", "barbershop", "onboarding"]);
 
+// Coleções operacionais estritamente protegidas (Auditoria Contábil, Fiscal e Operacional)
+// Estas coleções NUNCA são elegíveis para limpeza automatizada e devem ser preservadas 100%
+export const PROTECTED_OPERATIONAL_COLLECTIONS = new Set([
+  "queue",
+  "revenues",
+  "expenses",
+  "withdrawals",
+  "cashClosings",
+  "categories",
+  "customerPlans",
+  "commissionPayments",
+]);
+
+// Verificação semântica em profundidade de referências a entidades protegidas da Whitelist
+export function checkSemanticWhitelistedReference(obj, currentTenantId, visited = new Set()) {
+  if (!obj || typeof obj !== "object") return null;
+  if (visited.has(obj)) return null;
+  visited.add(obj);
+
+  for (const [key, val] of Object.entries(obj)) {
+    if (val === null || val === undefined) continue;
+
+    if (typeof val === "string") {
+      const trimmed = val.trim();
+      if (WHITELISTED_ORGS.has(trimmed) && trimmed !== currentTenantId) {
+        return { key, val: trimmed, reason: `Propriedade "${key}" referencia entidade protegida "${trimmed}"` };
+      }
+    } else if (Array.isArray(val)) {
+      for (let i = 0; i < val.length; i++) {
+        const item = val[i];
+        if (typeof item === "string") {
+          const trimmed = item.trim();
+          if (WHITELISTED_ORGS.has(trimmed) && trimmed !== currentTenantId) {
+            return { key: `${key}[${i}]`, val: trimmed, reason: `Item em array "${key}[${i}]" referencia entidade protegida "${trimmed}"` };
+          }
+        } else if (typeof item === "object" && item !== null) {
+          const nested = checkSemanticWhitelistedReference(item, currentTenantId, visited);
+          if (nested) return { key: `${key}[${i}].${nested.key}`, val: nested.val, reason: nested.reason };
+        }
+      }
+    } else if (typeof val === "object") {
+      const nested = checkSemanticWhitelistedReference(val, currentTenantId, visited);
+      if (nested) return { key: `${key}.${nested.key}`, val: nested.val, reason: nested.reason };
+    }
+  }
+
+  return null;
+}
+
 export function classifyOrganization(id, name) {
   if (WHITELISTED_ORGS.has(id)) {
     return {
@@ -189,6 +238,26 @@ export function generateCleanupManifest(options = {}) {
       return;
     }
 
+    // Política estrita para coleções operacionais protegidas (Auditoria Contábil/Fiscal/Filas)
+    if (PROTECTED_OPERATIONAL_COLLECTIONS.has(collName)) {
+      items.forEach((item, index) => {
+        if (typeof item !== "object" || item === null) {
+          unexpectedStructures.push({ file: dbRelativePath, collection: collName, reason: `Item no índice ${index} não é objeto` });
+          return;
+        }
+        const tenantId = item.barbershop_id || item.organization_id;
+        if (tenantId && candidateOrgIdsSet.has(tenantId)) {
+          crossReferenceViolations.push({
+            id: item.id || `index_${index}`,
+            collection: collName,
+            tenantId,
+            reason: `Tentativa proibida de classificar registro da coleção operacional protegida '${collName}' como removível.`,
+          });
+        }
+      });
+      return; // Coleção operacional protegida: nenhum registro é incluído no manifesto
+    }
+
     items.forEach((item, index) => {
       if (typeof item !== "object" || item === null) {
         unexpectedStructures.push({ file: dbRelativePath, collection: collName, reason: `Item no índice ${index} não é objeto` });
@@ -198,34 +267,47 @@ export function generateCleanupManifest(options = {}) {
       let tenantId = item.barbershop_id || item.organization_id;
       if (collName === "barbershops") tenantId = item.id;
 
+      // Se a coleção exigir proprietário e o registro não tiver barbershop_id nem organization_id:
+      if (!tenantId) {
+        ambiguousEntries.push({
+          file: dbRelativePath,
+          collection: collName,
+          id: item.id || item.email || item.code || `index_${index}`,
+          physicalPath: `${collName}[${index}]`,
+          reason: `Registro na coleção '${collName}' no índice [${index}] não possui identificador de tenant ('barbershop_id' ou 'organization_id').`,
+        });
+        return;
+      }
+
       // Verify no cross-reference to whitelisted legitimate organizations
       if (WHITELISTED_ORGS.has(tenantId)) {
         return; // Legitimate record belonging to whitelisted org
       }
 
-      if (tenantId && candidateOrgIdsSet.has(tenantId)) {
-        // Additional safety check: check if record references a whitelisted org in any property
-        const refsWhitelisted = Object.values(item).some(
-          (val) => typeof val === "string" && WHITELISTED_ORGS.has(val) && val !== tenantId
-        );
-        if (refsWhitelisted) {
+      if (candidateOrgIdsSet.has(tenantId)) {
+        const recordId = item.id || item.email || item.code || `${collName}_${index}`;
+        const physicalPath = `${collName}[${index}]`;
+
+        // Verificação semântica em profundidade de referências a entidades protegidas da Whitelist
+        const refViolation = checkSemanticWhitelistedReference(item, tenantId);
+        if (refViolation) {
           crossReferenceViolations.push({
-            id: item.id || `index_${index}`,
+            id: recordId,
             collection: collName,
             tenantId,
-            reason: "Registro candidato possui referência cruzada com entidade whitelisted de produção",
+            reason: `Registro candidato possui referência cruzada com entidade whitelisted: ${refViolation.reason}`,
           });
           return;
         }
 
-        const recordId = item.id || item.email || item.code || `${collName}_${index}`;
-        const physicalPath = `${collName}[${index}]`;
-        const pathKey = `${dbRelativePath}::${collName}::${recordId}`;
+        const physicalKey = `${dbRelativePath}::${physicalPath}`;
+        const logicalKey = `${dbRelativePath}::${collName}::${recordId}`;
 
-        if (seenPhysicalPaths.has(pathKey)) {
-          duplicatePathViolations.push(pathKey);
+        if (seenPhysicalPaths.has(physicalKey) || seenPhysicalPaths.has(logicalKey)) {
+          duplicatePathViolations.push(physicalKey);
         } else {
-          seenPhysicalPaths.add(pathKey);
+          seenPhysicalPaths.add(physicalKey);
+          seenPhysicalPaths.add(logicalKey);
         }
 
         const orgInfo = candidateOrgsMap.get(tenantId);
@@ -240,12 +322,12 @@ export function generateCleanupManifest(options = {}) {
           physicalPath,
           reason: `Vínculo inequívoco de tenant com a organização de teste ${tenantId}`,
         });
-      } else if (tenantId) {
+      } else {
         // Possui tenantId mas não está na whitelist nem nos candidatos conhecidos -> AMBÍGUO!
         ambiguousEntries.push({
           file: dbRelativePath,
           collection: collName,
-          id: item.id || `index_${index}`,
+          id: item.id || item.email || item.code || `index_${index}`,
           tenantId,
           reason: `Tenant '${tenantId}' não está na whitelist nem entre as organizações de teste confirmadas.`,
         });
@@ -293,16 +375,14 @@ export function generateCleanupManifest(options = {}) {
           return;
         }
 
-        // Validar referências cruzadas: não pode apontar para whitelist
-        const refsWhitelisted = Object.values(entryVal).some(
-          (val) => typeof val === "string" && WHITELISTED_ORGS.has(val)
-        );
-        if (refsWhitelisted) {
+        // Validar referências cruzadas em profundidade
+        const refViolation = checkSemanticWhitelistedReference(entryVal, key);
+        if (refViolation) {
           crossReferenceViolations.push({
             id: key,
             collection: collName,
             tenantId: key,
-            reason: `Entrada candidata no dicionário '${collName}' possui referência cruzada com entidade whitelisted`,
+            reason: `Entrada candidata no dicionário '${collName}' possui referência cruzada com entidade whitelisted: ${refViolation.reason}`,
           });
           return;
         }
@@ -319,11 +399,15 @@ export function generateCleanupManifest(options = {}) {
           return;
         }
 
-        const pathKey = `${dbRelativePath}::${collName}::${key}`;
-        if (seenPhysicalPaths.has(pathKey)) {
-          duplicatePathViolations.push(pathKey);
+        const physicalPath = `${collName}.${key}`;
+        const physicalKey = `${dbRelativePath}::${physicalPath}`;
+        const logicalKey = `${dbRelativePath}::${collName}::${key}`;
+
+        if (seenPhysicalPaths.has(physicalKey) || seenPhysicalPaths.has(logicalKey)) {
+          duplicatePathViolations.push(physicalKey);
         } else {
-          seenPhysicalPaths.add(pathKey);
+          seenPhysicalPaths.add(physicalKey);
+          seenPhysicalPaths.add(logicalKey);
         }
 
         const orgInfo = candidateOrgsMap.get(key);
@@ -336,7 +420,7 @@ export function generateCleanupManifest(options = {}) {
           entityType: "organization_setting_entry",
           ownerOrgId: key,
           ownerOrgName: orgInfo ? orgInfo.name : "(Desconhecido)",
-          physicalPath: `${collName}.${key}`,
+          physicalPath,
           reason: `Vínculo positivo e inequívoco da chave '${key}' no dicionário '${collName}' com a organização de teste ${key}`,
         });
       } else {
@@ -363,20 +447,48 @@ export function generateCleanupManifest(options = {}) {
       const key = Array.isArray(entry) ? entry[0] : null;
       const value = Array.isArray(entry) ? entry[1] : entry;
       let tenantId = value.organization_id || value.barbershop_id;
-      if (collName === "organizations") tenantId = key;
+      if (collName === "organizations") tenantId = key || value.id;
+
+      // Se a coleção exigir proprietário e o registro não tiver:
+      if (!tenantId) {
+        ambiguousEntries.push({
+          file: storageRelativePath,
+          collection: collName,
+          id: value.id || key || `index_${index}`,
+          physicalPath: `${collName}[${index}]`,
+          reason: `Registro em storage na coleção '${collName}' no índice [${index}] não possui identificador de tenant.`,
+        });
+        return;
+      }
 
       if (WHITELISTED_ORGS.has(tenantId)) {
         return; // Legitimate record
       }
 
-      if (tenantId && candidateOrgIdsSet.has(tenantId)) {
+      if (candidateOrgIdsSet.has(tenantId)) {
         const recordId = value.id || key || `${collName}_${index}`;
-        const pathKey = `${storageRelativePath}::${collName}::${recordId}`;
+        const physicalPath = `${collName}[${index}]`;
 
-        if (seenPhysicalPaths.has(pathKey)) {
-          duplicatePathViolations.push(pathKey);
+        // Verificação semântica em profundidade de referências a entidades protegidas da Whitelist no Storage
+        const refViolation = checkSemanticWhitelistedReference(value, tenantId);
+        if (refViolation) {
+          crossReferenceViolations.push({
+            id: recordId,
+            collection: collName,
+            tenantId,
+            reason: `Registro em storage possui referência cruzada com entidade whitelisted: ${refViolation.reason}`,
+          });
+          return;
+        }
+
+        const physicalKey = `${storageRelativePath}::${physicalPath}`;
+        const logicalKey = `${storageRelativePath}::${collName}::${recordId}`;
+
+        if (seenPhysicalPaths.has(physicalKey) || seenPhysicalPaths.has(logicalKey)) {
+          duplicatePathViolations.push(physicalKey);
         } else {
-          seenPhysicalPaths.add(pathKey);
+          seenPhysicalPaths.add(physicalKey);
+          seenPhysicalPaths.add(logicalKey);
         }
 
         const orgInfo = candidateOrgsMap.get(tenantId);
@@ -388,10 +500,10 @@ export function generateCleanupManifest(options = {}) {
           entityType: "storage_record",
           ownerOrgId: tenantId,
           ownerOrgName: orgInfo ? orgInfo.name : "(Desconhecido)",
-          physicalPath: `${collName}[${index}]`,
+          physicalPath,
           reason: `Vínculo inequívoco de tenant em kupola_storage.json com a organização de teste ${tenantId}`,
         });
-      } else if (tenantId) {
+      } else {
         ambiguousEntries.push({
           file: storageRelativePath,
           collection: collName,
